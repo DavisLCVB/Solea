@@ -6,4 +6,12 @@
     <string name="no_accound_sign_up_label">No account? Sign Up</string>
     <string name="already_have_an_account_log_in_button">Already have an account? Log In</string>
     <string name="sign_up_button">Sign Up</string>
+    <string name="error_auth_user_not_found">Error: User Not Found!</string>
+    <string name="error_auth_invalid_credentials">Error: Invalid credentials!</string>
+    <string name="error_auth_user_collision">Error: User already exists!</string>
+    <string name="error_auth_email">Error: Email Send Error!</string>
+    <string name="error_auth_unknown">Error: Authentication Failed!</string>
+    <string name="error_auth_invalid_email">Error: Invalid Email!</string>
+    <string name="error_auth_weak_password">Error: Weak Password!</string>
+    <string name="create_your_account">Create you Solea account!</string>
 </resources>

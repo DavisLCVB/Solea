@@ -1,5 +1,7 @@
 package com.grupo03.solea.data.models
 
+import com.grupo03.solea.utils.ErrorCode
+
 data class User(
     val uid: String = "",
     val email: String = "",
@@ -9,6 +11,6 @@ data class User(
 
 data class AuthResult(
     val success: Boolean,
-    val message: String? = null,
-    val user: User? = null
+    val user: User? = null,
+    val errorCode: ErrorCode.Auth? = null
 )

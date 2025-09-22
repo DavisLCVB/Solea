@@ -13,38 +13,38 @@ fun NavGraphBuilder.authNavigationGraph(
     authViewModel: AuthViewModel
 ) {
     navigation(
-        startDestination = Routes.Auth.LOGIN,
-        route = Routes.Auth.BASE
+        startDestination = AuthRoutes.LOGIN,
+        route = AuthRoutes.PREFIX
     ) {
-        composable(Routes.Auth.LOGIN) {
+        composable(AuthRoutes.LOGIN) {
 
             LoginScreen(
                 viewModel = authViewModel,
-                onNavigateToSignUp = {
-                    navController.navigate(Routes.Auth.SIGN_UP)
+                navigateToSignUp = {
+                    navController.navigate(AuthRoutes.SIGN_UP)
                 },
-                onNavigateToHome = {
-                    navController.navigate(Routes.Home.HOME) {
-                        popUpTo(Routes.Auth.LOGIN) {
+                navigateToHome = {
+                    navController.navigate(AppRoutes.HOME) {
+                        popUpTo(AuthRoutes.LOGIN) {
                             inclusive = true
                         }
                     }
                 }
             )
         }
-        composable(Routes.Auth.SIGN_UP) {
+        composable(AuthRoutes.SIGN_UP) {
             SignUpScreen(
                 viewModel = authViewModel,
-                onNavigateToLogin = {
-                    navController.navigate(Routes.Auth.LOGIN) {
-                        popUpTo(Routes.Auth.LOGIN) {
+                navigateToLogin = {
+                    navController.navigate(AuthRoutes.LOGIN) {
+                        popUpTo(AuthRoutes.LOGIN) {
                             inclusive = true
                         }
                     }
                 },
-                onNavigateToHome = {
-                    navController.navigate(Routes.Home.HOME) {
-                        popUpTo(Routes.Auth.LOGIN) {
+                navigateToHome = {
+                    navController.navigate(AppRoutes.HOME) {
+                        popUpTo(AuthRoutes.LOGIN) {
                             inclusive = true
                         }
                     }

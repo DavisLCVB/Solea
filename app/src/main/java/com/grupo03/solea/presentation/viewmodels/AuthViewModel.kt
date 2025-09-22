@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.grupo03.solea.data.repositories.AuthRepository
 import com.grupo03.solea.presentation.states.AuthUiState
+import com.grupo03.solea.utils.ErrorCode
 import com.grupo03.solea.utils.Validation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
@@ -33,22 +35,23 @@ class AuthViewModel(
     }
 
     fun onEmailChange(newEmail: String) {
-        val errorMessage = if (Validation.isValidEmail(newEmail)) null else "invalid_email"
+        val errorMessage =
+            if (Validation.isValidEmail(newEmail)) null else ErrorCode.Auth.INVALID_EMAIL
         _uiState.value =
             _uiState.value.copy(
                 email = newEmail,
                 isEmailValid = Validation.isValidEmail(newEmail),
-                errorMessage = errorMessage
+                errorCode = errorMessage
             )
     }
 
-    fun onPasswordChange(newPassword: String) {
+    fun onPasswordChange(newPassword: String, skipValidation: Boolean = false) {
         val errorMessage =
-            if (Validation.isValidPassword(newPassword)) null else "invalid_password"
+            if (Validation.isValidPassword(newPassword)) null else ErrorCode.Auth.WEAK_PASSWORD
         _uiState.value = _uiState.value.copy(
             password = newPassword,
-            isPasswordValid = Validation.isValidPassword(newPassword),
-            errorMessage = errorMessage
+            isPasswordValid = Validation.isValidPassword(newPassword) || skipValidation,
+            errorCode = if (skipValidation) null else errorMessage
         )
     }
 
@@ -56,29 +59,34 @@ class AuthViewModel(
         val currentState = _uiState.value
 
         if (!Validation.isValidEmail(currentState.email)) {
-            _uiState.value = currentState.copy(isEmailValid = false, errorMessage = "invalid_email")
-            return
-        }
-
-        if (!Validation.isValidPassword(currentState.password)) {
-            _uiState.value =
-                currentState.copy(isPasswordValid = false, errorMessage = "invalid_password")
+            _uiState.update {
+                it.copy(
+                    isEmailValid = false,
+                    errorCode = ErrorCode.Auth.INVALID_EMAIL
+                )
+            }
             return
         }
 
         viewModelScope.launch {
-            _uiState.value = currentState.copy(isLoading = true, errorMessage = null)
+            _uiState.update { it.copy(isLoading = true, errorCode = null) }
 
-            val result = authRepository.signIn(_uiState.value.email, _uiState.value.password)
-            if (result.success) {
-                _uiState.value = _uiState.value.copy(isLoading = false, isLoggedIn = true)
-            } else {
-                _uiState.value =
-                    _uiState.value.copy(
+            val result = authRepository.signIn(currentState.email, currentState.password)
+
+            _uiState.update {
+                if (result.success) {
+                    it.copy(
                         isLoading = false,
-                        errorMessage = result.message,
+                        isLoggedIn = true,
+                        errorCode = null
+                    )
+                } else {
+                    it.copy(
+                        isLoading = false,
+                        errorCode = result.errorCode,
                         isLoggedIn = false
                     )
+                }
             }
         }
     }
@@ -87,48 +95,60 @@ class AuthViewModel(
         val currentState = _uiState.value
 
         if (!Validation.isValidEmail(currentState.email)) {
-            _uiState.value = currentState.copy(isEmailValid = false, errorMessage = "invalid_email")
+            _uiState.update {
+                it.copy(
+                    isEmailValid = false,
+                    errorCode = ErrorCode.Auth.INVALID_EMAIL
+                )
+            }
             return
         }
 
         if (!Validation.isValidPassword(currentState.password)) {
-            _uiState.value =
-                currentState.copy(isPasswordValid = false, errorMessage = "invalid_password")
+            _uiState.update {
+                it.copy(
+                    isPasswordValid = false,
+                    errorCode = ErrorCode.Auth.WEAK_PASSWORD
+                )
+            }
             return
         }
 
         viewModelScope.launch {
-            _uiState.value = currentState.copy(isLoading = true, errorMessage = null)
+            _uiState.update { it.copy(isLoading = true, errorCode = null) }
 
-            val result = authRepository.signUp(_uiState.value.email, _uiState.value.password)
-            if (result.success) {
-                _uiState.value = _uiState.value.copy(isLoading = false, isLoggedIn = true)
-            } else {
-                _uiState.value =
-                    _uiState.value.copy(
+            val result = authRepository.signUp(currentState.email, currentState.password)
+
+            _uiState.update {
+                if (result.success) {
+                    it.copy(
                         isLoading = false,
-                        errorMessage = result.message,
+                        isLoggedIn = true,
+                        errorCode = null
+                    )
+                } else {
+                    it.copy(
+                        isLoading = false,
+                        errorCode = result.errorCode,
                         isLoggedIn = false
                     )
+                }
             }
         }
     }
 
     fun signOut() {
-        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+        _uiState.value = _uiState.value.copy(isLoading = true, errorCode = null)
         viewModelScope.launch {
             val result = authRepository.signOut()
             if (result.success) {
                 _uiState.value = _uiState.value.copy(isLoading = false, isLoggedIn = false)
             } else {
                 _uiState.value =
-                    _uiState.value.copy(isLoading = false, errorMessage = result.message)
+                    _uiState.value.copy(isLoading = false, errorCode = result.errorCode)
             }
         }
     }
 
-    fun clearErrorMessage() {
-        _uiState.value = _uiState.value.copy(errorMessage = null)
-    }
 
 }
