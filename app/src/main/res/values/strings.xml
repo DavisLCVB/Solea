@@ -14,4 +14,7 @@
     <string name="error_auth_invalid_email">Error: Invalid Email!</string>
     <string name="error_auth_weak_password">Error: Weak Password!</string>
     <string name="create_your_account">Create you Solea account!</string>
+    <string name="button_sign_in_google">Sign in with Google</string>
+    <string name="error_auth_google_sign_in_failed">Error: Failed to Sign in with Google</string>
+    <string name="or">or</string>
 </resources>

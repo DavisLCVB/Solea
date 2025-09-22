@@ -12,5 +12,6 @@ data class User(
 data class AuthResult(
     val success: Boolean,
     val user: User? = null,
-    val errorCode: ErrorCode.Auth? = null
+    val errorCode: ErrorCode.Auth? = null,
+    val token: String? = null
 )

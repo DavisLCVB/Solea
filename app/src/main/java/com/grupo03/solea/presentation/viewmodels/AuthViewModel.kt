@@ -55,7 +55,7 @@ class AuthViewModel(
         )
     }
 
-    fun signIn() {
+    fun signInWithEmailAndPassword() {
         val currentState = _uiState.value
 
         if (!Validation.isValidEmail(currentState.email)) {
@@ -71,7 +71,8 @@ class AuthViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorCode = null) }
 
-            val result = authRepository.signIn(currentState.email, currentState.password)
+            val result =
+                authRepository.signInWithEmailAndPassword(currentState.email, currentState.password)
 
             _uiState.update {
                 if (result.success) {
@@ -91,7 +92,7 @@ class AuthViewModel(
         }
     }
 
-    fun signUp() {
+    fun signUpWithEmailAndPassword() {
         val currentState = _uiState.value
 
         if (!Validation.isValidEmail(currentState.email)) {
@@ -117,7 +118,32 @@ class AuthViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorCode = null) }
 
-            val result = authRepository.signUp(currentState.email, currentState.password)
+            val result =
+                authRepository.signUpWithEmailAndPassword(currentState.email, currentState.password)
+
+            _uiState.update {
+                if (result.success) {
+                    it.copy(
+                        isLoading = false,
+                        isLoggedIn = true,
+                        errorCode = null
+                    )
+                } else {
+                    it.copy(
+                        isLoading = false,
+                        errorCode = result.errorCode,
+                        isLoggedIn = false
+                    )
+                }
+            }
+        }
+    }
+
+    fun signInWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorCode = null) }
+
+            val result = authRepository.signInWithGoogle(idToken)
 
             _uiState.update {
                 if (result.success) {

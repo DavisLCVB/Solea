@@ -6,6 +6,7 @@ object ValidationConstants {
     const val NAME_REGEX = "^[a-zA-ZÀ-ÿ\\s]{1,40}$"
 }
 
-object DatabaseConstants {
-    const val USERS_COLLECTION = "users"
+object ServiceConstants {
+    const val WEB_CLIENT_ID =
+        "605623344017-j1n9ujjcf29f4q3mfa41lf79jv7q7b4s.apps.googleusercontent.com"
 }

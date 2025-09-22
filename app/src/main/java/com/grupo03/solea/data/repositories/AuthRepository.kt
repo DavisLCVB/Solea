@@ -1,27 +1,35 @@
 package com.grupo03.solea.data.repositories
 
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthEmailException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.GoogleAuthProvider
 import com.grupo03.solea.data.models.AuthResult
 import com.grupo03.solea.data.models.User
 import com.grupo03.solea.utils.ErrorCode
 import kotlinx.coroutines.tasks.await
 
 interface AuthRepository {
-    suspend fun signIn(email: String, password: String): AuthResult
-    suspend fun signUp(email: String, password: String): AuthResult
+    suspend fun signInWithEmailAndPassword(email: String, password: String): AuthResult
+    suspend fun signUpWithEmailAndPassword(email: String, password: String): AuthResult
+
+    suspend fun signInWithGoogle(idToken: String): AuthResult
     suspend fun signOut(): AuthResult
     suspend fun getCurrentUser(): User?
 }
 
 class FirebaseAuthRepository(
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
 ) : AuthRepository {
 
-    override suspend fun signIn(email: String, password: String): AuthResult {
+    private companion object {
+        const val TAG = "FirebaseAuthRepository"
+    }
+
+    override suspend fun signInWithEmailAndPassword(email: String, password: String): AuthResult {
         return try {
             val authResponse = auth.signInWithEmailAndPassword(email, password).await()
             if (authResponse.user != null) {
@@ -58,7 +66,7 @@ class FirebaseAuthRepository(
         }
     }
 
-    override suspend fun signUp(email: String, password: String): AuthResult {
+    override suspend fun signUpWithEmailAndPassword(email: String, password: String): AuthResult {
         return try {
             val authResponse = auth.createUserWithEmailAndPassword(email, password).await()
 
@@ -93,6 +101,45 @@ class FirebaseAuthRepository(
             )
         }
     }
+
+    override suspend fun signInWithGoogle(idToken: String): AuthResult {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val authResponse = auth.signInWithCredential(credential).await()
+
+            Log.d(TAG, "signInWithGoogle: ${authResponse.user?.email}")
+
+            if (authResponse.user != null) {
+                AuthResult(
+                    success = true,
+                    user = User(
+                        uid = authResponse.user!!.uid,
+                        email = authResponse.user!!.email ?: "",
+                        displayName = authResponse.user!!.displayName,
+                        photoUrl = authResponse.user!!.photoUrl?.toString()
+                    ),
+                    errorCode = null
+                )
+            } else {
+                AuthResult(
+                    success = false,
+                    errorCode = ErrorCode.Auth.UNKNOWN_ERROR
+                )
+            }
+        } catch (e: Exception) {
+            val errorCode = when (e) {
+                is FirebaseAuthInvalidCredentialsException -> ErrorCode.Auth.INVALID_CREDENTIALS
+                is FirebaseAuthUserCollisionException -> ErrorCode.Auth.USER_COLLISION
+                else -> ErrorCode.Auth.GOOGLE_SIGN_IN_FAILED
+            }
+
+            AuthResult(
+                success = false,
+                errorCode = errorCode
+            )
+        }
+    }
+
 
     override suspend fun signOut(): AuthResult {
         return try {

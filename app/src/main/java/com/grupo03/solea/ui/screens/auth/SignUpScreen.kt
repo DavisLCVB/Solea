@@ -47,7 +47,7 @@ fun SignUpScreen(
         uiState = uiState,
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
-        onSignUpClick = viewModel::signUp,
+        onSignUpClick = viewModel::signUpWithEmailAndPassword,
         onNavigateToLogin = navigateToLogin,
         modifier = Modifier.fillMaxSize()
     )
