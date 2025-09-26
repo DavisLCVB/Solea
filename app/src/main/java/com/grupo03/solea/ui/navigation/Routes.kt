@@ -9,4 +9,8 @@ object AuthRoutes {
 object AppRoutes {
     const val PREFIX = "solea"
     const val HOME = "solea/home"
+    const val HISTORY = "solea/history"
+    const val SAVINGS = "solea/savings"
+    const val SHOPPING_LIST = "solea/shopping_list"
+    const val SETTINGS = "solea/settings"
 }

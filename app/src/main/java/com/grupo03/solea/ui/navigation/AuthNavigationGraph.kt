@@ -24,10 +24,9 @@ fun NavGraphBuilder.authNavigationGraph(
                     navController.navigate(AuthRoutes.SIGN_UP)
                 },
                 navigateToHome = {
-                    navController.navigate(AppRoutes.HOME) {
-                        popUpTo(AuthRoutes.LOGIN) {
-                            inclusive = true
-                        }
+                    navController.navigate(AppRoutes.PREFIX) {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )
@@ -43,10 +42,9 @@ fun NavGraphBuilder.authNavigationGraph(
                     }
                 },
                 navigateToHome = {
-                    navController.navigate(AppRoutes.HOME) {
-                        popUpTo(AuthRoutes.LOGIN) {
-                            inclusive = true
-                        }
+                    navController.navigate(AppRoutes.PREFIX) {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )
