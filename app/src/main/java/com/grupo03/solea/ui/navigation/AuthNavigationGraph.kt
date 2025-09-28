@@ -5,7 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.grupo03.solea.presentation.viewmodels.AuthViewModel
-import com.grupo03.solea.ui.screens.auth.LoginScreen
+import com.grupo03.solea.ui.screens.auth.SignInScreen
 import com.grupo03.solea.ui.screens.auth.SignUpScreen
 
 fun NavGraphBuilder.authNavigationGraph(
@@ -18,7 +18,7 @@ fun NavGraphBuilder.authNavigationGraph(
     ) {
         composable(AuthRoutes.LOGIN) {
 
-            LoginScreen(
+            SignInScreen(
                 viewModel = authViewModel,
                 navigateToSignUp = {
                     navController.navigate(AuthRoutes.SIGN_UP)
@@ -26,7 +26,6 @@ fun NavGraphBuilder.authNavigationGraph(
                 navigateToHome = {
                     navController.navigate(AppRoutes.PREFIX) {
                         popUpTo(0) { inclusive = true }
-                        launchSingleTop = true
                     }
                 }
             )
@@ -44,7 +43,6 @@ fun NavGraphBuilder.authNavigationGraph(
                 navigateToHome = {
                     navController.navigate(AppRoutes.PREFIX) {
                         popUpTo(0) { inclusive = true }
-                        launchSingleTop = true
                     }
                 }
             )

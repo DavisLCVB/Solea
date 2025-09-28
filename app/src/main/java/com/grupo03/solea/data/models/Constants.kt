@@ -10,3 +10,8 @@ object ServiceConstants {
     const val WEB_CLIENT_ID =
         "605623344017-j1n9ujjcf29f4q3mfa41lf79jv7q7b4s.apps.googleusercontent.com"
 }
+
+object DatabaseContants {
+    const val MOVEMENTS_COLLECTION = "movements"
+    const val MOVEMENT_TYPES_COLLECTION = "movement_types"
+}

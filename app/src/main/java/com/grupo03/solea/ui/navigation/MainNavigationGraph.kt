@@ -1,19 +1,19 @@
 package com.grupo03.solea.ui.navigation
 
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.composable
-import androidx.navigation.navigation
-import com.grupo03.solea.presentation.viewmodels.AuthViewModel
-import com.grupo03.solea.ui.screens.home.HomeScreen
-
-import androidx.navigation.NavHostController
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
-import com.grupo03.solea.ui.screens.home.HomeScreenContent
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.composable
+import androidx.navigation.navigation
+import com.grupo03.solea.presentation.viewmodels.AuthViewModel
+import com.grupo03.solea.presentation.viewmodels.MovementsViewModel
+import com.grupo03.solea.ui.screens.home.HomeScreen
 
 fun NavGraphBuilder.mainNavigationGraph(
     authViewModel: AuthViewModel,
+    movementsViewModel: MovementsViewModel,
     navController: NavHostController,
     contentPadding: PaddingValues
 ) {
@@ -22,11 +22,12 @@ fun NavGraphBuilder.mainNavigationGraph(
         route = AppRoutes.PREFIX
     ) {
         composable(AppRoutes.HOME) {
-            HomeScreenContent(
-                modifier = Modifier.padding(contentPadding)
+            HomeScreen(
+                movementsViewModel = movementsViewModel,
+                authViewModel = authViewModel
             )
         }
-        composable(AppRoutes.HISTORY) {
+       /* composable(AppRoutes.HISTORY) {
             com.grupo03.solea.ui.screens.history.HistoryScreen(
                 modifier = Modifier.padding(contentPadding)
             )
@@ -46,6 +47,6 @@ fun NavGraphBuilder.mainNavigationGraph(
                 authViewModel = authViewModel,
                 modifier = Modifier.padding(contentPadding)
             )
-        }
+        }*/
     }
 }

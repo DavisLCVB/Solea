@@ -1,5 +1,7 @@
 package com.grupo03.solea.ui.screens.auth
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +12,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,6 +20,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -24,9 +29,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.grupo03.solea.R
-import com.grupo03.solea.presentation.states.AuthUiState
+import com.grupo03.solea.presentation.states.AuthState
 import com.grupo03.solea.presentation.viewmodels.AuthViewModel
 import com.grupo03.solea.ui.theme.SoleaTheme
+import com.grupo03.solea.utils.ErrorCode
 import com.grupo03.solea.utils.getStringRes
 
 @Composable
@@ -36,31 +42,48 @@ fun SignUpScreen(
     navigateToHome: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val formState = uiState.signUpFormState
 
-    LaunchedEffect(uiState.isLoggedIn) {
-        if (uiState.isLoggedIn) {
+    fun onEmailChange(newEmail: String) {
+        viewModel.onEmailChange(AuthState.FormType.REGISTER, newEmail)
+    }
+
+    fun onPasswordChange(newPassword: String) {
+        viewModel.onPasswordChange(AuthState.FormType.REGISTER, newPassword)
+    }
+
+    LaunchedEffect(uiState) {
+        if (uiState.user != null) {
             navigateToHome()
         }
     }
 
     SignUpForm(
-        uiState = uiState,
-        onEmailChange = viewModel::onEmailChange,
-        onPasswordChange = viewModel::onPasswordChange,
+        formState = formState,
+        onNameChange = viewModel::onSignUpNameChange,
+        onEmailChange = ::onEmailChange,
+        onPasswordChange = ::onPasswordChange,
+        onConfirmPasswordChange = viewModel::onSignUpConfirmPasswordChange,
         onSignUpClick = viewModel::signUpWithEmailAndPassword,
         onNavigateToLogin = navigateToLogin,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        errorCode = uiState.errorCode,
+        isLoading = uiState.isLoading,
     )
 }
 
 @Composable
 fun SignUpForm(
     modifier: Modifier = Modifier,
-    uiState: AuthUiState = AuthUiState(),
+    formState: AuthState.SignUpFormState = AuthState.SignUpFormState(),
     onEmailChange: (String) -> Unit = {},
+    onNameChange: (String) -> Unit = {},
     onPasswordChange: (String) -> Unit = {},
+    onConfirmPasswordChange: (String) -> Unit = {},
     onSignUpClick: () -> Unit = {},
     onNavigateToLogin: () -> Unit = {},
+    errorCode: ErrorCode.Auth? = null,
+    isLoading: Boolean = false,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -73,30 +96,70 @@ fun SignUpForm(
             modifier = Modifier.weight(3f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 5.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.solea_logo),
+                    contentDescription = stringResource(R.string.app_name),
+                    modifier = Modifier
+                        .padding(bottom = 20.dp)
+                        .weight(0.4f),
+                    contentScale = ContentScale.Fit
+                )
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.displayMedium,
+                    modifier = Modifier
+                        .padding(bottom = 20.dp, start = 10.dp)
+                        .weight(0.6f),
+                    textAlign = TextAlign.Left
+                )
+            }
             Text(
                 text = stringResource(R.string.create_your_account),
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 24.dp),
                 textAlign = TextAlign.Center
             )
-            // Email Input Field
             OutlinedTextField(
-                value = uiState.email,
+                value = formState.name,
+                onValueChange = onNameChange,
+                label = { Text(stringResource(R.string.name_label)) },
+                isError = !formState.isEmailValid || errorCode != null,
+                modifier = Modifier.padding(top = 5.dp, bottom = 10.dp)
+            )
+            OutlinedTextField(
+                value = formState.email,
                 onValueChange = onEmailChange,
                 label = { Text(stringResource(R.string.email_label)) },
-                isError = !uiState.isEmailValid || uiState.errorCode != null
+                isError = !formState.isEmailValid || errorCode != null,
+                modifier = Modifier.padding(top = 5.dp, bottom = 10.dp)
             )
             // Password Input Field
             OutlinedTextField(
-                value = uiState.password,
+                value = formState.password,
                 onValueChange = onPasswordChange,
                 label = { Text(stringResource(R.string.password_label)) },
-                isError = !uiState.isPasswordValid || uiState.errorCode != null,
+                isError = !formState.isPasswordValid || errorCode != null,
                 visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.padding(top = 5.dp, bottom = 10.dp)
+            )
+            OutlinedTextField(
+                value = formState.confirmPassword,
+                onValueChange = onConfirmPasswordChange,
+                label = { Text(stringResource(R.string.confirm_password_label)) },
+                isError = !formState.isPasswordValid || errorCode != null,
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.padding(top = 5.dp, bottom = 10.dp)
             )
             Button(
                 onClick = onSignUpClick,
-                enabled = !uiState.isLoading,
+                enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 40.dp),
@@ -112,9 +175,9 @@ fun SignUpForm(
                     textAlign = TextAlign.Center
                 )
             }
-            if (uiState.errorCode != null) {
+            if (errorCode != null) {
                 Text(
-                    text = stringResource(uiState.errorCode.getStringRes()),
+                    text = stringResource(errorCode.getStringRes()),
                     color = MaterialTheme.colorScheme.error,
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center,
@@ -131,17 +194,22 @@ fun SignUpForm(
 @Preview(showBackground = true)
 @Composable
 fun SignUpFormPreview() {
-    SoleaTheme {
-        SignUpForm(
-            modifier = Modifier.fillMaxSize(),
-            uiState = AuthUiState(
-                email = "example@gmail.com",
-                password = "password123",
-                isEmailValid = true,
-                isPasswordValid = true,
-                isLoading = false,
-                isLoggedIn = false,
-            ),
-        )
+    SoleaTheme(
+        darkTheme = true
+    ) {
+        Surface {
+            SignUpForm(
+                modifier = Modifier.fillMaxSize(),
+                formState = AuthState.SignUpFormState(
+                    name = "Hello",
+                    email = "example@gmail.com",
+                    password = "password123",
+                    confirmPassword = "password123",
+                    isEmailValid = true,
+                    isPasswordValid = true,
+                ),
+            )
+        }
     }
+
 }

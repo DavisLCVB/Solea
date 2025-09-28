@@ -4,7 +4,7 @@
     <string name="password_label">Password</string>
     <string name="login_button_label">Login</string>
     <string name="no_accound_sign_up_label">No account? Sign Up</string>
-    <string name="already_have_an_account_log_in_button">Already have an account? Log In</string>
+    <string name="already_have_an_account_log_in_button">Have an account? Sign In</string>
     <string name="sign_up_button">Sign Up</string>
     <string name="error_auth_user_not_found">Error: User Not Found!</string>
     <string name="error_auth_invalid_credentials">Error: Invalid credentials!</string>
@@ -13,8 +13,12 @@
     <string name="error_auth_unknown">Error: Authentication Failed!</string>
     <string name="error_auth_invalid_email">Error: Invalid Email!</string>
     <string name="error_auth_weak_password">Error: Weak Password!</string>
-    <string name="create_your_account">Create you Solea account!</string>
+    <string name="create_your_account">Create your Solea account!</string>
     <string name="button_sign_in_google">Sign in with Google</string>
     <string name="error_auth_google_sign_in_failed">Error: Failed to Sign in with Google</string>
     <string name="or">or</string>
+    <string name="error_auth_invalid_name">Error: Username invalid</string>
+    <string name="confirm_password_label">Confirm password</string>
+    <string name="error_auth_passwords_do_not_match">Error: \"Passwords do not match\"</string>
+    <string name="name_label">Name</string>
 </resources>

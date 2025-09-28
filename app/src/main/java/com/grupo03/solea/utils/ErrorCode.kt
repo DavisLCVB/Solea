@@ -12,7 +12,9 @@ object ErrorCode {
         UNKNOWN_ERROR,
         INVALID_EMAIL,
         WEAK_PASSWORD,
-        GOOGLE_SIGN_IN_FAILED
+        GOOGLE_SIGN_IN_FAILED,
+        INVALID_NAME,
+        PASSWORDS_DO_NOT_MATCH
     }
 }
 
@@ -27,5 +29,7 @@ fun ErrorCode.Auth.getStringRes(): Int {
         ErrorCode.Auth.INVALID_EMAIL -> R.string.error_auth_invalid_email
         ErrorCode.Auth.WEAK_PASSWORD -> R.string.error_auth_weak_password
         ErrorCode.Auth.GOOGLE_SIGN_IN_FAILED -> R.string.error_auth_google_sign_in_failed
+        ErrorCode.Auth.INVALID_NAME -> R.string.error_auth_invalid_name
+        ErrorCode.Auth.PASSWORDS_DO_NOT_MATCH -> R.string.error_auth_passwords_do_not_match
     }
 }

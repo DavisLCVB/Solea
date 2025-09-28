@@ -1,9 +1,11 @@
 package com.grupo03.solea.presentation.viewmodels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.grupo03.solea.data.repositories.AuthRepository
-import com.grupo03.solea.presentation.states.AuthUiState
+import com.grupo03.solea.data.models.User
+import com.grupo03.solea.data.services.AuthService
+import com.grupo03.solea.presentation.states.AuthState
 import com.grupo03.solea.utils.ErrorCode
 import com.grupo03.solea.utils.Validation
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,166 +15,203 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
-    private val authRepository: AuthRepository,
+    private val authRepository: AuthService,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AuthUiState())
-    val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(AuthState.State())
+    val uiState: StateFlow<AuthState.State> = _uiState.asStateFlow()
 
     init {
         checkAuthState()
     }
 
+    private fun setLoading(isLoading: Boolean) {
+        _uiState.update { it.copy(isLoading = isLoading) }
+    }
+
+    private fun setUser(user: User?) {
+        _uiState.update { it.copy(user = user) }
+    }
+
+    private fun setSignInForm(change: (AuthState.SignInFormState) -> AuthState.SignInFormState) {
+        val newLoginFormState = change(_uiState.value.signInFormState)
+        _uiState.update { it.copy(signInFormState = newLoginFormState) }
+    }
+
+    private fun setSignUpForm(change: (AuthState.SignUpFormState) -> AuthState.SignUpFormState) {
+        val newSignUpForm = change(_uiState.value.signUpFormState)
+        _uiState.update { it.copy(signUpFormState = newSignUpForm) }
+    }
+
+    private fun setErrorCode(errorCode: ErrorCode.Auth?) {
+        _uiState.update { it.copy(errorCode = errorCode) }
+    }
+
     fun checkAuthState() {
+        setLoading(true)
         viewModelScope.launch {
             val user = authRepository.getCurrentUser()
-            if (user != null) {
-                _uiState.value = _uiState.value.copy(isLoggedIn = true)
-            } else {
-                _uiState.value = _uiState.value.copy(isLoggedIn = false)
-            }
+            setUser(user)
+            setLoading(false)
         }
     }
 
-    fun onEmailChange(newEmail: String) {
-        val errorMessage =
-            if (Validation.isValidEmail(newEmail)) null else ErrorCode.Auth.INVALID_EMAIL
-        _uiState.value =
-            _uiState.value.copy(
-                email = newEmail,
-                isEmailValid = Validation.isValidEmail(newEmail),
-                errorCode = errorMessage
-            )
+    fun onEmailChange(formType: AuthState.FormType, newEmail: String) {
+        when (formType) {
+            AuthState.FormType.LOGIN -> onLoginEmailChange(newEmail)
+            AuthState.FormType.REGISTER -> onSignUpEmailChange(newEmail)
+        }
     }
 
-    fun onPasswordChange(newPassword: String, skipValidation: Boolean = false) {
+    private fun onLoginEmailChange(newEmail: String) {
+        val errorCode =
+            if (Validation.isValidEmail(newEmail)) null else ErrorCode.Auth.INVALID_EMAIL
+        setSignInForm {
+            it.copy(
+                email = newEmail,
+                isEmailValid = errorCode != null,
+            )
+        }
+        if (errorCode != null) {
+            setErrorCode(errorCode)
+        }
+    }
+
+    private fun onSignUpEmailChange(newEmail: String) {
+        val errorCode =
+            if (Validation.isValidEmail(newEmail)) null else ErrorCode.Auth.INVALID_EMAIL
+        setSignUpForm {
+            it.copy(
+                email = newEmail,
+                isEmailValid = errorCode != null,
+            )
+        }
+        if (errorCode != null) {
+            setErrorCode(errorCode)
+        }
+    }
+
+    fun onSignUpNameChange(newName: String) {
+        val errorCode = if (Validation.isValidName(newName)) null else ErrorCode.Auth.INVALID_NAME
+        setSignUpForm {
+            it.copy(
+                name = newName,
+                isNameValid = errorCode != null,
+            )
+        }
+        if (errorCode != null) {
+            setErrorCode(errorCode)
+        }
+    }
+
+    fun onPasswordChange(formType: AuthState.FormType, newPassword: String) {
+        when (formType) {
+            AuthState.FormType.LOGIN -> onLoginPasswordChange(newPassword)
+            AuthState.FormType.REGISTER -> onSignUpPasswordChange(newPassword)
+        }
+    }
+
+    private fun onLoginPasswordChange(newPassword: String) {
+        setSignInForm {
+            it.copy(
+                password = newPassword,
+            )
+        }
+    }
+
+    private fun onSignUpPasswordChange(newPassword: String) {
         val errorMessage =
             if (Validation.isValidPassword(newPassword)) null else ErrorCode.Auth.WEAK_PASSWORD
-        _uiState.value = _uiState.value.copy(
-            password = newPassword,
-            isPasswordValid = Validation.isValidPassword(newPassword) || skipValidation,
-            errorCode = if (skipValidation) null else errorMessage
-        )
+        setSignUpForm {
+            it.copy(
+                password = newPassword,
+                isPasswordValid = Validation.isValidPassword(newPassword),
+            )
+        }
+        if (errorMessage != null) {
+            setErrorCode(errorMessage)
+        }
+    }
+
+    fun onSignUpConfirmPasswordChange(newPassword: String) {
+        setSignUpForm {
+            it.copy(
+                confirmPassword = newPassword,
+            )
+        }
+        if (newPassword != _uiState.value.signUpFormState.password) {
+            setErrorCode(ErrorCode.Auth.PASSWORDS_DO_NOT_MATCH)
+            setSignUpForm {
+                it.copy(isPasswordValid = false)
+            }
+        }
     }
 
     fun signInWithEmailAndPassword() {
-        val currentState = _uiState.value
-
-        if (!Validation.isValidEmail(currentState.email)) {
-            _uiState.update {
-                it.copy(
-                    isEmailValid = false,
-                    errorCode = ErrorCode.Auth.INVALID_EMAIL
-                )
-            }
+        val formState = _uiState.value.signInFormState
+        if (!formState.isEmailValid) {
             return
         }
-
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorCode = null) }
-
+            setErrorCode(null)
+            setLoading(true)
             val result =
-                authRepository.signInWithEmailAndPassword(currentState.email, currentState.password)
-
-            _uiState.update {
-                if (result.success) {
-                    it.copy(
-                        isLoading = false,
-                        isLoggedIn = true,
-                        errorCode = null
-                    )
-                } else {
-                    it.copy(
-                        isLoading = false,
-                        errorCode = result.errorCode,
-                        isLoggedIn = false
-                    )
-                }
-            }
+                authRepository.signInWithEmailAndPassword(
+                    formState.email,
+                    formState.password
+                )
+            setUser(result.user)
+            setErrorCode(result.errorCode)
+            setLoading(false)
         }
     }
 
     fun signUpWithEmailAndPassword() {
-        val currentState = _uiState.value
-
-        if (!Validation.isValidEmail(currentState.email)) {
-            _uiState.update {
-                it.copy(
-                    isEmailValid = false,
-                    errorCode = ErrorCode.Auth.INVALID_EMAIL
-                )
-            }
+        val formState = _uiState.value.signUpFormState
+        if (!formState.isEmailValid || !formState.isPasswordValid) {
             return
         }
-
-        if (!Validation.isValidPassword(currentState.password)) {
-            _uiState.update {
-                it.copy(
-                    isPasswordValid = false,
-                    errorCode = ErrorCode.Auth.WEAK_PASSWORD
-                )
-            }
-            return
-        }
-
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorCode = null) }
-
+            setLoading(true)
+            setErrorCode(null)
             val result =
-                authRepository.signUpWithEmailAndPassword(currentState.email, currentState.password)
-
-            _uiState.update {
-                if (result.success) {
-                    it.copy(
-                        isLoading = false,
-                        isLoggedIn = true,
-                        errorCode = null
-                    )
-                } else {
-                    it.copy(
-                        isLoading = false,
-                        errorCode = result.errorCode,
-                        isLoggedIn = false
-                    )
-                }
-            }
+                authRepository.signUpWithEmailAndPassword(
+                    formState.email,
+                    formState.password
+                )
+            setErrorCode(result.errorCode)
+            setUser(result.user)
+            setLoading(false)
         }
     }
 
-    fun signInWithGoogle(idToken: String) {
+    fun signInWithGoogle(context: Context) {
+        val request = authRepository.generateGoogleRequest();
+        if (request == null) {
+            setErrorCode(ErrorCode.Auth.GOOGLE_SIGN_IN_FAILED)
+            return
+        }
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorCode = null) }
-
-            val result = authRepository.signInWithGoogle(idToken)
-
-            _uiState.update {
-                if (result.success) {
-                    it.copy(
-                        isLoading = false,
-                        isLoggedIn = true,
-                        errorCode = null
-                    )
-                } else {
-                    it.copy(
-                        isLoading = false,
-                        errorCode = result.errorCode,
-                        isLoggedIn = false
-                    )
-                }
-            }
+            setLoading(true)
+            setErrorCode(null)
+            val result = authRepository.signInWithGoogle(context, request)
+            setUser(result.user)
+            setErrorCode(result.errorCode)
+            setLoading(false)
         }
     }
 
     fun signOut() {
-        _uiState.value = _uiState.value.copy(isLoading = true, errorCode = null)
+        setLoading(true)
+        setErrorCode(null)
         viewModelScope.launch {
             val result = authRepository.signOut()
-            if (result.success) {
-                _uiState.value = _uiState.value.copy(isLoading = false, isLoggedIn = false)
+            if (result.errorCode == null) {
+                setUser(null)
             } else {
-                _uiState.value =
-                    _uiState.value.copy(isLoading = false, errorCode = result.errorCode)
+                setErrorCode(result.errorCode)
             }
+            setLoading(false)
         }
     }
 

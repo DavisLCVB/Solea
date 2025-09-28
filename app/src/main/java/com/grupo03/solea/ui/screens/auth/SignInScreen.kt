@@ -1,7 +1,5 @@
 package com.grupo03.solea.ui.screens.auth
 
-import android.app.Activity
-import android.util.Log
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -28,7 +26,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,134 +35,77 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.grupo03.solea.R
-import com.grupo03.solea.data.models.ServiceConstants
-import com.grupo03.solea.presentation.states.AuthUiState
+import com.grupo03.solea.presentation.states.AuthState
 import com.grupo03.solea.presentation.viewmodels.AuthViewModel
 import com.grupo03.solea.ui.theme.SoleaTheme
 import com.grupo03.solea.utils.ErrorCode
 import com.grupo03.solea.utils.getStringRes
-import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(
+fun SignInScreen(
     viewModel: AuthViewModel,
     navigateToSignUp: () -> Unit,
     navigateToHome: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val formState = uiState.signInFormState
+    val context = LocalContext.current
 
-    LaunchedEffect(uiState.isLoggedIn) {
-        if (uiState.isLoggedIn) {
+    fun onEmailChange(newEmail: String) {
+        viewModel.onEmailChange(AuthState.FormType.LOGIN, newEmail)
+    }
+
+    fun onPasswordChange(newPassword: String) {
+        viewModel.onPasswordChange(AuthState.FormType.LOGIN, newPassword)
+    }
+
+    fun onSignInWithGoogle() {
+        viewModel.signInWithGoogle(context)
+    }
+
+    LaunchedEffect(uiState.user) {
+        if (uiState.user != null) {
             navigateToHome()
         }
     }
 
 
-    LoginForm(
-        uiState = uiState,
-        onEmailChange = viewModel::onEmailChange,
-        onPasswordChange = { pass -> viewModel.onPasswordChange(pass, true) },
+    SignInForm(
+        formState = formState,
+        onEmailChange = ::onEmailChange,
+        onPasswordChange = ::onPasswordChange,
         onLoginClick = viewModel::signInWithEmailAndPassword,
-        onGoogleSignIn = viewModel::signInWithGoogle,
+        onGoogleSignIn = ::onSignInWithGoogle,
         onNavigateToSignUp = navigateToSignUp,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        errorCode = uiState.errorCode,
+        isLoading = uiState.isLoading,
     )
 }
 
 @Composable
-fun LoginForm(
+fun SignInForm(
     modifier: Modifier = Modifier,
-    uiState: AuthUiState = AuthUiState(),
+    formState: AuthState.SignInFormState = AuthState.SignInFormState(),
     onEmailChange: (String) -> Unit = {},
     onPasswordChange: (String) -> Unit = {},
     onLoginClick: () -> Unit = {},
-    onGoogleSignIn: (String) -> Unit = {},
+    onGoogleSignIn: () -> Unit = {},
     onNavigateToSignUp: () -> Unit = { },
+    errorCode: ErrorCode.Auth? = null,
+    isLoading: Boolean = false,
 ) {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
     var errorGoogle: ErrorCode.Auth? by remember {
         mutableStateOf(null)
     }
-
     var errorHeight by remember { mutableStateOf(0.dp) }
     val density = LocalDensity.current
-
-    fun handleGoogleSignIn() {
-        coroutineScope.launch {
-            try {
-                Log.d("LoginForm", "Starting Google Sign-In")
-                Log.d("LoginForm", "Package name: ${context.packageName}")
-                Log.d("LoginForm", "WEB_CLIENT_ID: ${ServiceConstants.WEB_CLIENT_ID}")
-
-                val credentialManager = CredentialManager.create(context)
-                Log.d("LoginForm", "CredentialManager created successfully")
-
-                val googleIdOption = GetGoogleIdOption.Builder()
-                    .setFilterByAuthorizedAccounts(false)
-                    .setServerClientId(ServiceConstants.WEB_CLIENT_ID)
-                    .setAutoSelectEnabled(false)
-                    .setNonce(null)
-                    .build()
-
-                Log.d(
-                    "LoginForm",
-                    "GoogleIdOption built with server client ID: ${ServiceConstants.WEB_CLIENT_ID}"
-                )
-
-                val request = GetCredentialRequest.Builder()
-                    .addCredentialOption(googleIdOption)
-                    .build()
-
-                Log.d("LoginForm", "Requesting credential...")
-
-                val result = credentialManager.getCredential(
-                    request = request,
-                    context = context as Activity
-                )
-
-                Log.d("LoginForm", "Credential obtained successfully")
-                Log.d("LoginForm", "Credential type: ${result.credential.type}")
-                Log.d("LoginForm", "Credential class: ${result.credential::class.java.simpleName}")
-
-                val credential = result.credential
-                if (credential is CustomCredential &&
-                    credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
-                ) {
-                    Log.d("LoginForm", "Valid Google credential found, parsing token...")
-                    val googleIdTokenCredential = GoogleIdTokenCredential
-                        .createFrom(credential.data)
-                    Log.d("LoginForm", "Token parsed successfully, calling onGoogleSignIn")
-                    onGoogleSignIn(googleIdTokenCredential.idToken)
-                } else {
-                    Log.e("LoginForm", "Invalid credential type received: ${credential.type}")
-                    Log.e(
-                        "LoginForm",
-                        "Expected: ${GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL}"
-                    )
-                    errorGoogle = ErrorCode.Auth.GOOGLE_SIGN_IN_FAILED
-                }
-            } catch (e: Exception) {
-                Log.e(
-                    "LoginForm",
-                    "Google Sign-In failed with exception: ${e::class.java.simpleName}"
-                )
-                Log.e("LoginForm", "Error message: ${e.message}")
-                Log.e("LoginForm", "Stack trace: ", e)
-                errorGoogle = ErrorCode.Auth.GOOGLE_SIGN_IN_FAILED
-            }
-        }
-    }
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -186,7 +126,7 @@ fun LoginForm(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(R.drawable.solea),
+                    painter = painterResource(R.drawable.solea_logo),
                     contentDescription = stringResource(R.string.app_name),
                     modifier = Modifier
                         .padding(bottom = 40.dp)
@@ -204,28 +144,29 @@ fun LoginForm(
             }
             // Email Input Field
             OutlinedTextField(
-                value = uiState.email,
+                value = formState.email,
                 onValueChange = onEmailChange,
                 label = { Text(stringResource(R.string.email_label)) },
-                isError = !uiState.isEmailValid || uiState.errorCode != null
+                isError = !formState.isEmailValid || errorCode != null,
+                singleLine = true
             )
             // Password Input Field
             OutlinedTextField(
-                value = uiState.password,
+                value = formState.password,
                 onValueChange = onPasswordChange,
                 label = { Text(stringResource(R.string.password_label)) },
-                isError = uiState.errorCode != null
+                isError = errorCode != null,
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation()
             )
-
-
             Box(
                 modifier = Modifier
-                    .height(if (uiState.errorCode != null || errorGoogle != null) errorHeight else 30.dp)
+                    .height(if (errorCode != null || errorGoogle != null) errorHeight else 30.dp)
                     .fillMaxWidth()
                     .animateContentSize()
             ) {
-                if (uiState.errorCode != null || errorGoogle != null) {
-                    val errorCode = uiState.errorCode ?: errorGoogle
+                if (errorCode != null || errorGoogle != null) {
+                    val errorCode = errorCode ?: errorGoogle
                     Text(
                         text = stringResource(errorCode!!.getStringRes()),
                         color = MaterialTheme.colorScheme.error,
@@ -244,12 +185,12 @@ fun LoginForm(
 
             Button(
                 onClick = onLoginClick,
-                enabled = !uiState.isLoading,
+                enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 20.dp),
             ) {
-                Text(if (!uiState.isLoading) stringResource(R.string.login_button_label) else "Loading...")
+                Text(if (!isLoading) stringResource(R.string.login_button_label) else "Loading...")
             }
 
             OutlinedButton(
@@ -281,8 +222,8 @@ fun LoginForm(
                 )
             }
             OutlinedButton(
-                onClick = ::handleGoogleSignIn,
-                enabled = !uiState.isLoading,
+                onClick = onGoogleSignIn,
+                enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
@@ -312,21 +253,17 @@ fun LoginForm(
 
 @Preview(showBackground = true)
 @Composable
-fun LoginFormPreview() {
+fun SignInFormPreview() {
     SoleaTheme(
         darkTheme = true
     ) {
         Surface {
-            LoginForm(
+            SignInForm(
                 modifier = Modifier.fillMaxSize(),
-                uiState = AuthUiState(
-                    email = "example@gmail.com",
+                formState = AuthState.SignInFormState(
+                    email = "test@email.com",
                     password = "password123",
-                    isEmailValid = true,
-                    isPasswordValid = true,
-                    isLoading = false,
-                    isLoggedIn = false,
-                    errorCode = null,
+                    isEmailValid = true
                 ),
             )
         }
