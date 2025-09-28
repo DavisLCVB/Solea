@@ -140,7 +140,8 @@ fun SignInForm(
                 onValueChange = onEmailChange,
                 label = { Text(stringResource(R.string.email_label)) },
                 isError = !formState.isEmailValid || errorCode != null,
-                singleLine = true
+                singleLine = true,
+                modifier = Modifier.padding(bottom = 10.dp)
             )
             // Password Input Field
             OutlinedTextField(
