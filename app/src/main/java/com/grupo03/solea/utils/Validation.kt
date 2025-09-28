@@ -1,19 +1,36 @@
 package com.grupo03.solea.utils
 
-import android.util.Patterns
-import com.grupo03.solea.data.models.ValidationConstants
-
 object Validation {
-    fun isValidEmail(email: String): Boolean {
-        return email.isNotBlank() && Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    fun checkEmail(email: String): ErrorCode.Auth? {
+        if (email.isEmpty()) {
+            return ErrorCode.Auth.EMAIL_EMPTY
+        }
+        if (email.length > ValidationConstants.MAX_EMAIL_LENGTH) {
+            return ErrorCode.Auth.EMAIL_TOO_LONG
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            return ErrorCode.Auth.EMAIL_INVALID
+        }
+        return null
     }
 
-    fun isValidPassword(password: String): Boolean {
-        return password.length >= ValidationConstants.MIN_PASSWORD_LENGTH &&
-                password.length <= ValidationConstants.MAX_PASSWORD_LENGTH
+    fun checkPassword(password: String): ErrorCode.Auth? {
+        if (password.isEmpty()) {
+            return ErrorCode.Auth.PASSWORD_EMPTY
+        }
+        if (password.length < ValidationConstants.MIN_PASSWORD_LENGTH) {
+            return ErrorCode.Auth.WEAK_PASSWORD
+        }
+        if (password.length > ValidationConstants.MAX_PASSWORD_LENGTH) {
+            return ErrorCode.Auth.WEAK_PASSWORD
+        }
+        return null
     }
 
-    fun isValidName(name: String): Boolean {
-        return name.matches(Regex(ValidationConstants.NAME_REGEX))
+    fun checkUsername(name: String): ErrorCode.Auth? {
+        if (!Regex(ValidationConstants.NAME_REGEX).matches(name)) {
+            return ErrorCode.Auth.USERNAME_INVALID
+        }
+        return null
     }
 }

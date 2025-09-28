@@ -17,8 +17,16 @@
     <string name="button_sign_in_google">Sign in with Google</string>
     <string name="error_auth_google_sign_in_failed">Error: Failed to Sign in with Google</string>
     <string name="or">or</string>
-    <string name="error_auth_invalid_name">Error: Username invalid</string>
     <string name="confirm_password_label">Confirm password</string>
-    <string name="error_auth_passwords_do_not_match">Error: \"Passwords do not match\"</string>
+    <string name="error_auth_passwords_do_not_match">Error: Passwords do not match</string>
     <string name="name_label">Name</string>
+    <string name="nav_home_title">Home</string>
+    <string name="nav_history_title">History</string>
+    <string name="nav_savings_title">Savings</string>
+    <string name="nav_shopping_list_title">Shopping</string>
+    <string name="nav_settings_title">Settings</string>
+    <string name="error_auth_email_empty">Error: Email is empty!</string>
+    <string name="error_auth_email_too_long">Error: Email too long!</string>
+    <string name="error_auth_invalid_username">Error: Invalid username!</string>
+    <string name="error_auth_password_empty">Error: Password is empty!</string>
 </resources>

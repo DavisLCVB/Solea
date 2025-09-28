@@ -47,6 +47,23 @@ class AuthViewModel(
         _uiState.update { it.copy(errorCode = errorCode) }
     }
 
+    private fun isEmailError(): Boolean {
+        return _uiState.value.errorCode == ErrorCode.Auth.EMAIL_INVALID ||
+                _uiState.value.errorCode == ErrorCode.Auth.EMAIL_ERROR ||
+                _uiState.value.errorCode == ErrorCode.Auth.EMAIL_EMPTY ||
+                _uiState.value.errorCode == ErrorCode.Auth.EMAIL_TOO_LONG
+    }
+
+    private fun isPasswordError(): Boolean {
+        return _uiState.value.errorCode == ErrorCode.Auth.WEAK_PASSWORD ||
+                _uiState.value.errorCode == ErrorCode.Auth.PASSWORDS_DO_NOT_MATCH ||
+                _uiState.value.errorCode == ErrorCode.Auth.PASSWORD_EMPTY
+    }
+
+    private fun isUsernameError(): Boolean {
+        return _uiState.value.errorCode == ErrorCode.Auth.USERNAME_INVALID
+    }
+
     fun checkAuthState() {
         setLoading(true)
         viewModelScope.launch {
@@ -64,42 +81,40 @@ class AuthViewModel(
     }
 
     private fun onLoginEmailChange(newEmail: String) {
-        val errorCode =
-            if (Validation.isValidEmail(newEmail)) null else ErrorCode.Auth.INVALID_EMAIL
+        val errorCode = Validation.checkEmail(newEmail)
         setSignInForm {
             it.copy(
                 email = newEmail,
                 isEmailValid = errorCode != null,
             )
         }
-        if (errorCode != null) {
+        if (errorCode != null || isEmailError()) {
             setErrorCode(errorCode)
         }
     }
 
     private fun onSignUpEmailChange(newEmail: String) {
-        val errorCode =
-            if (Validation.isValidEmail(newEmail)) null else ErrorCode.Auth.INVALID_EMAIL
+        val errorCode = Validation.checkEmail(newEmail)
         setSignUpForm {
             it.copy(
                 email = newEmail,
                 isEmailValid = errorCode != null,
             )
         }
-        if (errorCode != null) {
+        if (errorCode != null || isEmailError()) {
             setErrorCode(errorCode)
         }
     }
 
     fun onSignUpNameChange(newName: String) {
-        val errorCode = if (Validation.isValidName(newName)) null else ErrorCode.Auth.INVALID_NAME
+        val errorCode = Validation.checkUsername(newName)
         setSignUpForm {
             it.copy(
                 name = newName,
                 isNameValid = errorCode != null,
             )
         }
-        if (errorCode != null) {
+        if (errorCode != null || isUsernameError()) {
             setErrorCode(errorCode)
         }
     }
@@ -120,15 +135,14 @@ class AuthViewModel(
     }
 
     private fun onSignUpPasswordChange(newPassword: String) {
-        val errorMessage =
-            if (Validation.isValidPassword(newPassword)) null else ErrorCode.Auth.WEAK_PASSWORD
+        val errorMessage = Validation.checkPassword(newPassword)
         setSignUpForm {
             it.copy(
                 password = newPassword,
-                isPasswordValid = Validation.isValidPassword(newPassword),
+                isPasswordValid = errorMessage == null,
             )
         }
-        if (errorMessage != null) {
+        if (errorMessage != null || isPasswordError()) {
             setErrorCode(errorMessage)
         }
     }
@@ -143,6 +157,11 @@ class AuthViewModel(
             setErrorCode(ErrorCode.Auth.PASSWORDS_DO_NOT_MATCH)
             setSignUpForm {
                 it.copy(isPasswordValid = false)
+            }
+        } else if (_uiState.value.errorCode == ErrorCode.Auth.PASSWORDS_DO_NOT_MATCH) {
+            setErrorCode(null)
+            setSignUpForm {
+                it.copy(isPasswordValid = true)
             }
         }
     }
@@ -186,7 +205,7 @@ class AuthViewModel(
     }
 
     fun signInWithGoogle(context: Context) {
-        val request = authRepository.generateGoogleRequest();
+        val request = authRepository.generateGoogleRequest()
         if (request == null) {
             setErrorCode(ErrorCode.Auth.GOOGLE_SIGN_IN_FAILED)
             return

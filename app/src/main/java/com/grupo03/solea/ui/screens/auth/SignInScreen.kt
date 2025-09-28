@@ -21,7 +21,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,7 +50,6 @@ import com.grupo03.solea.utils.getStringRes
 fun SignInScreen(
     viewModel: AuthViewModel,
     navigateToSignUp: () -> Unit,
-    navigateToHome: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val formState = uiState.signInFormState
@@ -67,12 +65,6 @@ fun SignInScreen(
 
     fun onSignInWithGoogle() {
         viewModel.signInWithGoogle(context)
-    }
-
-    LaunchedEffect(uiState.user) {
-        if (uiState.user != null) {
-            navigateToHome()
-        }
     }
 
 

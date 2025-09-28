@@ -7,20 +7,23 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -39,10 +42,10 @@ import com.grupo03.solea.utils.getStringRes
 fun SignUpScreen(
     viewModel: AuthViewModel,
     navigateToLogin: () -> Unit,
-    navigateToHome: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val formState = uiState.signUpFormState
+    val context = LocalContext.current
 
     fun onEmailChange(newEmail: String) {
         viewModel.onEmailChange(AuthState.FormType.REGISTER, newEmail)
@@ -52,10 +55,8 @@ fun SignUpScreen(
         viewModel.onPasswordChange(AuthState.FormType.REGISTER, newPassword)
     }
 
-    LaunchedEffect(uiState) {
-        if (uiState.user != null) {
-            navigateToHome()
-        }
+    fun onGoogleSignUp() {
+        viewModel.signInWithGoogle(context)
     }
 
     SignUpForm(
@@ -69,6 +70,7 @@ fun SignUpScreen(
         modifier = Modifier.fillMaxSize(),
         errorCode = uiState.errorCode,
         isLoading = uiState.isLoading,
+        onGoogleSignUp = ::onGoogleSignUp
     )
 }
 
@@ -81,6 +83,7 @@ fun SignUpForm(
     onPasswordChange: (String) -> Unit = {},
     onConfirmPasswordChange: (String) -> Unit = {},
     onSignUpClick: () -> Unit = {},
+    onGoogleSignUp: () -> Unit = {},
     onNavigateToLogin: () -> Unit = {},
     errorCode: ErrorCode.Auth? = null,
     isLoading: Boolean = false,
@@ -183,6 +186,50 @@ fun SignUpForm(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 16.dp)
                 )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                HorizontalDivider(
+                    modifier = Modifier
+                        .weight(1f)
+                        .align(Alignment.CenterVertically)
+                )
+                Text(
+                    text = stringResource(R.string.or),
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                HorizontalDivider(
+                    modifier = Modifier
+                        .weight(1f)
+                        .align(Alignment.CenterVertically)
+                )
+            }
+            OutlinedButton(
+                onClick = onGoogleSignUp,
+                enabled = !isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.google_brand),
+                        contentDescription = "Google Icon",
+                        modifier = Modifier.padding(end = 8.dp),
+                    )
+                    Text(text = stringResource(R.string.button_sign_in_google))
+                }
             }
         }
         Spacer(

@@ -14,9 +14,9 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.grupo03.solea.data.models.AuthResult
-import com.grupo03.solea.data.models.ServiceConstants
 import com.grupo03.solea.data.models.User
 import com.grupo03.solea.utils.ErrorCode
+import com.grupo03.solea.utils.ServiceConstants
 import kotlinx.coroutines.tasks.await
 
 class FirebaseAuthService(

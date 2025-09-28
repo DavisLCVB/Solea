@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
@@ -28,16 +27,12 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -53,7 +48,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.grupo03.solea.presentation.viewmodels.AuthViewModel
 import com.grupo03.solea.presentation.viewmodels.MovementsViewModel
-import com.grupo03.solea.ui.navigation.mainNavigationGraph
 
 // Data classes para los datos mock
 data class FinancialData(
@@ -80,71 +74,7 @@ fun HomeScreen(
     ) {
         Text(text = "Hola")
     }
-    return
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = when (selectedBottomItem) {
-                            0 -> "Perfil"
-                            1 -> "Ahorro"
-                            2 -> "Solea"
-                            3 -> "Historial"
-                            4 -> "Lista de compras"
-                            else -> "Solea"
-                        },
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-                },
-                actions = {
-                    IconButton(onClick = { authViewModel.signOut() }) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Profile",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        },
-        bottomBar = {
-            BottomNavigationBar(
-                selectedItem = selectedBottomItem,
-                onItemSelected = {
-                    selectedBottomItem = it
-                    when (it) {
-                        0 -> {/* Perfil, no navega */
-                        }
-
-                        1 -> navController.navigate(com.grupo03.solea.ui.navigation.AppRoutes.SAVINGS)
-                        2 -> navController.navigate(com.grupo03.solea.ui.navigation.AppRoutes.HOME)
-                        3 -> navController.navigate(com.grupo03.solea.ui.navigation.AppRoutes.HISTORY)
-                        4 -> navController.navigate(com.grupo03.solea.ui.navigation.AppRoutes.SHOPPING_LIST)
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        androidx.navigation.compose.NavHost(
-            navController = navController,
-            startDestination = com.grupo03.solea.ui.navigation.AppRoutes.HOME
-        ) {
-            mainNavigationGraph(
-                authViewModel = authViewModel,
-                navController = navController,
-                contentPadding = paddingValues,
-                movementsViewModel = movementsViewModel
-            )
-        }
-    }
 }
 
 @Composable

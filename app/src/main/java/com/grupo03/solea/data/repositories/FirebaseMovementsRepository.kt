@@ -2,10 +2,10 @@ package com.grupo03.solea.data.repositories
 
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
-import com.grupo03.solea.data.models.DatabaseContants
 import com.grupo03.solea.data.models.Movement
 import com.grupo03.solea.data.models.MovementType
 import com.grupo03.solea.data.models.toMap
+import com.grupo03.solea.utils.DatabaseContants
 import kotlinx.coroutines.tasks.await
 
 class FirebaseMovementsRepository(

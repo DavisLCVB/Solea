@@ -1,5 +1,6 @@
 package com.grupo03.solea.ui.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
@@ -16,21 +17,42 @@ fun NavGraphBuilder.authNavigationGraph(
         startDestination = AuthRoutes.LOGIN,
         route = AuthRoutes.PREFIX
     ) {
-        composable(AuthRoutes.LOGIN) {
-
+        composable(
+            route = AuthRoutes.LOGIN,
+            enterTransition = {
+                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right)
+            },
+            exitTransition = {
+                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left)
+            },
+            popEnterTransition = {
+                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right)
+            },
+            popExitTransition = {
+                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left)
+            }
+        ) {
             SignInScreen(
                 viewModel = authViewModel,
                 navigateToSignUp = {
                     navController.navigate(AuthRoutes.SIGN_UP)
                 },
-                navigateToHome = {
-                    navController.navigate(AppRoutes.PREFIX) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
             )
         }
-        composable(AuthRoutes.SIGN_UP) {
+        composable(
+            route = AuthRoutes.SIGN_UP,
+            enterTransition = {
+                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left)
+            },
+            exitTransition = {
+                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right)
+            },
+            popEnterTransition = {
+                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left)
+            },
+            popExitTransition = {
+                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right)
+            }) {
             SignUpScreen(
                 viewModel = authViewModel,
                 navigateToLogin = {
@@ -40,11 +62,6 @@ fun NavGraphBuilder.authNavigationGraph(
                         }
                     }
                 },
-                navigateToHome = {
-                    navController.navigate(AppRoutes.PREFIX) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
             )
         }
     }

@@ -27,7 +27,7 @@ fun NavGraphBuilder.mainNavigationGraph(
                 authViewModel = authViewModel
             )
         }
-       /* composable(AppRoutes.HISTORY) {
+        composable(AppRoutes.HISTORY) {
             com.grupo03.solea.ui.screens.history.HistoryScreen(
                 modifier = Modifier.padding(contentPadding)
             )
@@ -47,6 +47,6 @@ fun NavGraphBuilder.mainNavigationGraph(
                 authViewModel = authViewModel,
                 modifier = Modifier.padding(contentPadding)
             )
-        }*/
+        }
     }
 }
