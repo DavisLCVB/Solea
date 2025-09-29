@@ -4,17 +4,15 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.grupo03.solea.presentation.viewmodels.AuthViewModel
-import com.grupo03.solea.presentation.viewmodels.MovementsViewModel
+import com.grupo03.solea.presentation.viewmodels.CoreViewModel
 import com.grupo03.solea.ui.screens.home.HomeScreen
 
 fun NavGraphBuilder.mainNavigationGraph(
     authViewModel: AuthViewModel,
-    movementsViewModel: MovementsViewModel,
-    navController: NavHostController,
+    coreViewModel: CoreViewModel,
     contentPadding: PaddingValues
 ) {
     navigation(
@@ -23,8 +21,8 @@ fun NavGraphBuilder.mainNavigationGraph(
     ) {
         composable(AppRoutes.HOME) {
             HomeScreen(
-                movementsViewModel = movementsViewModel,
-                authViewModel = authViewModel
+                authViewModel = authViewModel,
+                coreViewModel = coreViewModel
             )
         }
         composable(AppRoutes.HISTORY) {

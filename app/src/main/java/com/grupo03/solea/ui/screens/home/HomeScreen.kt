@@ -17,27 +17,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,64 +37,157 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.grupo03.solea.data.models.Movement
+import com.grupo03.solea.data.models.MovementType
+import com.grupo03.solea.presentation.states.CoreState
 import com.grupo03.solea.presentation.viewmodels.AuthViewModel
-import com.grupo03.solea.presentation.viewmodels.MovementsViewModel
-
-// Data classes para los datos mock
-data class FinancialData(
-    val currentBalance: Double = 1250.00,
-    val income: Double = 2000.00,
-    val expenses: Double = 750.00,
-    val snacksLimit: Double = 40.00,
-    val snacksSpent: Double = 22.00, // 55% of limit
-    val laptopGoal: Double = 1600.00,
-    val laptopSaved: Double = 160.00 // 10% of goal
-)
+import com.grupo03.solea.presentation.viewmodels.CoreViewModel
+import com.grupo03.solea.ui.components.MovementModalBottomSheet
+import com.grupo03.solea.ui.theme.SoleaTheme
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     authViewModel: AuthViewModel,
-    movementsViewModel: MovementsViewModel
+    coreViewModel: CoreViewModel
 ) {
-    val navController = androidx.navigation.compose.rememberNavController()
-    var selectedBottomItem by remember { mutableIntStateOf(2) } // "Inicio" selected (index 2)
-
+    val coreState = coreViewModel.uiState.collectAsState()
+    val screenState = coreState.value.homeScreenState
     Surface(
         modifier = Modifier.fillMaxSize(),
     ) {
-        Text(text = "Hola")
+        HomeScreenContent(
+            modifier = Modifier.fillMaxSize(),
+            onAddClick = coreViewModel::onActivateSheet,
+            screenState = screenState,
+        )
+        if (screenState.activeSheet) {
+            MovementModalBottomSheet(
+                onDismissRequest = coreViewModel::onDeactivateSheet
+            )
+        }
     }
 
+}
+
+@Composable
+fun Separator(
+    title: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = title)
+        Spacer(modifier = Modifier.width(10.dp))
+        HorizontalDivider(modifier = Modifier.weight(1f))
+    }
 }
 
 @Composable
 fun HomeScreenContent(
     modifier: Modifier = Modifier,
-    financialData: FinancialData = FinancialData()
+    onAddClick: () -> Unit = { },
+    screenState: CoreState.HomeScreenState = CoreState.HomeScreenState(),
 ) {
-    Column(
-        modifier = modifier
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Balance Card
-        BalanceCard(financialData = financialData)
+    Box() {
+        Column(
+            modifier = modifier
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Balance Card
+            BalanceCard(
+                currentBalance = screenState.balance,
+                income = screenState.income,
+                outcome = screenState.outcome
+            )
 
-        // Income vs Expenses Chart Placeholder
-        ChartCard()
+            // Income vs Expenses Chart Placeholder
+            ChartCard()
 
-        // Alerts/Notifications
-        AlertsSection(financialData = financialData)
+            // Separator
+            Separator(title = "Ultimos movimientos")
 
-        // Add some bottom spacing
-        Spacer(modifier = Modifier.height(16.dp))
+            // Alerts/Notifications
+            //AlertsSection(financialData = financialData)
+
+            // Recent Movements
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                screenState.movementSet.take(5).forEach { (movement, movementType) ->
+                    MovementCard(
+                        movement = movement,
+                        movementType = movementType
+                    )
+                }
+            }
+
+            // Add some bottom spacing
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+        FloatingActionButton(
+            onClick = onAddClick,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(20.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Add")
+        }
     }
 }
 
 @Composable
-fun BalanceCard(financialData: FinancialData) {
+fun MovementCard(
+    movement: Movement,
+    movementType: MovementType
+) {
+    val zone = ZoneId.systemDefault()
+    val format = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm").withZone(zone)
+    val dateFormated = format.format(movement.date)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(10.dp)
+        ) {
+            Text(
+                text = dateFormated,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = movement.amount.toString(),
+                modifier = Modifier.weight(0.5f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = movementType.value,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.End
+            )
+        }
+    }
+}
+
+@Composable
+fun BalanceCard(
+    currentBalance: Double = 0.0,
+    income: Double = 0.0,
+    outcome: Double = 0.0,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -123,7 +207,7 @@ fun BalanceCard(financialData: FinancialData) {
             )
 
             Text(
-                text = "S/ ${String.format("%.2f", financialData.currentBalance)}",
+                text = "S/ ${String.format("%.2f", currentBalance)}",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -135,14 +219,14 @@ fun BalanceCard(financialData: FinancialData) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Ingresos: S/ ${String.format("%.2f", financialData.income)}",
+                    text = "Ingresos: S/ ${String.format("%.2f", income)}",
                     fontSize = 12.sp,
                     color = Color(0xFF4CAF50), // Green for income
                     fontWeight = FontWeight.Medium
                 )
 
                 Text(
-                    text = "Gastos: S/ ${String.format("%.2f", financialData.expenses)}",
+                    text = "Gastos: S/ ${String.format("%.2f", outcome)}",
                     fontSize = 12.sp,
                     color = Color(0xFFF44336), // Red for expenses
                     fontWeight = FontWeight.Medium
@@ -195,6 +279,7 @@ fun ChartCard() {
     }
 }
 
+/*
 @Composable
 fun AlertsSection(financialData: FinancialData) {
     Column(
@@ -225,6 +310,7 @@ fun AlertsSection(financialData: FinancialData) {
         )
     }
 }
+*/
 
 @Composable
 fun AlertCard(
@@ -298,74 +384,17 @@ fun AlertCard(
     }
 }
 
-@Composable
-fun BottomNavigationBar(
-    selectedItem: Int,
-    onItemSelected: (Int) -> Unit
-) {
-    val items = listOf(
-        BottomNavItem("Perfil", Icons.Default.Person, hasNotification = true),
-        BottomNavItem("Ahorro", Icons.Default.Star, hasNotification = false),
-        BottomNavItem("Inicio", Icons.Default.Home, hasNotification = false),
-        BottomNavItem("Historial", Icons.Default.Star, hasNotification = true),
-        BottomNavItem("Lista", Icons.Default.List, hasNotification = false)
-    )
-
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface
-    ) {
-        items.forEachIndexed { index, item ->
-            NavigationBarItem(
-                selected = selectedItem == index,
-                onClick = { onItemSelected(index) },
-                icon = {
-                    Box {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = item.label,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        if (item.hasNotification) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .background(Color(0xFFF44336), CircleShape)
-                                    .align(Alignment.TopEnd)
-                            )
-                        }
-                    }
-                },
-                label = {
-                    Text(
-                        text = item.label,
-                        fontSize = 12.sp
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            )
-        }
-    }
-}
-
-data class BottomNavItem(
-    val label: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val hasNotification: Boolean = false
-)
 
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
-    MaterialTheme {
-        HomeScreenContent(
+    SoleaTheme(
+        darkTheme = true
+    ) {
+        Surface(
             modifier = Modifier.fillMaxSize()
-        )
+        ) {
+            HomeScreenContent()
+        }
     }
 }

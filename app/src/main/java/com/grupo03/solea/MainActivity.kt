@@ -12,10 +12,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -30,10 +26,10 @@ import com.grupo03.solea.data.repositories.MovementsRepository
 import com.grupo03.solea.data.services.AuthService
 import com.grupo03.solea.data.services.FirebaseAuthService
 import com.grupo03.solea.presentation.viewmodels.AuthViewModel
-import com.grupo03.solea.presentation.viewmodels.MovementsViewModel
+import com.grupo03.solea.presentation.viewmodels.CoreViewModel
+import com.grupo03.solea.ui.components.BottomNavigationBar
 import com.grupo03.solea.ui.navigation.AppRoutes
 import com.grupo03.solea.ui.navigation.AuthRoutes
-import com.grupo03.solea.ui.navigation.BottomNavigationBar
 import com.grupo03.solea.ui.navigation.authNavigationGraph
 import com.grupo03.solea.ui.navigation.mainNavigationGraph
 import com.grupo03.solea.ui.theme.SoleaTheme
@@ -68,15 +64,9 @@ fun AppNavigation(
         AuthViewModel(authService)
     }
     val authState = authViewModel.uiState.collectAsState()
-    val movementsViewModel = viewModel {
-        MovementsViewModel(movementsRepository)
+    val coreViewModel = viewModel {
+        CoreViewModel(movementsRepository)
     }
-
-    val startDestination = remember(authState.value.user) {
-        if (authState.value.user != null) AppRoutes.PREFIX else AuthRoutes.PREFIX
-    }
-
-    var selectedBottomItem by remember { mutableStateOf<Int>(2) } // "Inicio" selected (index 2)
 
     if (authState.value.user == null) {
         NavHost(
@@ -86,10 +76,11 @@ fun AppNavigation(
             authNavigationGraph(navController, authViewModel)
         }
     } else {
+        coreViewModel.fetchMovements(authState.value.user!!.uid)
         MainAppContent(
             navController = navController,
             authViewModel = authViewModel,
-            movementsViewModel = movementsViewModel
+            coreViewModel = coreViewModel
         )
     }
 }
@@ -98,7 +89,7 @@ fun AppNavigation(
 fun MainAppContent(
     navController: NavHostController = rememberNavController(),
     authViewModel: AuthViewModel,
-    movementsViewModel: MovementsViewModel
+    coreViewModel: CoreViewModel
 ) {
     Scaffold(
         bottomBar = {
@@ -114,10 +105,10 @@ fun MainAppContent(
         ) {
             mainNavigationGraph(
                 authViewModel = authViewModel,
-                movementsViewModel = movementsViewModel,
-                navController = navController,
+                coreViewModel = coreViewModel,
                 contentPadding = PaddingValues(0.dp)
             )
+
         }
     }
 }

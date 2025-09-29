@@ -1,4 +1,4 @@
-package com.grupo03.solea.ui.navigation
+package com.grupo03.solea.ui.components
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.grupo03.solea.R
+import com.grupo03.solea.ui.navigation.AppRoutes
 
 sealed class BottomNavItem(
     val route: String,
