@@ -107,7 +107,7 @@ class AuthViewModel(
     }
 
     fun onSignUpNameChange(newName: String) {
-        val errorCode = Validation.checkUsername(newName)
+        val errorCode = Validation.checkName(newName)
         setSignUpForm {
             it.copy(
                 name = newName,

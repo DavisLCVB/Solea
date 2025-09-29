@@ -8,6 +8,7 @@ interface MovementsRepository {
     suspend fun createMovementType(type: MovementType): MovementType?;
     suspend fun getAllMovements(userId: String): List<Movement>;
     suspend fun getAllMovementTypes(movementTypeIds: List<String>): List<MovementType>;
+    suspend fun getAllMovementTypesByUser(userId: String): List<MovementType>;
     suspend fun updateMovement(movement: Movement): Boolean;
     suspend fun deleteMovement(movementId: String): Boolean;
 }

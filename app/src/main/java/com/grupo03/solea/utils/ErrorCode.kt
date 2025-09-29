@@ -19,6 +19,15 @@ object ErrorCode {
         GOOGLE_SIGN_IN_FAILED,
         PASSWORDS_DO_NOT_MATCH
     }
+
+    enum class Movement {
+        INVALID_AMOUNT,
+        INVALID_TYPE,
+        INVALID_NOTE,
+        UNKNOWN_ERROR,
+        INVALID_NAME,
+        INVALID_DESCRIPTION,
+    }
 }
 
 @StringRes

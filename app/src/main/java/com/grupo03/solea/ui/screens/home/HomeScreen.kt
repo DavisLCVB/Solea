@@ -43,6 +43,8 @@ import com.grupo03.solea.presentation.states.CoreState
 import com.grupo03.solea.presentation.viewmodels.AuthViewModel
 import com.grupo03.solea.presentation.viewmodels.CoreViewModel
 import com.grupo03.solea.ui.components.MovementModalBottomSheet
+import com.grupo03.solea.ui.screens.forms.NewMovementForm
+import com.grupo03.solea.ui.screens.forms.NewMovementTypeForm
 import com.grupo03.solea.ui.theme.SoleaTheme
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -55,17 +57,58 @@ fun HomeScreen(
 ) {
     val coreState = coreViewModel.uiState.collectAsState()
     val screenState = coreState.value.homeScreenState
+    val userId = authViewModel.uiState.collectAsState().value.user!!.uid
     Surface(
         modifier = Modifier.fillMaxSize(),
     ) {
-        HomeScreenContent(
-            modifier = Modifier.fillMaxSize(),
-            onAddClick = coreViewModel::onActivateSheet,
-            screenState = screenState,
-        )
+        when (coreState.value.currentContent) {
+            CoreState.HomeContent.HOME -> {
+                HomeScreenContent(
+                    onAddClick = coreViewModel::onActivateSheet,
+                    screenState = screenState,
+                )
+            }
+
+            CoreState.HomeContent.NEW_MOVEMENT_FORM -> {
+                NewMovementForm(
+                    modifier = Modifier.padding(16.dp),
+                    movementAmount = coreState.value.newMovementFormState.movementAmount,
+                    onMovementAmountChange = coreViewModel::onMovementAmountChange,
+                    typeList = coreState.value.movementTypes.map { it.value },
+                    onTypeSelected = coreViewModel::onMovementTypeSelected,
+                    typeSelected = coreState.value.newMovementFormState.typeSelected,
+                    note = coreState.value.newMovementFormState.note,
+                    onNoteChange = coreViewModel::onMovementNoteChange,
+                    onCreateMovement = {
+                        coreViewModel.createMovement(userId)
+                    },
+                    onCancel = {
+                        coreViewModel.changeContent(CoreState.HomeContent.HOME)
+                    }
+                )
+            }
+
+            CoreState.HomeContent.NEW_MOVEMENT_TYPE_FORM -> {
+                NewMovementTypeForm(
+                    modifier = Modifier.padding(16.dp),
+                    movementTypeName = coreState.value.newMovementTypeFormState.typeName,
+                    onNameChange = coreViewModel::onMovementTypeNameChange,
+                    movementTypeDescription = coreState.value.newMovementTypeFormState.typeDescription,
+                    onDescriptionChange = coreViewModel::onMovementTypeDescriptionChange,
+                    onCreateType = {
+                        coreViewModel.createMovementType(userId)
+                    },
+                    onCancel = {
+                        coreViewModel.changeContent(CoreState.HomeContent.HOME)
+                    }
+                )
+            }
+        }
         if (screenState.activeSheet) {
             MovementModalBottomSheet(
-                onDismissRequest = coreViewModel::onDeactivateSheet
+                onDismissRequest = coreViewModel::onDeactivateSheet,
+                onAddMovement = { coreViewModel.changeContent(CoreState.HomeContent.NEW_MOVEMENT_FORM) },
+                onAddMovementType = { coreViewModel.changeContent(CoreState.HomeContent.NEW_MOVEMENT_TYPE_FORM) }
             )
         }
     }

@@ -10,6 +10,7 @@ data class Movement(
     val userId: String = "",
     val amount: Double = 0.0,
     val date: Instant = Instant.now(),
+    val note: String = "",
     val typeId: String = "",
 ) : ToMap {
     override fun toMap(): Map<String, Any> {
@@ -18,6 +19,7 @@ data class Movement(
             "userId" to userId,
             "amount" to amount,
             "date" to date.toString(),
+            "note" to note,
             "typeId" to typeId,
         )
     }
@@ -28,6 +30,7 @@ data class Movement(
             val id = map["id"] as? String ?: return null
             val userId = map["userId"] as? String ?: return null
             val amount = (map["amount"] as? Number)?.toDouble() ?: return null
+            val note = map["note"] as? String ?: ""
             val dateString = map["date"] as? String ?: return null
             val date = try {
                 Instant.parse(dateString)
@@ -42,7 +45,8 @@ data class Movement(
                 userId = userId,
                 amount = amount,
                 date = date,
-                typeId = typeId
+                typeId = typeId,
+                note = note
             )
         }
     }

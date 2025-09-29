@@ -27,7 +27,7 @@ object Validation {
         return null
     }
 
-    fun checkUsername(name: String): ErrorCode.Auth? {
+    fun checkName(name: String): ErrorCode.Auth? {
         if (!Regex(ValidationConstants.NAME_REGEX).matches(name)) {
             return ErrorCode.Auth.USERNAME_INVALID
         }

@@ -6,6 +6,8 @@ import com.grupo03.solea.data.models.Movement
 import com.grupo03.solea.data.models.MovementType
 import com.grupo03.solea.data.repositories.MovementsRepository
 import com.grupo03.solea.presentation.states.CoreState
+import com.grupo03.solea.utils.ErrorCode
+import com.grupo03.solea.utils.Validation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +35,26 @@ class CoreViewModel(
         _uiState.value = _uiState.value.copy(homeScreenState = homeScreenState)
     }
 
+    private fun setNewMovementFormState(newMovementFormState: CoreState.NewMovementFormState) {
+        _uiState.value = _uiState.value.copy(newMovementFormState = newMovementFormState)
+    }
+
+    private fun setNewMovementTypeFormState(newMovementTypeFormState: CoreState.NewMovementTypeFormState) {
+        _uiState.value = _uiState.value.copy(newMovementTypeFormState = newMovementTypeFormState)
+    }
+
+    private fun setMovementError(errorCode: ErrorCode.Movement?, isTypeForm: Boolean = false) {
+        if (isTypeForm) {
+            val currentState = _uiState.value.newMovementTypeFormState
+            val newState = currentState.copy(errorCode = errorCode)
+            setNewMovementTypeFormState(newState)
+        } else {
+            val currentState = _uiState.value.newMovementFormState
+            val newState = currentState.copy(errorCode = errorCode)
+            setNewMovementFormState(newState)
+        }
+    }
+
     fun onActivateSheet() {
         val currentState = _uiState.value.homeScreenState
         val newState = currentState.copy(activeSheet = true)
@@ -50,8 +72,7 @@ class CoreViewModel(
         viewModelScope.launch {
             val movements = movementsRepository.getAllMovements(userId)
             setMovements(movements)
-            val movementTypeIds = movements.map { it.typeId }
-            val movementTypes = movementsRepository.getAllMovementTypes(movementTypeIds)
+            val movementTypes = movementsRepository.getAllMovementTypesByUser(userId)
             setMovementTypes(movementTypes)
             calculateHomeScreenState(movements)
             val movementSet = movements.mapNotNull { movement ->
@@ -90,6 +111,132 @@ class CoreViewModel(
             outcome = outcome
         )
         setHomeScreenState(homeScreenState)
+    }
+
+
+    fun onMovementTypeNameChange(newName: String) {
+        val errorCode = Validation.checkName(newName)
+        if (errorCode == null) {
+            val currentState = _uiState.value.newMovementTypeFormState
+            val newState = currentState.copy(typeName = newName)
+            setNewMovementTypeFormState(newState)
+        } else {
+            val currentState = _uiState.value.newMovementTypeFormState
+            val newState = currentState.copy(typeName = newName, isNameValid = false)
+            setNewMovementTypeFormState(newState)
+            setMovementError(ErrorCode.Movement.INVALID_NAME, isTypeForm = true)
+        }
+    }
+
+    fun onMovementTypeDescriptionChange(newDescription: String) {
+        val currentState = _uiState.value.newMovementTypeFormState
+        val newState = currentState.copy(typeDescription = newDescription)
+        setNewMovementTypeFormState(newState)
+    }
+
+    fun onMovementAmountChange(newAmount: String) {
+        val amount = newAmount.toDoubleOrNull()
+        if (amount != null && amount != 0.0) {
+            val currentState = _uiState.value.newMovementFormState
+            val newState = currentState.copy(movementAmount = newAmount, isAmountValid = true)
+            setNewMovementFormState(newState)
+        } else {
+            val currentState = _uiState.value.newMovementFormState
+            val newState = currentState.copy(movementAmount = newAmount, isAmountValid = false)
+            setNewMovementFormState(newState)
+            setMovementError(ErrorCode.Movement.INVALID_AMOUNT)
+        }
+    }
+
+    fun onMovementTypeSelected(newType: String) {
+        val currentState = _uiState.value.newMovementFormState
+        val newState = currentState.copy(typeSelected = newType, isTypeValid = true)
+        setNewMovementFormState(newState)
+    }
+
+    fun onMovementNoteChange(newNote: String) {
+        val currentState = _uiState.value.newMovementFormState
+        val newState = currentState.copy(note = newNote)
+        setNewMovementFormState(newState)
+    }
+
+    fun createMovement(userId: String) {
+        val currentState = _uiState.value.newMovementFormState
+        val amount = currentState.movementAmount.toDoubleOrNull()
+        val type = _uiState.value.movementTypes.find { it.value == currentState.typeSelected }
+        val note = currentState.note
+
+        var isValid = true
+        if (amount == null || amount == 0.0) {
+            isValid = false
+            setMovementError(ErrorCode.Movement.INVALID_AMOUNT)
+        }
+        if (type == null) {
+            isValid = false
+            setMovementError(ErrorCode.Movement.INVALID_TYPE)
+        }
+
+        if (!isValid) {
+            return
+        }
+
+        setLoading(true)
+        viewModelScope.launch {
+            val movement = Movement(
+                id = "",
+                userId = userId,
+                amount = amount!!,
+                typeId = type!!.id,
+                note = note
+            )
+            val success = movementsRepository.createMovement(movement)
+            if (success != null) {
+                fetchMovements(userId)
+            } else {
+                setMovementError(ErrorCode.Movement.UNKNOWN_ERROR)
+            }
+            setLoading(false)
+            changeContent(CoreState.HomeContent.HOME)
+        }
+    }
+
+    fun createMovementType(userId: String) {
+        val currentState = _uiState.value.newMovementTypeFormState
+        val name = currentState.typeName
+        val description = currentState.typeDescription
+
+        var isValid = true
+        val nameError = Validation.checkName(name)
+        if (nameError != null) {
+            isValid = false
+            setMovementError(ErrorCode.Movement.INVALID_NAME, isTypeForm = true)
+        }
+
+        if (!isValid) {
+            return
+        }
+
+        setLoading(true)
+        viewModelScope.launch {
+            val movementType = MovementType(
+                id = "",
+                userId = userId,
+                value = name,
+                description = description
+            )
+            val success = movementsRepository.createMovementType(movementType)
+            if (success != null) {
+                fetchMovements(userId)
+            } else {
+                setMovementError(ErrorCode.Movement.UNKNOWN_ERROR, isTypeForm = true)
+            }
+            setLoading(false)
+            changeContent(CoreState.HomeContent.HOME)
+        }
+    }
+
+    fun changeContent(newContent: CoreState.HomeContent) {
+        _uiState.value = _uiState.value.copy(currentContent = newContent)
     }
 
 }

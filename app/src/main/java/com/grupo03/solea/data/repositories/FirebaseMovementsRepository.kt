@@ -112,4 +112,26 @@ class FirebaseMovementsRepository(
             false
         }
     }
+
+    override suspend fun getAllMovementTypesByUser(userId: String): List<MovementType> {
+        return try {
+            val querySnapshot = firestore
+                .collection(DatabaseContants.MOVEMENT_TYPES_COLLECTION)
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+            val types = querySnapshot.documents.mapNotNull { document ->
+                val data = document.data
+                if (data != null) {
+                    MovementType.fromMap(data)
+                } else {
+                    null
+                }
+            }
+            types
+        } catch (e: Exception) {
+            Log.d(TAG, "getAllMovementTypesByUser: ${e.message}", e)
+            emptyList()
+        }
+    }
 }
