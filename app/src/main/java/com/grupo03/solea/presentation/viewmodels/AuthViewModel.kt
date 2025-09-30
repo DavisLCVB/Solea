@@ -75,21 +75,26 @@ class AuthViewModel(
 
     fun onEmailChange(formType: AuthState.FormType, newEmail: String) {
         when (formType) {
-            AuthState.FormType.LOGIN -> onLoginEmailChange(newEmail)
+            AuthState.FormType.LOGIN -> onSignInEmailChange(newEmail)
             AuthState.FormType.REGISTER -> onSignUpEmailChange(newEmail)
         }
     }
 
-    private fun onLoginEmailChange(newEmail: String) {
+    private fun onSignInEmailChange(newEmail: String) {
         val errorCode = Validation.checkEmail(newEmail)
         setSignInForm {
             it.copy(
                 email = newEmail,
-                isEmailValid = errorCode != null,
+                isEmailValid = errorCode == null,
             )
         }
         if (errorCode != null || isEmailError()) {
             setErrorCode(errorCode)
+            if (errorCode == null) {
+                setSignInForm {
+                    it.copy(isEmailValid = true)
+                }
+            }
         }
     }
 
@@ -98,11 +103,16 @@ class AuthViewModel(
         setSignUpForm {
             it.copy(
                 email = newEmail,
-                isEmailValid = errorCode != null,
+                isEmailValid = errorCode == null,
             )
         }
         if (errorCode != null || isEmailError()) {
             setErrorCode(errorCode)
+            if (errorCode == null) {
+                setSignUpForm {
+                    it.copy(isEmailValid = true)
+                }
+            }
         }
     }
 
@@ -111,22 +121,27 @@ class AuthViewModel(
         setSignUpForm {
             it.copy(
                 name = newName,
-                isNameValid = errorCode != null,
+                isNameValid = errorCode == null,
             )
         }
         if (errorCode != null || isUsernameError()) {
             setErrorCode(errorCode)
+            if (errorCode == null) {
+                setSignUpForm {
+                    it.copy(isNameValid = true)
+                }
+            }
         }
     }
 
     fun onPasswordChange(formType: AuthState.FormType, newPassword: String) {
         when (formType) {
-            AuthState.FormType.LOGIN -> onLoginPasswordChange(newPassword)
+            AuthState.FormType.LOGIN -> onSignInPasswordChange(newPassword)
             AuthState.FormType.REGISTER -> onSignUpPasswordChange(newPassword)
         }
     }
 
-    private fun onLoginPasswordChange(newPassword: String) {
+    private fun onSignInPasswordChange(newPassword: String) {
         setSignInForm {
             it.copy(
                 password = newPassword,
@@ -135,15 +150,20 @@ class AuthViewModel(
     }
 
     private fun onSignUpPasswordChange(newPassword: String) {
-        val errorMessage = Validation.checkPassword(newPassword)
+        val errorCode = Validation.checkPassword(newPassword)
         setSignUpForm {
             it.copy(
                 password = newPassword,
-                isPasswordValid = errorMessage == null,
+                isPasswordValid = errorCode == null,
             )
         }
-        if (errorMessage != null || isPasswordError()) {
-            setErrorCode(errorMessage)
+        if (errorCode != null || isPasswordError()) {
+            setErrorCode(errorCode)
+            if (errorCode == null) {
+                setSignUpForm {
+                    it.copy(isPasswordValid = true)
+                }
+            }
         }
     }
 
