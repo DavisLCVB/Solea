@@ -13,6 +13,7 @@ object ServiceConstants {
 }
 
 object DatabaseContants {
+    const val USERS_COLLECTION = "users"
     const val MOVEMENTS_COLLECTION = "movements"
     const val MOVEMENT_TYPES_COLLECTION = "movement_types"
 }

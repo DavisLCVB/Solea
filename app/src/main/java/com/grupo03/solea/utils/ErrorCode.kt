@@ -17,7 +17,8 @@ object ErrorCode {
         WEAK_PASSWORD,
         PASSWORD_EMPTY,
         GOOGLE_SIGN_IN_FAILED,
-        PASSWORDS_DO_NOT_MATCH
+        PASSWORDS_DO_NOT_MATCH,
+        USER_CREATION_FAILED
     }
 
     enum class Movement {
@@ -46,5 +47,6 @@ fun ErrorCode.Auth.getStringRes(): Int {
         ErrorCode.Auth.PASSWORD_EMPTY -> R.string.error_auth_password_empty
         ErrorCode.Auth.GOOGLE_SIGN_IN_FAILED -> R.string.error_auth_google_sign_in_failed
         ErrorCode.Auth.PASSWORDS_DO_NOT_MATCH -> R.string.error_auth_passwords_do_not_match
+        ErrorCode.Auth.USER_CREATION_FAILED -> R.string.error_auth_user_creation_failed
     }
 }

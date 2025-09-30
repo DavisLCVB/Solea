@@ -29,4 +29,5 @@
     <string name="error_auth_email_too_long">Error: Email too long!</string>
     <string name="error_auth_invalid_username">Error: Invalid username!</string>
     <string name="error_auth_password_empty">Error: Password is empty!</string>
+    <string name="error_auth_user_creation_failed">Error: User creation Failed!</string>
 </resources>

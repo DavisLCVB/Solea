@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.grupo03.solea.data.models.User
+import com.grupo03.solea.data.repositories.UsersRepository
 import com.grupo03.solea.data.services.AuthService
 import com.grupo03.solea.presentation.states.AuthState
 import com.grupo03.solea.utils.ErrorCode
@@ -14,8 +15,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+
 class AuthViewModel(
-    private val authRepository: AuthService,
+    private val authService: AuthService,
+    private val usersRepository: UsersRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthState.State())
@@ -67,7 +70,7 @@ class AuthViewModel(
     fun checkAuthState() {
         setLoading(true)
         viewModelScope.launch {
-            val user = authRepository.getCurrentUser()
+            val user = authService.getCurrentUser()
             setUser(user)
             setLoading(false)
         }
@@ -195,11 +198,18 @@ class AuthViewModel(
             setErrorCode(null)
             setLoading(true)
             val result =
-                authRepository.signInWithEmailAndPassword(
+                authService.signInWithEmailAndPassword(
                     formState.email,
                     formState.password
                 )
-            setUser(result.user)
+            if (result.user != null) {
+                val displayName = usersRepository.getDisplayName(result.user.uid)
+                val userWithDisplayName = result.user.copy(displayName = displayName)
+                setUser(userWithDisplayName)
+            }
+            if (result.user == null) {
+                setUser(null)
+            }
             setErrorCode(result.errorCode)
             setLoading(false)
         }
@@ -207,25 +217,44 @@ class AuthViewModel(
 
     fun signUpWithEmailAndPassword() {
         val formState = _uiState.value.signUpFormState
-        if (!formState.isEmailValid || !formState.isPasswordValid) {
+        if (!formState.isEmailValid || !formState.isPasswordValid || !formState.isNameValid) {
             return
         }
         viewModelScope.launch {
             setLoading(true)
             setErrorCode(null)
             val result =
-                authRepository.signUpWithEmailAndPassword(
+                authService.signUpWithEmailAndPassword(
                     formState.email,
                     formState.password
                 )
-            setErrorCode(result.errorCode)
-            setUser(result.user)
+            val user = result.user
+            var createdUser: User? = null
+            if (user != null) {
+                val newUser = User(
+                    uid = user.uid,
+                    displayName = formState.name,
+                    email = formState.email
+                )
+                createdUser = usersRepository.createUser(newUser)
+                if (createdUser != null) {
+                    setUser(createdUser)
+                } else {
+                    setErrorCode(ErrorCode.Auth.USER_CREATION_FAILED)
+                }
+            }
+            if (createdUser == null) {
+                setUser(null)
+            }
+            if (user == null) {
+                setErrorCode(result.errorCode)
+            }
             setLoading(false)
         }
     }
 
     fun signInWithGoogle(context: Context) {
-        val request = authRepository.generateGoogleRequest()
+        val request = authService.generateGoogleRequest()
         if (request == null) {
             setErrorCode(ErrorCode.Auth.GOOGLE_SIGN_IN_FAILED)
             return
@@ -233,7 +262,7 @@ class AuthViewModel(
         viewModelScope.launch {
             setLoading(true)
             setErrorCode(null)
-            val result = authRepository.signInWithGoogle(context, request)
+            val result = authService.signInWithGoogle(context, request)
             setUser(result.user)
             setErrorCode(result.errorCode)
             setLoading(false)
@@ -244,7 +273,7 @@ class AuthViewModel(
         setLoading(true)
         setErrorCode(null)
         viewModelScope.launch {
-            val result = authRepository.signOut()
+            val result = authService.signOut()
             if (result.errorCode == null) {
                 setUser(null)
             } else {
