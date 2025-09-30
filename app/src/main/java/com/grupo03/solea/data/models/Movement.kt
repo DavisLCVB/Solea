@@ -10,6 +10,7 @@ data class Movement(
     val userId: String = "",
     val amount: Double = 0.0,
     val date: Instant = Instant.now(),
+    val item: String = "",
     val note: String = "",
     val typeId: String = "",
 ) : ToMap {
@@ -19,6 +20,7 @@ data class Movement(
             "userId" to userId,
             "amount" to amount,
             "date" to date.toString(),
+            "item" to item,
             "note" to note,
             "typeId" to typeId,
         )
@@ -32,6 +34,7 @@ data class Movement(
             val amount = (map["amount"] as? Number)?.toDouble() ?: return null
             val note = map["note"] as? String ?: ""
             val dateString = map["date"] as? String ?: return null
+            val item = map["item"] as? String ?: ""
             val date = try {
                 Instant.parse(dateString)
             } catch (e: Exception) {
@@ -46,7 +49,8 @@ data class Movement(
                 amount = amount,
                 date = date,
                 typeId = typeId,
-                note = note
+                note = note,
+                item = item
             )
         }
     }
