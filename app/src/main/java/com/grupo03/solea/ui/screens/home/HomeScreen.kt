@@ -45,6 +45,7 @@ import com.grupo03.solea.presentation.viewmodels.CoreViewModel
 import com.grupo03.solea.ui.components.MovementModalBottomSheet
 import com.grupo03.solea.ui.screens.forms.NewMovementForm
 import com.grupo03.solea.ui.screens.forms.NewMovementTypeForm
+import com.grupo03.solea.ui.screens.camera.ReceiptCameraScreen
 import com.grupo03.solea.ui.theme.SoleaTheme
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -103,12 +104,27 @@ fun HomeScreen(
                     }
                 )
             }
+            
+            CoreState.HomeContent.RECEIPT_CAMERA -> {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                ReceiptCameraScreen(
+                    cameraState = coreState.value.receiptCameraState,
+                    onBackClick = { coreViewModel.changeContent(CoreState.HomeContent.HOME) },
+                    onImageCaptured = { imageUri ->
+                        coreViewModel.analyzeReceiptImage(imageUri, context)
+                    },
+                    onCreateMovement = {
+                        coreViewModel.createMovementFromReceipt(userId)
+                    }
+                )
+            }
         }
         if (screenState.activeSheet) {
             MovementModalBottomSheet(
                 onDismissRequest = coreViewModel::onDeactivateSheet,
                 onAddMovement = { coreViewModel.changeContent(CoreState.HomeContent.NEW_MOVEMENT_FORM) },
-                onAddMovementType = { coreViewModel.changeContent(CoreState.HomeContent.NEW_MOVEMENT_TYPE_FORM) }
+                onAddMovementType = { coreViewModel.changeContent(CoreState.HomeContent.NEW_MOVEMENT_TYPE_FORM) },
+                onScanReceipt = { coreViewModel.changeContent(CoreState.HomeContent.RECEIPT_CAMERA) }
             )
         }
     }

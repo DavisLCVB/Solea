@@ -2,6 +2,7 @@ package com.grupo03.solea.presentation.states
 
 import com.grupo03.solea.data.models.Movement
 import com.grupo03.solea.data.models.MovementType
+import com.grupo03.solea.data.models.ReceiptAnalysis
 import com.grupo03.solea.utils.ErrorCode
 
 object CoreState {
@@ -9,7 +10,8 @@ object CoreState {
     enum class HomeContent {
         HOME,
         NEW_MOVEMENT_FORM,
-        NEW_MOVEMENT_TYPE_FORM
+        NEW_MOVEMENT_TYPE_FORM,
+        RECEIPT_CAMERA
     }
 
     data class State(
@@ -19,6 +21,7 @@ object CoreState {
         val homeScreenState: HomeScreenState = HomeScreenState(),
         val newMovementFormState: NewMovementFormState = NewMovementFormState(),
         val newMovementTypeFormState: NewMovementTypeFormState = NewMovementTypeFormState(),
+        val receiptCameraState: ReceiptCameraState = ReceiptCameraState(),
         val currentContent: HomeContent = HomeContent.HOME,
     )
 
@@ -47,5 +50,11 @@ object CoreState {
         val isNameValid: Boolean = true,
         val isDescriptionValid: Boolean = true,
         val errorCode: ErrorCode.Movement? = null,
+    )
+
+    data class ReceiptCameraState(
+        val isLoading: Boolean = false,
+        val errorMessage: String? = null,
+        val analysisResult: ReceiptAnalysis? = null
     )
 }

@@ -25,6 +25,8 @@ import com.grupo03.solea.data.repositories.FirebaseMovementsRepository
 import com.grupo03.solea.data.repositories.FirebaseUsersRepository
 import com.grupo03.solea.data.repositories.MovementsRepository
 import com.grupo03.solea.data.repositories.UsersRepository
+import com.grupo03.solea.data.repositories.ReceiptAnalysisRepository
+import com.grupo03.solea.data.repositories.IReceiptAnalysisRepository
 import com.grupo03.solea.data.services.AuthService
 import com.grupo03.solea.data.services.FirebaseAuthService
 import com.grupo03.solea.presentation.viewmodels.AuthViewModel
@@ -40,6 +42,7 @@ class MainActivity : ComponentActivity() {
     private val authService = FirebaseAuthService(Firebase.auth)
     private val movementsRepository = FirebaseMovementsRepository(Firebase.firestore)
     private val usersRepository: UsersRepository = FirebaseUsersRepository(Firebase.firestore)
+    private val receiptAnalysisRepository: IReceiptAnalysisRepository = ReceiptAnalysisRepository()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -48,7 +51,7 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    AppNavigation(authService, usersRepository, movementsRepository)
+                    AppNavigation(authService, usersRepository, movementsRepository, receiptAnalysisRepository)
                 }
             }
         }
@@ -61,7 +64,8 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation(
     authService: AuthService,
     usersRepository: UsersRepository,
-    movementsRepository: MovementsRepository
+    movementsRepository: MovementsRepository,
+    receiptAnalysisRepository: IReceiptAnalysisRepository
 ) {
     val navController = rememberNavController()
     val authViewModel = viewModel {
@@ -69,7 +73,7 @@ fun AppNavigation(
     }
     val authState = authViewModel.uiState.collectAsState()
     val coreViewModel = viewModel {
-        CoreViewModel(movementsRepository)
+        CoreViewModel(movementsRepository, receiptAnalysisRepository)
     }
 
     if (authState.value.user == null) {

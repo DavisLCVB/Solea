@@ -26,7 +26,8 @@ import com.grupo03.solea.R
 fun MovementModalBottomSheet(
     onDismissRequest: () -> Unit = {},
     onAddMovement: () -> Unit = {},
-    onAddMovementType: () -> Unit = {}
+    onAddMovementType: () -> Unit = {},
+    onScanReceipt: () -> Unit = {}
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -62,6 +63,26 @@ fun MovementModalBottomSheet(
                             }
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(text = "Add movement by form")
+                        }
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            onDismissRequest()
+                            onScanReceipt()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row {
+                            Box(
+                                contentAlignment = Alignment.TopStart
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_camera),
+                                    contentDescription = "Scan receipt",
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(text = "Analizar boleta")
                         }
                     }
                     OutlinedButton(

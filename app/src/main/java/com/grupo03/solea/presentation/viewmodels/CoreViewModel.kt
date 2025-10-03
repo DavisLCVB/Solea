@@ -1,5 +1,6 @@
 package com.grupo03.solea.presentation.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.grupo03.solea.data.models.Movement
@@ -14,7 +15,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class CoreViewModel(
-    private val movementsRepository: MovementsRepository
+    private val movementsRepository: MovementsRepository,
+    private val receiptAnalysisRepository: com.grupo03.solea.data.repositories.IReceiptAnalysisRepository? = null
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CoreState.State())
     val uiState: StateFlow<CoreState.State> = _uiState.asStateFlow()
@@ -41,6 +43,10 @@ class CoreViewModel(
 
     private fun setNewMovementTypeFormState(newMovementTypeFormState: CoreState.NewMovementTypeFormState) {
         _uiState.value = _uiState.value.copy(newMovementTypeFormState = newMovementTypeFormState)
+    }
+
+    private fun setReceiptCameraState(receiptCameraState: CoreState.ReceiptCameraState) {
+        _uiState.value = _uiState.value.copy(receiptCameraState = receiptCameraState)
     }
 
     private fun setMovementError(errorCode: ErrorCode.Movement?, isTypeForm: Boolean = false) {
@@ -237,6 +243,180 @@ class CoreViewModel(
 
     fun changeContent(newContent: CoreState.HomeContent) {
         _uiState.value = _uiState.value.copy(currentContent = newContent)
+    }
+
+    fun createMovementFromReceipt(userId: String) {
+        val currentState = _uiState.value.receiptCameraState
+        val analysisResult = currentState.analysisResult ?: return
+        
+        viewModelScope.launch {
+            try {
+                // Buscar o crear tipo de movimiento "Compras"
+                val existingShoppingType = _uiState.value.movementTypes.find { 
+                    it.value.equals("Compras", ignoreCase = true) || 
+                    it.value.equals("Shopping", ignoreCase = true) ||
+                    it.value.equals("Gastos", ignoreCase = true)
+                }
+                
+                val movementTypeId = if (existingShoppingType != null) {
+                    existingShoppingType.id
+                } else {
+                    // Crear nuevo tipo "Compras"
+                    val newType = MovementType(
+                        id = "",
+                        userId = userId,
+                        value = "Compras",
+                        description = "Gastos en tiendas y supermercados"
+                    )
+                    val createdType = movementsRepository.createMovementType(newType)
+                    createdType?.id ?: run {
+                        setReceiptCameraState(
+                            currentState.copy(
+                                errorMessage = "Error al crear el tipo de movimiento"
+                            )
+                        )
+                        return@launch
+                    }
+                }
+                
+                val storeName = analysisResult.computedStoreInfo?.name ?: "Tienda"
+                val items = analysisResult.computedItems
+                
+                if (items.isNullOrEmpty()) {
+                    // Si no hay items específicos, crear un movimiento con el total
+                    val totalAmount = analysisResult.computedTotals?.totalPrinted ?: 0.0
+                    if (totalAmount > 0) {
+                        val movement = Movement(
+                            id = "",
+                            userId = userId,
+                            amount = -totalAmount, // Negativo porque es un gasto
+                            typeId = movementTypeId,
+                            note = "Compra en $storeName",
+                            item = "Compra general"
+                        )
+                        
+                        movementsRepository.createMovement(movement)
+                    }
+                } else {
+                    // Crear un movimiento por cada item
+                    var successCount = 0
+                    
+                    items.forEach { item ->
+                        val itemPrice = item.computedTotal ?: item.unitPrice ?: 0.0
+                        if (itemPrice > 0) {
+                            val itemName = item.description?.take(50) ?: "Producto"
+                            val quantity = item.quantity ?: 1.0
+                            val unit = item.unit ?: ""
+                            
+                            val note = buildString {
+                                append("$storeName")
+                                if (quantity > 1) {
+                                    append(" - $quantity")
+                                    if (unit.isNotEmpty()) append(" $unit")
+                                }
+                            }
+                            
+                            val movement = Movement(
+                                id = "",
+                                userId = userId,
+                                amount = -itemPrice, // Negativo porque es un gasto
+                                typeId = movementTypeId,
+                                note = note,
+                                item = itemName
+                            )
+                            
+                            val success = movementsRepository.createMovement(movement)
+                            if (success != null) {
+                                successCount++
+                            }
+                        }
+                    }
+                    
+                    Log.d("CoreViewModel", "Created $successCount movements from ${items.size} items")
+                }
+                
+                // Actualizar la lista de movimientos
+                fetchMovements(userId)
+                
+                // Limpiar el estado de la cámara
+                setReceiptCameraState(CoreState.ReceiptCameraState())
+                
+                // Volver a la pantalla principal
+                changeContent(CoreState.HomeContent.HOME)
+                
+            } catch (e: Exception) {
+                Log.e("CoreViewModel", "Error creating movements from receipt", e)
+                setReceiptCameraState(
+                    currentState.copy(
+                        errorMessage = "Error al crear los movimientos: ${e.message}"
+                    )
+                )
+            }
+        }
+    }
+
+    fun analyzeReceiptImage(imageUri: android.net.Uri, context: android.content.Context) {
+        Log.d("CoreViewModel", "Starting receipt analysis for URI: $imageUri")
+        
+        viewModelScope.launch {
+            if (receiptAnalysisRepository == null) {
+                Log.e("CoreViewModel", "Receipt analysis repository is null")
+                setReceiptCameraState(
+                    CoreState.ReceiptCameraState(
+                        isLoading = false,
+                        errorMessage = "Servicio de análisis no disponible"
+                    )
+                )
+                return@launch
+            }
+
+            Log.d("CoreViewModel", "Setting loading state to true")
+            setReceiptCameraState(
+                CoreState.ReceiptCameraState(isLoading = true)
+            )
+
+            try {
+                Log.d("CoreViewModel", "Calling repository analyzeReceiptImage")
+                val result = receiptAnalysisRepository.analyzeReceiptImage(imageUri, context)
+                
+                result.fold(
+                    onSuccess = { analysisResult ->
+                        Log.d("CoreViewModel", "Analysis successful")
+                        Log.d("CoreViewModel", "Store: ${analysisResult.computedStoreInfo?.name}")
+                        Log.d("CoreViewModel", "Total: ${analysisResult.computedTotals?.totalPrinted}")
+                        setReceiptCameraState(
+                            CoreState.ReceiptCameraState(
+                                isLoading = false,
+                                analysisResult = analysisResult
+                            )
+                        )
+                        // El movimiento se creará cuando el usuario presione el botón
+                    },
+                    onFailure = { error ->
+                        Log.e("CoreViewModel", "Analysis failed", error)
+                        setReceiptCameraState(
+                            CoreState.ReceiptCameraState(
+                                isLoading = false,
+                                errorMessage = error.message ?: "Error desconocido"
+                            )
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("CoreViewModel", "Exception during analysis", e)
+                setReceiptCameraState(
+                    CoreState.ReceiptCameraState(
+                        isLoading = false,
+                        errorMessage = "Error inesperado: ${e.message}\nTipo: ${e.javaClass.simpleName}"
+                    )
+                )
+            }
+        }
+    }
+
+    fun clearReceiptCameraError() {
+        val currentState = _uiState.value.receiptCameraState
+        setReceiptCameraState(currentState.copy(errorMessage = null))
     }
 
 }
