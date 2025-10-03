@@ -27,7 +27,8 @@ fun NavGraphBuilder.mainNavigationGraph(
         }
         composable(AppRoutes.HISTORY) {
             com.grupo03.solea.ui.screens.history.HistoryScreen(
-                modifier = Modifier.padding(contentPadding)
+                modifier = Modifier.padding(contentPadding),
+                coreViewModel = coreViewModel
             )
         }
         composable(AppRoutes.SAVINGS) {
