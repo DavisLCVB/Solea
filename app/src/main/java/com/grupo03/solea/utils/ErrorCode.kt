@@ -29,6 +29,14 @@ object ErrorCode {
         INVALID_NAME,
         INVALID_DESCRIPTION,
     }
+
+    enum class Budget {
+        INVALID_AMOUNT,
+        INVALID_CATEGORY,
+        INVALID_DATE,
+        UNKNOWN_ERROR,
+        BUDGET_ALREADY_EXISTS
+    }
 }
 
 @StringRes

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,11 +20,84 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.grupo03.solea.data.models.MovementType
+import com.grupo03.solea.presentation.states.CoreState
 import com.grupo03.solea.presentation.viewmodels.AuthViewModel
+import com.grupo03.solea.presentation.viewmodels.CoreViewModel
 
 @Composable
 fun SettingsScreen(
     authViewModel: AuthViewModel,
+    coreViewModel: CoreViewModel,  // CAMBIAR: agregar coreViewModel
+    modifier: Modifier = Modifier
+) {
+    val coreState = coreViewModel.uiState.collectAsState()
+    val authState = authViewModel.uiState.collectAsState()
+    val userId = authState.value.user?.uid ?: ""
+
+    // AGREGAR: Cargar budgets al iniciar
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            coreViewModel.fetchBudgets(userId)
+        }
+    }
+
+    when (coreState.value.currentSettingsContent) {
+        CoreState.SettingsContent.SETTINGS -> {
+            SettingsContent(
+                authViewModel = authViewModel,
+                onNavigateToBudgetLimits = {
+                    coreViewModel.changeSettingsContent(CoreState.SettingsContent.BUDGET_LIMITS)
+                },
+                modifier = modifier
+            )
+        }
+        CoreState.SettingsContent.BUDGET_LIMITS -> {
+            val budgetState = coreState.value.budgetLimitsState
+            if (budgetState.selectedCategory != null) {
+                val existingBudget = coreState.value.budgets.find {
+                    it.movementTypeId == budgetState.selectedCategory.id
+                }
+                // Obtener status disponibles (por ahora hardcoded, idealmente desde ViewModel)
+                val availableStatus = listOf(
+                    com.grupo03.solea.data.models.Status("active", "ACTIVE"),
+                    com.grupo03.solea.data.models.Status("exceeded", "EXCEEDED"),
+                    com.grupo03.solea.data.models.Status("inactive", "INACTIVE")
+                )
+
+                EditBudgetForm(
+                    category = budgetState.selectedCategory,
+                    existingBudget = existingBudget,
+                    budgetAmount = budgetState.budgetAmount,
+                    onAmountChange = coreViewModel::onBudgetAmountChange,
+                    onSave = { statusId, untilDate ->
+                        coreViewModel.saveBudgetLimit(userId, statusId, untilDate)
+                    },
+                    onCancel = coreViewModel::cancelBudgetEdit,
+                    onDelete = if (existingBudget != null) {
+                        { coreViewModel.deleteBudgetLimit(userId, existingBudget.id) }
+                    } else null,
+                    isAmountValid = budgetState.isAmountValid,
+                    availableStatus = availableStatus
+                )
+            } else {
+                BudgetLimitsScreen(
+                    budgetLimitsState = budgetState,
+                    onSelectCategory = coreViewModel::onSelectCategoryForBudget,
+                    onBack = {
+                        coreViewModel.changeSettingsContent(CoreState.SettingsContent.SETTINGS)
+                    }
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun SettingsContent(
+    authViewModel: AuthViewModel,
+    onNavigateToBudgetLimits: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var notificationsEnabled by remember { mutableStateOf(true) }
@@ -100,10 +174,15 @@ fun SettingsScreen(
             Switch(checked = notificationsEnabled, onCheckedChange = { notificationsEnabled = it })
         }
         Spacer(modifier = Modifier.height(8.dp))
+        // MODIFICAR la Card de "Establecer Límites por Categoría"
         Card(
             shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth().height(44.dp).padding(vertical = 2.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .padding(vertical = 2.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            onClick = onNavigateToBudgetLimits  // AGREGAR onClick
         ) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
                 Text(

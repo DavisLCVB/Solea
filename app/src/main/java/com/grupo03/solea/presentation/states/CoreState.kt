@@ -1,5 +1,6 @@
 package com.grupo03.solea.presentation.states
 
+import com.grupo03.solea.data.models.Budget
 import com.grupo03.solea.data.models.Movement
 import com.grupo03.solea.data.models.MovementType
 import com.grupo03.solea.utils.ErrorCode
@@ -12,14 +13,22 @@ object CoreState {
         NEW_MOVEMENT_TYPE_FORM
     }
 
+    enum class SettingsContent {
+        SETTINGS,
+        BUDGET_LIMITS
+    }
+
     data class State(
         val movements: List<Movement> = emptyList(),
         val movementTypes: List<MovementType> = emptyList(),
+        val budgets: List<Budget> = emptyList(),  // AGREGAR ESTA LÍNEA
         val isLoading: Boolean = false,
         val homeScreenState: HomeScreenState = HomeScreenState(),
         val newMovementFormState: NewMovementFormState = NewMovementFormState(),
         val newMovementTypeFormState: NewMovementTypeFormState = NewMovementTypeFormState(),
+        val budgetLimitsState: BudgetLimitsState = BudgetLimitsState(),
         val currentContent: HomeContent = HomeContent.HOME,
+        val currentSettingsContent: SettingsContent = SettingsContent.SETTINGS
     )
 
     data class HomeScreenState(
@@ -47,5 +56,13 @@ object CoreState {
         val isNameValid: Boolean = true,
         val isDescriptionValid: Boolean = true,
         val errorCode: ErrorCode.Movement? = null,
+    )
+
+    data class BudgetLimitsState(
+        val categoriesWithBudgets: List<Pair<MovementType, Budget?>> = emptyList(),
+        val selectedCategory: MovementType? = null,
+        val budgetAmount: String = "",
+        val isAmountValid: Boolean = true,
+        val errorCode: ErrorCode.Budget? = null
     )
 }

@@ -1,8 +1,8 @@
 package com.grupo03.solea.ui.screens.savings
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -10,18 +10,51 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.grupo03.solea.data.models.Budget
+import com.grupo03.solea.data.models.Movement
+import com.grupo03.solea.data.models.MovementType
+import com.grupo03.solea.presentation.viewmodels.AuthViewModel
+import com.grupo03.solea.presentation.viewmodels.CoreViewModel
+import java.time.format.DateTimeFormatter
+import java.time.ZoneId
+import kotlin.math.abs
 
 @Composable
-fun SavingsScreen(modifier: Modifier = Modifier) {
+fun SavingsScreen(
+    authViewModel: AuthViewModel,
+    coreViewModel: CoreViewModel,
+    onNavigateToBudgetLimits: () -> Unit,
+    onEditBudget: (MovementType) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val coreState = coreViewModel.uiState.collectAsState()
+    val authState = authViewModel.uiState.collectAsState()
+    val userId = authState.value.user?.uid ?: ""
+
+    // Cargar datos
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            coreViewModel.fetchMovements(userId)
+            coreViewModel.fetchBudgets(userId)
+        }
+    }
+
+    // Calcular gastos por categoría
+    val spendingByCategory = remember(coreState.value.movements) {
+        coreState.value.movements
+            .filter { it.amount < 0 }
+            .groupBy { it.typeId }
+            .mapValues { entry -> abs(entry.value.sumOf { it.amount }) }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -33,6 +66,8 @@ fun SavingsScreen(modifier: Modifier = Modifier) {
             fontSize = 16.sp,
             modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
         )
+
+        // Aquí irían las metas (Goals) - mock data por ahora
         GoalCard(
             name = "Laptop",
             percent = 50,
@@ -49,38 +84,58 @@ fun SavingsScreen(modifier: Modifier = Modifier) {
             color = Color(0xFFFFC107)
         )
         Spacer(modifier = Modifier.height(8.dp))
-        AddCard()
+        AddCard(onClick = { /* TODO: Agregar meta */ })
+
         Text(
             text = "Límites de gastos",
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
             modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
         )
-        LimitCard(
-            name = "Snacks",
-            percent = 80,
-            amount = 50.0,
-            color = Color(0xFFF44336)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        LimitCard(
-            name = "Alcohol",
-            percent = 10,
-            amount = 40.0,
-            color = Color(0xFF4CAF50)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        AddCard()
-    }
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomEnd) {
-        FloatingActionButton(
-            onClick = { /* TODO: Add new goal or limit */ },
-            containerColor = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(16.dp)
+
+        // Mostrar límites registrados
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.weight(1f)
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Agregar", tint = Color.White)
+            // FILTRAR budgets activos
+            val activeBudgets = coreState.value.budgets.filter { budget ->
+                budget.statusId != "inactive" && budget.statusId.isNotEmpty()
+            }
+
+            items(activeBudgets) { budget ->
+                val category = coreState.value.movementTypes.find { it.id == budget.movementTypeId }
+                val spent = spendingByCategory[budget.movementTypeId] ?: 0.0
+                val percent = if (budget.amount > 0) {
+                    ((spent / budget.amount) * 100).toInt()
+                } else 0
+
+                if (category != null) {
+                    LimitCard(
+                        name = category.value,
+                        percent = percent,
+                        spent = spent,
+                        limit = budget.amount,
+                        color = when {
+                            percent >= 100 -> Color(0xFFF44336)
+                            percent >= 80 -> Color(0xFFFFC107)
+                            else -> Color(0xFF4CAF50)
+                        },
+                        onEditClick = { onEditBudget(category) },  // PASAR EL CALLBACK
+                        onDeactivateClick = {
+                            // TODO: Desactivar budget
+                        }
+                    )
+                }
+            }
+
+            item {
+                AddCard(onClick = onNavigateToBudgetLimits)
+            }
         }
     }
+
+
 }
 
 @Composable
@@ -112,7 +167,7 @@ fun GoalCard(name: String, percent: Int, amount: Double, date: String, color: Co
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     LinearProgressIndicator(
-                        progress = percent / 100f,
+                        progress = { percent / 100f },
                         color = color,
                         modifier = Modifier
                             .height(6.dp)
@@ -140,8 +195,19 @@ fun GoalCard(name: String, percent: Int, amount: Double, date: String, color: Co
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LimitCard(name: String, percent: Int, amount: Double, color: Color) {
+fun LimitCard(
+    name: String,
+    percent: Int,
+    spent: Double,
+    limit: Double,
+    color: Color,
+    onEditClick: () -> Unit,
+    onDeactivateClick: () -> Unit
+) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -152,7 +218,7 @@ fun LimitCard(name: String, percent: Int, amount: Double, color: Color) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.Close,
+                imageVector = if (percent >= 100) Icons.Default.Close else Icons.Default.CheckCircle,
                 contentDescription = null,
                 tint = color,
                 modifier = Modifier.size(28.dp)
@@ -169,7 +235,7 @@ fun LimitCard(name: String, percent: Int, amount: Double, color: Color) {
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     LinearProgressIndicator(
-                        progress = percent / 100f,
+                        progress = { (percent.coerceAtMost(100) / 100f) },
                         color = color,
                         modifier = Modifier
                             .height(6.dp)
@@ -177,24 +243,46 @@ fun LimitCard(name: String, percent: Int, amount: Double, color: Color) {
                             .clip(RoundedCornerShape(3.dp))
                     )
                 }
-            }
-            Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "S/ %.2f".format(amount),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
+                    text = "Gastado: S/ %.2f de S/ %.2f".format(spent, limit),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            IconButton(onClick = { }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+                }
+
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Editar límite") },
+                        onClick = {
+                            showMenu = false
+                            onEditClick()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Desactivar límite") },
+                        onClick = {
+                            showMenu = false
+                            onDeactivateClick()
+                        }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun AddCard() {
+fun AddCard(onClick: () -> Unit) {
     Card(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .height(36.dp),

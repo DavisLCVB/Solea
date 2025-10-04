@@ -16,4 +16,6 @@ object DatabaseContants {
     const val USERS_COLLECTION = "users"
     const val MOVEMENTS_COLLECTION = "movements"
     const val MOVEMENT_TYPES_COLLECTION = "movement_types"
+    const val BUDGETS_COLLECTION = "budgets"  // AGREGAR ESTA LÍNEA
+    const val STATUS_COLLECTION = "status"     // AGREGAR ESTA LÍNEA
 }
