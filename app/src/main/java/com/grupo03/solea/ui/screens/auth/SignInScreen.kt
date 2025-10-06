@@ -40,10 +40,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.grupo03.solea.R
-import com.grupo03.solea.presentation.states.AuthState
-import com.grupo03.solea.presentation.viewmodels.AuthViewModel
+import com.grupo03.solea.presentation.states.screens.SignInFormState
+import com.grupo03.solea.presentation.states.shared.FormType
+import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
 import com.grupo03.solea.ui.theme.SoleaTheme
-import com.grupo03.solea.utils.ErrorCode
+import com.grupo03.solea.utils.AuthError
 import com.grupo03.solea.utils.getStringRes
 
 @Composable
@@ -51,16 +52,16 @@ fun SignInScreen(
     viewModel: AuthViewModel,
     navigateToSignUp: () -> Unit,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val formState = uiState.signInFormState
+    val formState by viewModel.signInFormState.collectAsState()
+    val authState by viewModel.authState.collectAsState()
     val context = LocalContext.current
 
     fun onEmailChange(newEmail: String) {
-        viewModel.onEmailChange(AuthState.FormType.LOGIN, newEmail)
+        viewModel.onEmailChange(FormType.SIGN_IN, newEmail)
     }
 
     fun onPasswordChange(newPassword: String) {
-        viewModel.onPasswordChange(AuthState.FormType.LOGIN, newPassword)
+        viewModel.onPasswordChange(FormType.SIGN_IN, newPassword)
     }
 
     fun onSignInWithGoogle() {
@@ -76,44 +77,45 @@ fun SignInScreen(
         onGoogleSignIn = ::onSignInWithGoogle,
         onNavigateToSignUp = navigateToSignUp,
         modifier = Modifier.fillMaxSize(),
-        errorCode = uiState.errorCode,
-        isLoading = uiState.isLoading,
+        errorCode = authState.errorCode,
+        isLoading = formState.isLoading,
     )
 }
 
 @Composable
 fun SignInForm(
     modifier: Modifier = Modifier,
-    formState: AuthState.SignInFormState = AuthState.SignInFormState(),
+    formState: SignInFormState = SignInFormState(),
     onEmailChange: (String) -> Unit = {},
     onPasswordChange: (String) -> Unit = {},
     onLoginClick: () -> Unit = {},
     onGoogleSignIn: () -> Unit = {},
     onNavigateToSignUp: () -> Unit = { },
-    errorCode: ErrorCode.Auth? = null,
+    errorCode: AuthError? = null,
     isLoading: Boolean = false,
 ) {
-    var errorGoogle: ErrorCode.Auth? by remember {
+    var errorGoogle: AuthError? by remember {
         mutableStateOf(null)
     }
     var errorHeight by remember { mutableStateOf(0.dp) }
     val density = LocalDensity.current
+
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(
-            modifier = Modifier.weight(1f)
-        )
+        Spacer(modifier = Modifier.weight(1f))
+
         Column(
             modifier = Modifier.weight(3f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            // Logo y título
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 20.dp),
+                    .padding(bottom = 32.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -121,7 +123,7 @@ fun SignInForm(
                     painter = painterResource(R.drawable.solea_logo),
                     contentDescription = stringResource(R.string.app_name),
                     modifier = Modifier
-                        .padding(bottom = 40.dp)
+                        .padding(bottom = 8.dp)
                         .weight(0.4f),
                     contentScale = ContentScale.Fit
                 )
@@ -129,11 +131,28 @@ fun SignInForm(
                     text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.displayMedium,
                     modifier = Modifier
-                        .padding(bottom = 40.dp, start = 10.dp)
+                        .padding(bottom = 8.dp, start = 10.dp)
                         .weight(0.6f),
                     textAlign = TextAlign.Left
                 )
             }
+
+            // Título de bienvenida
+            Text(
+                text = stringResource(R.string.welcome_back),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(bottom = 8.dp),
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                text = stringResource(R.string.sign_in_subtitle),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 32.dp),
+                textAlign = TextAlign.Center
+            )
+
             // Email Input Field
             OutlinedTextField(
                 value = formState.email,
@@ -141,8 +160,11 @@ fun SignInForm(
                 label = { Text(stringResource(R.string.email_label)) },
                 isError = !formState.isEmailValid || errorCode != null,
                 singleLine = true,
-                modifier = Modifier.padding(bottom = 10.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
             )
+
             // Password Input Field
             OutlinedTextField(
                 value = formState.password,
@@ -150,11 +172,13 @@ fun SignInForm(
                 label = { Text(stringResource(R.string.password_label)) },
                 isError = errorCode != null,
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth()
             )
+
             Box(
                 modifier = Modifier
-                    .height(if (errorCode != null || errorGoogle != null) errorHeight else 30.dp)
+                    .height(if (errorCode != null || errorGoogle != null) errorHeight else 24.dp)
                     .fillMaxWidth()
                     .animateContentSize()
             ) {
@@ -169,7 +193,7 @@ fun SignInForm(
                             .fillMaxWidth()
                             .onGloballyPositioned { coordinates ->
                                 errorHeight = with(density) {
-                                    coordinates.size.height.toDp() + 30.dp // + padding
+                                    coordinates.size.height.toDp() + 24.dp
                                 }
                             }
                     )
@@ -181,22 +205,32 @@ fun SignInForm(
                 enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 20.dp),
+                    .padding(top = 16.dp),
             ) {
-                Text(if (!isLoading) stringResource(R.string.login_button_label) else "Loading...")
+                Text(
+                    text = if (!isLoading) stringResource(R.string.login_button_label) else stringResource(
+                        R.string.loading
+                    ),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
             }
 
             OutlinedButton(
                 onClick = onNavigateToSignUp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
             ) {
-                Text(text = stringResource(R.string.no_accound_sign_up_label))
+                Text(
+                    text = stringResource(R.string.no_accound_sign_up_label),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
             }
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp)
+                    .padding(vertical = 24.dp)
             ) {
                 HorizontalDivider(
                     modifier = Modifier
@@ -205,8 +239,9 @@ fun SignInForm(
                 )
                 Text(
                     text = stringResource(R.string.or),
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    style = MaterialTheme.typography.bodyMedium
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 HorizontalDivider(
                     modifier = Modifier
@@ -214,12 +249,11 @@ fun SignInForm(
                         .align(Alignment.CenterVertically)
                 )
             }
+
             OutlinedButton(
                 onClick = onGoogleSignIn,
                 enabled = !isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
                     modifier = Modifier
@@ -231,15 +265,16 @@ fun SignInForm(
                     Icon(
                         painter = painterResource(R.drawable.google_brand),
                         contentDescription = "Google Icon",
-                        modifier = Modifier.padding(end = 8.dp),
+                        modifier = Modifier.padding(end = 12.dp),
                     )
-                    Text(text = stringResource(R.string.button_sign_in_google))
+                    Text(
+                        text = stringResource(R.string.button_sign_in_google),
+                    )
                 }
             }
         }
-        Spacer(
-            modifier = Modifier.weight(1f)
-        )
+
+        Spacer(modifier = Modifier.weight(1f))
     }
 }
 
@@ -253,7 +288,7 @@ fun SignInFormPreview() {
         Surface {
             SignInForm(
                 modifier = Modifier.fillMaxSize(),
-                formState = AuthState.SignInFormState(
+                formState = SignInFormState(
                     email = "test@email.com",
                     password = "password123",
                     isEmailValid = true

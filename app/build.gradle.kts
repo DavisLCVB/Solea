@@ -53,6 +53,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui.text.google.fonts)
+    implementation(libs.androidx.datastore.core)
+    implementation(libs.androidx.datastore.preferences)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -73,7 +75,20 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.5")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation(platform("io.insert-koin:koin-bom:4.1.1"))
+    implementation("io.insert-koin:koin-core")
+    implementation("io.insert-koin:koin-compose")
+    implementation("io.insert-koin:koin-compose-viewmodel")
+    implementation("io.insert-koin:koin-compose-viewmodel-navigation")
 
+    // Coil for image loading
+    implementation("io.coil-kt.coil3:coil-compose:3.0.4")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.4")
+
+    // Vico for charts
+    implementation(libs.vico.compose)
+    implementation(libs.vico.compose.m3)
+    implementation(libs.vico.core)
 
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 

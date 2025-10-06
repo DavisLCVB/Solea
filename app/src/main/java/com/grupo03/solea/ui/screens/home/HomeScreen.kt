@@ -17,210 +17,217 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.grupo03.solea.R
+import com.grupo03.solea.data.models.Category
+import com.grupo03.solea.data.models.ExpenseDetails
+import com.grupo03.solea.data.models.IncomeDetails
 import com.grupo03.solea.data.models.Movement
-import com.grupo03.solea.data.models.MovementType
-import com.grupo03.solea.presentation.states.CoreState
-import com.grupo03.solea.presentation.viewmodels.AuthViewModel
-import com.grupo03.solea.presentation.viewmodels.CoreViewModel
-import com.grupo03.solea.ui.components.MovementModalBottomSheet
-import com.grupo03.solea.ui.screens.forms.NewMovementForm
-import com.grupo03.solea.ui.screens.forms.NewMovementTypeForm
+import com.grupo03.solea.presentation.states.shared.MovementsState
+import com.grupo03.solea.presentation.viewmodels.screens.HomeViewModel
+import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
+import com.grupo03.solea.presentation.viewmodels.shared.MovementsViewModel
+import com.grupo03.solea.ui.components.ExpandableFab
+import com.grupo03.solea.ui.components.FabMenuItem
+import com.grupo03.solea.ui.components.MovementCard
+import com.grupo03.solea.ui.components.SectionTitle
+import com.grupo03.solea.ui.components.TopBar
 import com.grupo03.solea.ui.theme.SoleaTheme
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import com.grupo03.solea.utils.CurrencyUtils
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottomAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStartAxis
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
+import com.patrykandpatrick.vico.compose.common.fill
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.core.common.shape.Shape
+import java.util.Locale
+
+/**
+ * Sealed class to represent any type of movement (Income or Expense)
+ */
+sealed class MovementItem {
+    abstract val movement: Movement
+
+    data class IncomeItem(
+        val incomeDetails: IncomeDetails
+    ) : MovementItem() {
+        override val movement: Movement = incomeDetails.movement
+    }
+
+    data class ExpenseItem(
+        val expenseDetails: ExpenseDetails
+    ) : MovementItem() {
+        override val movement: Movement = expenseDetails.movement
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    homeViewModel: HomeViewModel,
     authViewModel: AuthViewModel,
-    coreViewModel: CoreViewModel
+    movementsViewModel: MovementsViewModel,
+    onNavigateToNewMovement: () -> Unit,
+    onNavigateToNewCategory: () -> Unit
 ) {
-    val coreState = coreViewModel.uiState.collectAsState()
-    val screenState = coreState.value.homeScreenState
-    val userId = authViewModel.uiState.collectAsState().value.user!!.uid
-    Surface(
-        modifier = Modifier.fillMaxSize(),
+    val homeState = homeViewModel.homeState.collectAsState()
+    val movementsState = movementsViewModel.movementsState.collectAsState()
+    val userId = authViewModel.authState.collectAsState().value.user!!.uid
+
+    LaunchedEffect(userId) {
+        movementsViewModel.observeMovements(userId)
+        movementsViewModel.observeCategories(userId)
+    }
+
+    Column(
+        modifier = Modifier.fillMaxSize()
     ) {
-        when (coreState.value.currentContent) {
-            CoreState.HomeContent.HOME -> {
-                HomeScreenContent(
-                    onAddClick = coreViewModel::onActivateSheet,
-                    screenState = screenState,
-                )
-            }
+        TopBar(title = stringResource(R.string.home_title))
 
-            CoreState.HomeContent.NEW_MOVEMENT_FORM -> {
-                NewMovementForm(
-                    modifier = Modifier.padding(16.dp),
-                    movementAmount = coreState.value.newMovementFormState.movementAmount,
-                    onMovementAmountChange = coreViewModel::onMovementAmountChange,
-                    typeList = coreState.value.movementTypes.map { it.value },
-                    onTypeSelected = coreViewModel::onMovementTypeSelected,
-                    typeSelected = coreState.value.newMovementFormState.typeSelected,
-                    note = coreState.value.newMovementFormState.note,
-                    onNoteChange = coreViewModel::onMovementNoteChange,
-                    onCreateMovement = {
-                        coreViewModel.createMovement(userId)
-                    },
-                    onCancel = {
-                        coreViewModel.changeContent(CoreState.HomeContent.HOME)
-                    }
-                )
-            }
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            HomeScreenContent(
+                movementsState = movementsState.value
+            )
 
-            CoreState.HomeContent.NEW_MOVEMENT_TYPE_FORM -> {
-                NewMovementTypeForm(
-                    modifier = Modifier.padding(16.dp),
-                    movementTypeName = coreState.value.newMovementTypeFormState.typeName,
-                    onNameChange = coreViewModel::onMovementTypeNameChange,
-                    movementTypeDescription = coreState.value.newMovementTypeFormState.typeDescription,
-                    onDescriptionChange = coreViewModel::onMovementTypeDescriptionChange,
-                    onCreateType = {
-                        coreViewModel.createMovementType(userId)
-                    },
-                    onCancel = {
-                        coreViewModel.changeContent(CoreState.HomeContent.HOME)
-                    }
+            ExpandableFab(
+                expanded = homeState.value.fabExpanded,
+                onToggle = homeViewModel::onToggleFab,
+                items = listOf(
+                    FabMenuItem(
+                        iconRes = R.drawable.form,
+                        label = stringResource(R.string.button_new_movement),
+                        onClick = {
+                            homeViewModel.onCollapseFab()
+                            onNavigateToNewMovement()
+                        }
+                    ),
+                    FabMenuItem(
+                        icon = Icons.Default.Category,
+                        label = stringResource(R.string.button_new_category),
+                        onClick = {
+                            homeViewModel.onCollapseFab()
+                            onNavigateToNewCategory()
+                        }
+                    )
                 )
-            }
-        }
-        if (screenState.activeSheet) {
-            MovementModalBottomSheet(
-                onDismissRequest = coreViewModel::onDeactivateSheet,
-                onAddMovement = { coreViewModel.changeContent(CoreState.HomeContent.NEW_MOVEMENT_FORM) },
-                onAddMovementType = { coreViewModel.changeContent(CoreState.HomeContent.NEW_MOVEMENT_TYPE_FORM) }
             )
         }
     }
 
 }
 
-@Composable
-fun Separator(
-    title: String,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = title)
-        Spacer(modifier = Modifier.width(10.dp))
-        HorizontalDivider(modifier = Modifier.weight(1f))
-    }
-}
 
 @Composable
 fun HomeScreenContent(
     modifier: Modifier = Modifier,
-    onAddClick: () -> Unit = { },
-    screenState: CoreState.HomeScreenState = CoreState.HomeScreenState(),
+    movementsState: MovementsState = MovementsState()
 ) {
-    Box() {
+    // Calculate balance from movements
+    val totalIncome = movementsState.incomeDetailsList.sumOf { it.movement.total }
+    val totalExpense = movementsState.expenseDetailsList.sumOf { it.movement.total }
+    val balance = totalIncome - totalExpense
+
+    // Get currency from first movement or default to device currency
+    val currency = (movementsState.incomeDetailsList.firstOrNull()?.movement?.currency
+        ?: movementsState.expenseDetailsList.firstOrNull()?.movement?.currency
+        ?: CurrencyUtils.getCurrencyByCountry())
+
+    // Combine and sort all movements by creation date (most recent first)
+    val allMovements = buildList {
+        addAll(movementsState.incomeDetailsList.map { MovementItem.IncomeItem(it) })
+        addAll(movementsState.expenseDetailsList.map { MovementItem.ExpenseItem(it) })
+    }.sortedByDescending { it.movement.datetime }
+
+    Box {
         Column(
             modifier = modifier
-                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Balance Card
             BalanceCard(
-                currentBalance = screenState.balance,
-                income = screenState.income,
-                outcome = screenState.outcome
+                currentBalance = balance,
+                income = totalIncome,
+                outcome = totalExpense,
+                currency = currency
             )
 
-            // Income vs Expenses Chart Placeholder
-            ChartCard()
+            // Income vs Expenses Chart
+            ChartCard(
+                income = totalIncome,
+                expenses = totalExpense,
+                currency = currency
+            )
 
-            // Separator
-            Separator(title = "Ultimos movimientos")
+            // Section title
+            SectionTitle(
+                text = stringResource(R.string.home_last_movements),
+                icon = Icons.Default.History
+            )
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Alerts/Notifications
             //AlertsSection(financialData = financialData)
 
-            // Recent Movements
+            // Recent Movements - Show all movements (scrollable within parent column)
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                screenState.movementSet.take(5).forEach { (movement, movementType) ->
-                    MovementCard(
-                        movement = movement,
-                        movementType = movementType
-                    )
+                allMovements.forEach { movementItem ->
+                    when (movementItem) {
+                        is MovementItem.IncomeItem -> {
+                            MovementCard(
+                                incomeDetails = movementItem.incomeDetails,
+                                expenseDetails = null,
+                                category = Category() // TODO: Get actual category from movementsState
+                            )
+                        }
+
+                        is MovementItem.ExpenseItem -> {
+                            MovementCard(
+                                incomeDetails = null,
+                                expenseDetails = movementItem.expenseDetails,
+                                category = Category() // TODO: Get actual category from movementsState
+                            )
+                        }
+                    }
                 }
             }
 
             // Add some bottom spacing
             Spacer(modifier = Modifier.height(16.dp))
-        }
-        FloatingActionButton(
-            onClick = onAddClick,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(20.dp)
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Add")
-        }
-    }
-}
-
-@Composable
-fun MovementCard(
-    movement: Movement,
-    movementType: MovementType
-) {
-    val zone = ZoneId.systemDefault()
-    val format = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm").withZone(zone)
-    val dateFormated = format.format(movement.date)
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(10.dp)
-        ) {
-            Text(
-                text = dateFormated,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = movement.amount.toString(),
-                modifier = Modifier.weight(0.5f),
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = movementType.value,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.End
-            )
         }
     }
 }
@@ -230,6 +237,7 @@ fun BalanceCard(
     currentBalance: Double = 0.0,
     income: Double = 0.0,
     outcome: Double = 0.0,
+    currency: String = "USD"
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -243,14 +251,14 @@ fun BalanceCard(
             modifier = Modifier.padding(20.dp)
         ) {
             Text(
-                text = "Saldo actual",
+                text = stringResource(R.string.home_current_balance),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
             Text(
-                text = "S/ ${String.format("%.2f", currentBalance)}",
+                text = "$currency ${String.format(Locale.getDefault(), "%.2f", currentBalance)}",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -261,15 +269,29 @@ fun BalanceCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                val incomePrefix = stringResource(R.string.home_income_prefix)
+                val expensesPrefix = stringResource(R.string.home_expenses_prefix)
                 Text(
-                    text = "Ingresos: S/ ${String.format("%.2f", income)}",
+                    text = "$incomePrefix ${
+                        String.format(
+                            Locale.getDefault(),
+                            "%.2f",
+                            income
+                        )
+                    }",
                     fontSize = 12.sp,
                     color = Color(0xFF4CAF50), // Green for income
                     fontWeight = FontWeight.Medium
                 )
 
                 Text(
-                    text = "Gastos: S/ ${String.format("%.2f", outcome)}",
+                    text = "$expensesPrefix $currency ${
+                        String.format(
+                            Locale.getDefault(),
+                            "%.2f",
+                            outcome
+                        )
+                    }",
                     fontSize = 12.sp,
                     color = Color(0xFFF44336), // Red for expenses
                     fontWeight = FontWeight.Medium
@@ -280,11 +302,26 @@ fun BalanceCard(
 }
 
 @Composable
-fun ChartCard() {
+fun ChartCard(
+    income: Double,
+    expenses: Double,
+    currency: String
+) {
+    val modelProducer = remember { CartesianChartModelProducer() }
+
+    LaunchedEffect(income, expenses) {
+        modelProducer.runTransaction {
+            lineSeries {
+                series(x = listOf(1, 2), y = listOf(income, income))
+                series(x = listOf(1, 2), y = listOf(expenses, expenses))
+            }
+        }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp),
+            .height(280.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -295,28 +332,138 @@ fun ChartCard() {
             modifier = Modifier.padding(20.dp)
         ) {
             Text(
-                text = "Ingresos vs gastos",
+                text = stringResource(R.string.chart_title),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Placeholder for chart - you can replace this with actual chart later
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Color.Gray.copy(alpha = 0.1f),
-                        RoundedCornerShape(8.dp)
+            // Gráfico de líneas
+            CartesianChartHost(
+                chart = rememberCartesianChart(
+                    rememberLineCartesianLayer(
+                        lineProvider = LineCartesianLayer.LineProvider.series(
+                            rememberLine(
+                                fill = remember {
+                                    LineCartesianLayer.LineFill.single(
+                                        fill(
+                                            Color(
+                                                0xFF4CAF50
+                                            )
+                                        )
+                                    )
+                                },
+                                thickness = 3.dp,
+                                pointProvider = LineCartesianLayer.PointProvider.single(
+                                    LineCartesianLayer.Point(
+                                        component = rememberShapeComponent(
+                                            shape = Shape.Pill,
+                                            color = Color(0xFF4CAF50)
+                                        ),
+                                        sizeDp = 8f
+                                    )
+                                )
+                            ),
+                            rememberLine(
+                                fill = remember {
+                                    LineCartesianLayer.LineFill.single(
+                                        fill(
+                                            Color(
+                                                0xFFF44336
+                                            )
+                                        )
+                                    )
+                                },
+                                thickness = 3.dp,
+                                pointProvider = LineCartesianLayer.PointProvider.single(
+                                    LineCartesianLayer.Point(
+                                        component = rememberShapeComponent(
+                                            shape = Shape.Pill,
+                                            color = Color(0xFFF44336)
+                                        ),
+                                        sizeDp = 8f
+                                    )
+                                )
+                            )
+                        )
                     ),
-                contentAlignment = Alignment.Center
+                    startAxis = rememberStartAxis(),
+                    bottomAxis = rememberBottomAxis()
+                ),
+                modelProducer = modelProducer,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Leyenda debajo del gráfico
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Text(
-                    text = "Gráfico de ingresos vs gastos\n(Por implementar)",
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp
-                )
+                // Leyenda de Ingresos
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(Color(0xFF4CAF50), CircleShape)
+                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.Incomes),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "$currency ${
+                                String.format(
+                                    Locale.getDefault(),
+                                    "%.2f",
+                                    income
+                                )
+                            }",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF4CAF50)
+                        )
+                    }
+                }
+
+                // Leyenda de Gastos
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(Color(0xFFF44336), CircleShape)
+                    )
+                    Column {
+                        Text(
+                            text = stringResource(R.string.expenses),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "$currency ${
+                                String.format(
+                                    Locale.getDefault(),
+                                    "%.2f",
+                                    expenses
+                                )
+                            }",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFF44336)
+                        )
+                    }
+                }
             }
         }
     }

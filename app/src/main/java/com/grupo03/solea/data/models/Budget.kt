@@ -6,18 +6,18 @@ import java.time.Instant
 data class Budget(
     val id: String = "",
     val userId: String = "",
+    val category: String = "",
     val amount: Double = 0.0,
     val until: Instant = Instant.now(),
-    val movementTypeId: String = "",
     val statusId: String = ""
 ) : ToMap {
     override fun toMap(): Map<String, Any> {
         return mapOf(
             "id" to id,
             "userId" to userId,
+            "category" to category,
             "amount" to amount,
             "until" to until.toString(),
-            "movementTypeId" to movementTypeId,
             "statusId" to statusId
         )
     }
@@ -27,6 +27,7 @@ data class Budget(
         override fun fromMap(map: Map<String, Any?>): Budget? {
             val id = map["id"] as? String ?: return null
             val userId = map["userId"] as? String ?: return null
+            val category = map["category"] as? String ?: return null
             val amount = (map["amount"] as? Number)?.toDouble() ?: return null
             val untilString = map["until"] as? String ?: return null
             val until = try {
@@ -34,15 +35,14 @@ data class Budget(
             } catch (e: Exception) {
                 return null
             }
-            val movementTypeId = map["movementTypeId"] as? String ?: return null
             val statusId = map["statusId"] as? String ?: return null
 
             return Budget(
                 id = id,
                 userId = userId,
+                category = category,
                 amount = amount,
                 until = until,
-                movementTypeId = movementTypeId,
                 statusId = statusId
             )
         }

@@ -1,7 +1,8 @@
-package com.grupo03.solea.data.services
+package com.grupo03.solea.data.services.firebase
 
 import android.content.Context
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
@@ -13,9 +14,11 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.GoogleAuthProvider
-import com.grupo03.solea.data.models.AuthResult
+import com.google.firebase.auth.userProfileChangeRequest
 import com.grupo03.solea.data.models.User
-import com.grupo03.solea.utils.ErrorCode
+import com.grupo03.solea.data.services.interfaces.AuthService
+import com.grupo03.solea.utils.AuthResult
+import com.grupo03.solea.utils.AuthError
 import com.grupo03.solea.utils.ServiceConstants
 import kotlinx.coroutines.tasks.await
 
@@ -49,74 +52,74 @@ class FirebaseAuthService(
         return try {
             val authResponse = auth.signInWithEmailAndPassword(email, password).await()
             if (authResponse.user != null) {
-                AuthResult(
-                    success = true,
+                AuthResult.Success(
                     user = User(
                         uid = authResponse.user!!.uid,
                         email = authResponse.user!!.email ?: "",
                         displayName = authResponse.user!!.displayName,
                         photoUrl = authResponse.user!!.photoUrl?.toString()
-                    ),
-                    errorCode = null
+                    )
                 )
             } else {
-                AuthResult(
-                    success = false,
-                    errorCode = ErrorCode.Auth.UNKNOWN_ERROR
-                )
+                AuthResult.Error(AuthError.UNKNOWN_ERROR)
             }
         } catch (e: Exception) {
             Log.d(TAG, "signInWithEmailAndPassword: ${e.message}")
-            val errorMessage = when (e) {
-                is FirebaseAuthInvalidUserException -> ErrorCode.Auth.USER_NOT_FOUND
-                is FirebaseAuthInvalidCredentialsException -> ErrorCode.Auth.INVALID_CREDENTIALS
-                is FirebaseAuthUserCollisionException -> ErrorCode.Auth.USER_COLLISION
-                is FirebaseAuthEmailException -> ErrorCode.Auth.EMAIL_ERROR
-                else -> ErrorCode.Auth.UNKNOWN_ERROR
+            val error = when (e) {
+                is FirebaseAuthInvalidUserException -> AuthError.USER_NOT_FOUND
+                is FirebaseAuthInvalidCredentialsException -> AuthError.INVALID_CREDENTIALS
+                is FirebaseAuthUserCollisionException -> AuthError.USER_COLLISION
+                is FirebaseAuthEmailException -> AuthError.EMAIL_ERROR
+                else -> AuthError.UNKNOWN_ERROR
             }
 
-            AuthResult(
-                success = false,
-                user = null,
-                errorCode = errorMessage
-            )
+            AuthResult.Error(error)
         }
     }
 
-    override suspend fun signUpWithEmailAndPassword(email: String, password: String): AuthResult {
+    override suspend fun signUpWithEmailAndPassword(
+        email: String,
+        password: String,
+        displayName: String?,
+        photoUrl: String?
+    ): AuthResult {
         return try {
             val authResponse = auth.createUserWithEmailAndPassword(email, password).await()
 
             if (authResponse.user != null) {
-                AuthResult(
-                    success = true,
+                // Update profile if displayName or photoUrl provided
+                if (displayName != null || photoUrl != null) {
+                    val profileUpdates = userProfileChangeRequest {
+                        displayName?.let { this.displayName = it }
+                        photoUrl?.let { this.photoUri = it.toUri() }
+                    }
+                    authResponse.user!!.updateProfile(profileUpdates).await()
+                }
+
+                // Reload user to get updated profile
+                authResponse.user!!.reload().await()
+
+                AuthResult.Success(
                     user = User(
                         uid = authResponse.user!!.uid,
                         email = authResponse.user!!.email ?: "",
                         displayName = authResponse.user!!.displayName,
                         photoUrl = authResponse.user!!.photoUrl?.toString()
-                    ),
-                    errorCode = null
+                    )
                 )
             } else {
-                AuthResult(
-                    success = false,
-                    errorCode = null
-                )
+                AuthResult.Error(AuthError.UNKNOWN_ERROR)
             }
         } catch (e: Exception) {
             Log.d(TAG, "signUpWithEmailAndPassword: ${e.message}")
-            val errorMessage = when (e) {
-                is FirebaseAuthInvalidCredentialsException -> ErrorCode.Auth.INVALID_CREDENTIALS
-                is FirebaseAuthUserCollisionException -> ErrorCode.Auth.USER_COLLISION
-                is FirebaseAuthEmailException -> ErrorCode.Auth.EMAIL_ERROR
-                else -> ErrorCode.Auth.UNKNOWN_ERROR
+            val error = when (e) {
+                is FirebaseAuthInvalidCredentialsException -> AuthError.INVALID_CREDENTIALS
+                is FirebaseAuthUserCollisionException -> AuthError.USER_COLLISION
+                is FirebaseAuthEmailException -> AuthError.EMAIL_ERROR
+                else -> AuthError.UNKNOWN_ERROR
             }
 
-            AuthResult(
-                success = false,
-                errorCode = errorMessage
-            )
+            AuthResult.Error(error)
         }
     }
 
@@ -125,48 +128,38 @@ class FirebaseAuthService(
         request: GetCredentialRequest
     ): AuthResult {
         return try {
-            val credentialManager = CredentialManager.create(context)
+            val credentialManager = CredentialManager.Companion.create(context)
             val result = credentialManager.getCredential(context, request)
             val credential = result.credential
-            if (credential !is CustomCredential && credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                return AuthResult(
-                    success = false,
-                    errorCode = ErrorCode.Auth.GOOGLE_SIGN_IN_FAILED
-                )
+            if (credential !is CustomCredential && credential.type != GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                return AuthResult.Error(AuthError.GOOGLE_SIGN_IN_FAILED)
             }
-            val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+            val googleIdTokenCredential =
+                GoogleIdTokenCredential.Companion.createFrom(credential.data)
             val idToken = googleIdTokenCredential.idToken
             val authCredential = GoogleAuthProvider.getCredential(idToken, null)
             val authResponse = auth.signInWithCredential(authCredential).await()
             if (authResponse.user != null) {
-                AuthResult(
-                    success = true,
+                AuthResult.Success(
                     user = User(
                         uid = authResponse.user!!.uid,
                         email = authResponse.user!!.email ?: "",
                         displayName = authResponse.user!!.displayName,
                         photoUrl = authResponse.user!!.photoUrl?.toString()
-                    ),
-                    errorCode = null
+                    )
                 )
             } else {
-                AuthResult(
-                    success = false,
-                    errorCode = ErrorCode.Auth.UNKNOWN_ERROR
-                )
+                AuthResult.Error(AuthError.UNKNOWN_ERROR)
             }
         } catch (e: Exception) {
             Log.d(TAG, "signInWithGoogle: ${e.message}")
-            val errorCode = when (e) {
-                is FirebaseAuthInvalidCredentialsException -> ErrorCode.Auth.INVALID_CREDENTIALS
-                is FirebaseAuthUserCollisionException -> ErrorCode.Auth.USER_COLLISION
-                else -> ErrorCode.Auth.GOOGLE_SIGN_IN_FAILED
+            val error = when (e) {
+                is FirebaseAuthInvalidCredentialsException -> AuthError.INVALID_CREDENTIALS
+                is FirebaseAuthUserCollisionException -> AuthError.USER_COLLISION
+                else -> AuthError.GOOGLE_SIGN_IN_FAILED
             }
 
-            AuthResult(
-                success = false,
-                errorCode = errorCode
-            )
+            AuthResult.Error(error)
         }
     }
 
@@ -174,10 +167,13 @@ class FirebaseAuthService(
     override suspend fun signOut(): AuthResult {
         return try {
             auth.signOut()
-            AuthResult(success = true, errorCode = null)
+            // Sign out doesn't return a user, so we create a dummy user
+            AuthResult.Success(
+                user = User(uid = "", email = "", displayName = null, photoUrl = null)
+            )
         } catch (e: Exception) {
             Log.d(TAG, "signOut: ${e.message}")
-            AuthResult(success = false, errorCode = ErrorCode.Auth.UNKNOWN_ERROR)
+            AuthResult.Error(AuthError.UNKNOWN_ERROR)
         }
     }
 
@@ -190,6 +186,35 @@ class FirebaseAuthService(
                 displayName = it.displayName,
                 photoUrl = it.photoUrl?.toString()
             )
+        }
+    }
+
+    override suspend fun updateUserProfile(displayName: String?, photoUrl: String?): AuthResult {
+        return try {
+            val currentUser = auth.currentUser
+            if (currentUser == null) {
+                return AuthResult.Error(AuthError.USER_NOT_FOUND)
+            }
+
+            val profileUpdates = userProfileChangeRequest {
+                displayName?.let { this.displayName = it }
+                photoUrl?.let { this.photoUri = it.toUri() }
+            }
+
+            currentUser.updateProfile(profileUpdates).await()
+            currentUser.reload().await()
+
+            AuthResult.Success(
+                user = User(
+                    uid = currentUser.uid,
+                    email = currentUser.email ?: "",
+                    displayName = currentUser.displayName,
+                    photoUrl = currentUser.photoUrl?.toString()
+                )
+            )
+        } catch (e: Exception) {
+            Log.d(TAG, "updateUserProfile: ${e.message}")
+            AuthResult.Error(AuthError.UNKNOWN_ERROR)
         }
     }
 }

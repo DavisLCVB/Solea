@@ -1,33 +1,427 @@
 <resources>
+    <!-- App -->
     <string name="app_name">Solea</string>
+
+    <!-- Authentication -->
     <string name="email_label">Email</string>
     <string name="password_label">Password</string>
+    <string name="confirm_password_label">Confirm password</string>
+    <string name="name_label">Name</string>
+    <string name="display_name_label">Display Name</string>
     <string name="login_button_label">Login</string>
+    <string name="sign_up_button">Sign Up</string>
+    <string name="sign_out_button">Sign out</string>
+    <string name="button_sign_in_google">Sign in with Google</string>
     <string name="no_accound_sign_up_label">No account? Sign Up</string>
     <string name="already_have_an_account_log_in_button">Have an account? Sign In</string>
-    <string name="sign_up_button">Sign Up</string>
-    <string name="error_auth_user_not_found">Error: User Not Found!</string>
-    <string name="error_auth_invalid_credentials">Error: Invalid credentials!</string>
-    <string name="error_auth_user_collision">Error: User already exists!</string>
-    <string name="error_auth_email">Error: Email Send Error!</string>
-    <string name="error_auth_unknown">Error: Authentication Failed!</string>
-    <string name="error_auth_invalid_email">Error: Invalid Email!</string>
-    <string name="error_auth_weak_password">Error: Weak Password!</string>
     <string name="create_your_account">Create your Solea account!</string>
-    <string name="button_sign_in_google">Sign in with Google</string>
-    <string name="error_auth_google_sign_in_failed">Error: Failed to Sign in with Google</string>
+    <string name="welcome_message">Welcome to Solea!</string>
+    <string name="welcome_subtitle">Your app to manage your cash flow</string>
+    <string name="welcome_back">Welcome back!</string>
+    <string name="sign_in_subtitle">Sign in to continue</string>
+    <string name="sign_up_subtitle">Fill in your details to get started</string>
+    <string name="button_to_sign_up">Create an account</string>
+    <string name="button_to_sign_in">I have an account</string>
     <string name="or">or</string>
-    <string name="confirm_password_label">Confirm password</string>
-    <string name="error_auth_passwords_do_not_match">Error: Passwords do not match</string>
-    <string name="name_label">Name</string>
+
+    <!-- Profile -->
+    <string name="profile_photo">Profile Photo</string>
+    <string name="add_photo">Add Photo</string>
+    <string name="tap_to_add_photo">Tap to add a profile photo (optional)</string>
+    <string name="profile_photo_description">Profile photo</string>
+    <string name="avatar_description">Avatar</string>
+
+    <!-- Navigation -->
     <string name="nav_home_title">Home</string>
     <string name="nav_history_title">History</string>
     <string name="nav_savings_title">Savings</string>
     <string name="nav_shopping_list_title">Shopping</string>
     <string name="nav_settings_title">Settings</string>
+    <string name="navigate_description">Navigate</string>
+
+    <!-- Common -->
+    <string name="loading">Loading...</string>
+    <string name="back_button">Back</string>
+    <string name="back">Back</string>
+    <string name="add_button">Add</string>
+    <string name="add">Add</string>
+    <string name="edit_button">Edit</string>
+    <string name="edit">Edit</string>
+    <string name="delete_button">Delete</string>
+    <string name="delete">Delete</string>
+    <string name="create_button">Create</string>
+    <string name="create">Create</string>
+    <string name="creating_button">Creating...</string>
+    <string name="creating">Creating...</string>
+    <string name="cancel_button">Cancel</string>
+    <string name="accept_button">Accept</string>
+    <string name="update_limit_button">Update Limit</string>
+    <string name="create_limit_button">Create Limit</string>
+    <string name="configure_button">Configure</string>
+    <string name="options_button">Options</string>
+    <string name="options">Options</string>
+    <string name="next">Next</string>
+    <string name="confirm">Confirm</string>
+
+    <!-- Authentication Errors -->
+    <string name="error_auth_user_not_found">Error: User not found!</string>
+    <string name="error_auth_invalid_credentials">Error: Invalid credentials!</string>
+    <string name="error_auth_user_collision">Error: User already exists!</string>
+    <string name="error_auth_email">Error: Email send error!</string>
+    <string name="error_auth_unknown">Error: Authentication failed!</string>
+    <string name="error_auth_invalid_email">Error: Invalid email!</string>
+    <string name="error_auth_weak_password">Error: Weak password!</string>
+    <string name="error_auth_google_sign_in_failed">Error: Failed to sign in with Google</string>
+    <string name="error_auth_passwords_do_not_match">Error: Passwords do not match</string>
     <string name="error_auth_email_empty">Error: Email is empty!</string>
     <string name="error_auth_email_too_long">Error: Email too long!</string>
     <string name="error_auth_invalid_username">Error: Invalid username!</string>
     <string name="error_auth_password_empty">Error: Password is empty!</string>
-    <string name="error_auth_user_creation_failed">Error: User creation Failed!</string>
+    <string name="error_auth_user_creation_failed">Error: User creation failed!</string>
+
+    <!-- Movement Errors -->
+    <string name="error_movement_not_found">Error: Movement not found!</string>
+    <string name="error_movement_creation_failed">Error: Failed to create movement!</string>
+    <string name="error_movement_update_failed">Error: Failed to update movement!</string>
+    <string name="error_movement_delete_failed">Error: Failed to delete movement!</string>
+    <string name="error_movement_fetch_failed">Error: Failed to fetch movement!</string>
+    <string name="error_movement_invalid_amount">Error: Invalid amount!</string>
+    <string name="error_movement_invalid_type">Error: Invalid movement type!</string>
+    <string name="error_movement_invalid_note">Error: Invalid note!</string>
+    <string name="error_movement_invalid_name">Error: Invalid name!</string>
+    <string name="error_movement_invalid_description">Error: Invalid description!</string>
+    <string name="error_movement_invalid_data">Error: Invalid movement data!</string>
+    <string name="error_movement_permission_denied">Error: Permission denied!</string>
+    <string name="error_movement_network_error">Error: Network error!</string>
+    <string name="error_movement_unknown">Error: Movement operation failed!</string>
+
+    <!-- Budget Errors -->
+    <string name="error_budget_not_found">Error: Budget not found!</string>
+    <string name="error_budget_creation_failed">Error: Failed to create budget!</string>
+    <string name="error_budget_update_failed">Error: Failed to update budget!</string>
+    <string name="error_budget_delete_failed">Error: Failed to delete budget!</string>
+    <string name="error_budget_fetch_failed">Error: Failed to fetch budget!</string>
+    <string name="error_budget_invalid_amount">Error: Invalid budget amount!</string>
+    <string name="error_budget_invalid_category">Error: Invalid category!</string>
+    <string name="error_budget_invalid_date">Error: Invalid date!</string>
+    <string name="error_budget_invalid_data">Error: Invalid budget data!</string>
+    <string name="error_budget_already_exists">Error: Budget already exists!</string>
+    <string name="error_budget_permission_denied">Error: Permission denied!</string>
+    <string name="error_budget_network_error">Error: Network error!</string>
+    <string name="error_budget_unknown">Error: Budget operation failed!</string>
+
+    <!-- Receipt Errors -->
+    <string name="error_receipt_not_found">Error: Receipt not found!</string>
+    <string name="error_receipt_creation_failed">Error: Failed to create receipt!</string>
+    <string name="error_receipt_update_failed">Error: Failed to update receipt!</string>
+    <string name="error_receipt_delete_failed">Error: Failed to delete receipt!</string>
+    <string name="error_receipt_fetch_failed">Error: Failed to fetch receipt!</string>
+    <string name="error_receipt_invalid_data">Error: Invalid receipt data!</string>
+    <string name="error_receipt_permission_denied">Error: Permission denied!</string>
+    <string name="error_receipt_network_error">Error: Network error!</string>
+    <string name="error_receipt_unknown">Error: Receipt operation failed!</string>
+
+    <!-- Item Errors -->
+    <string name="error_item_not_found">Error: Item not found!</string>
+    <string name="error_item_creation_failed">Error: Failed to create item!</string>
+    <string name="error_item_update_failed">Error: Failed to update item!</string>
+    <string name="error_item_delete_failed">Error: Failed to delete item!</string>
+    <string name="error_item_fetch_failed">Error: Failed to fetch item!</string>
+    <string name="error_item_invalid_data">Error: Invalid item data!</string>
+    <string name="error_item_permission_denied">Error: Permission denied!</string>
+    <string name="error_item_network_error">Error: Network error!</string>
+    <string name="error_item_unknown">Error: Item operation failed!</string>
+
+    <!-- Category Errors -->
+    <string name="error_category_not_found">Error: Category not found!</string>
+    <string name="error_category_creation_failed">Error: Failed to create category!</string>
+    <string name="error_category_update_failed">Error: Failed to update category!</string>
+    <string name="error_category_delete_failed">Error: Failed to delete category!</string>
+    <string name="error_category_fetch_failed">Error: Failed to fetch category!</string>
+    <string name="error_category_invalid_name">Error: Invalid category name!</string>
+    <string name="error_category_invalid_data">Error: Invalid category data!</string>
+    <string name="error_category_already_exists">Error: Category already exists!</string>
+    <string name="error_category_permission_denied">Error: Permission denied!</string>
+    <string name="error_category_network_error">Error: Network error!</string>
+    <string name="error_category_unknown">Error: Category operation failed!</string>
+
+    <!-- Source Errors -->
+    <string name="error_source_not_found">Error: Source not found!</string>
+    <string name="error_source_creation_failed">Error: Failed to create source!</string>
+    <string name="error_source_update_failed">Error: Failed to update source!</string>
+    <string name="error_source_delete_failed">Error: Failed to delete source!</string>
+    <string name="error_source_fetch_failed">Error: Failed to fetch source!</string>
+    <string name="error_source_invalid_data">Error: Invalid source data!</string>
+    <string name="error_source_permission_denied">Error: Permission denied!</string>
+    <string name="error_source_network_error">Error: Network error!</string>
+    <string name="error_source_unknown">Error: Source operation failed!</string>
+
+    <!-- User Errors -->
+    <string name="error_user_not_found">Error: User not found!</string>
+    <string name="error_user_creation_failed">Error: Failed to create user!</string>
+    <string name="error_user_update_failed">Error: Failed to update user!</string>
+    <string name="error_user_delete_failed">Error: Failed to delete user!</string>
+    <string name="error_user_fetch_failed">Error: Failed to fetch user!</string>
+    <string name="error_user_invalid_data">Error: Invalid user data!</string>
+    <string name="error_user_permission_denied">Error: Permission denied!</string>
+    <string name="error_user_network_error">Error: Network error!</string>
+    <string name="error_user_unknown">Error: User operation failed!</string>
+
+    <!-- Repository Errors -->
+    <string name="error_repository_database_connection_failed">Error: Database connection failed!</string>
+    <string name="error_repository_transaction_failed">Error: Transaction failed!</string>
+    <string name="error_repository_serialization_error">Error: Data serialization error!</string>
+    <string name="error_repository_unknown">Error: Unknown repository error!</string>
+    <string name="unknown_error">Unknown error</string>
+
+    <!-- Home Screen -->
+    <string name="home">Home</string>
+    <string name="home_title">Home</string>
+    <string name="current_balance">Current balance</string>
+    <string name="current_balance_label">Current balance</string>
+    <string name="home_current_balance">Current balance</string>
+    <string name="income_vs_expenses">Income vs expenses</string>
+    <string name="income_vs_expenses_title">Income vs expenses</string>
+    <string name="chart_title">Income vs expenses</string>
+    <string name="chart_placeholder_text">Income vs expenses chart\n(To be implemented)</string>
+    <string name="latest_movements">Latest movements</string>
+    <string name="latest_movements_separator">Latest movements</string>
+    <string name="home_last_movements">Latest movements</string>
+    <string name="income_label_format">Income: %1$s %2$s</string>
+    <string name="expenses_label_format">Expenses: %1$s %2$s</string>
+    <string name="home_income_prefix">Income:</string>
+    <string name="home_expenses_prefix">Expenses:</string>
+    <string name="income_short">Income</string>
+    <string name="income_label">Income</string>
+    <string name="income">Income</string>
+    <string name="Incomes">Income</string>
+    <string name="expenses_short">Expenses</string>
+    <string name="expense_label">Expense</string>
+    <string name="expense">Expense</string>
+    <string name="expenses">Expenses</string>
+    <string name="new_movement_fab">New Movement</string>
+    <string name="button_new_movement">New Movement</string>
+    <string name="new_category_fab">New Category</string>
+    <string name="button_new_category">New Category</string>
+
+    <!-- History Screen -->
+    <string name="history">History</string>
+    <string name="transactions">Transactions</string>
+    <string name="transactions_title">Transactions</string>
+    <string name="history_transactions">Transactions</string>
+    <string name="no_transactions">No transactions</string>
+    <string name="calendar_description">Calendar</string>
+    <string name="date_range_display">23 - 30 March 2025</string>
+    <string name="today">TODAY</string>
+    <string name="today_filter">TODAY</string>
+    <string name="history_filter_today">TODAY</string>
+    <string name="week">WEEK</string>
+    <string name="week_filter">WEEK</string>
+    <string name="history_filter_week">WEEK</string>
+    <string name="month">MONTH</string>
+    <string name="month_filter">MONTH</string>
+    <string name="history_filter_month">MONTH</string>
+    <string name="year">YEAR</string>
+    <string name="year_filter">YEAR</string>
+    <string name="history_filter_year">YEAR</string>
+    <string name="custom">CUSTOM</string>
+    <string name="custom_filter">CUSTOM</string>
+    <string name="history_filter_pers">CUSTOM</string>
+    <string name="transaction_detail_format">%1$s, at %2$s</string>
+    <string name="picker_next">Next</string>
+    <string name="picker_confirm">Confirm</string>
+    <string name="history_filters_cancel">Cancel</string>
+    <string name="select_start_date">Select start date</string>
+    <string name="history_filter_select_initial_date">Select start date</string>
+    <string name="select_end_date">Select end date</string>
+    <string name="history_filter_select_end_date">Select end date</string>
+
+    <!-- Savings Screen -->
+    <string name="savings">Savings</string>
+    <string name="savings_title">Savings</string>
+    <string name="manage_goals_limits_subtitle">Manage your goals and limits</string>
+    <string name="savings_goals">Savings Goals</string>
+    <string name="savings_goals_title">Savings Goals</string>
+    <string name="saving_goals">Savings Goals</string>
+    <string name="spending_limits">Spending Limits</string>
+    <string name="spending_limits_title">Spending Limits</string>
+    <string name="add_new">Add new</string>
+    <string name="add_new_button">Add new</string>
+    <string name="edit_limit">Edit limit</string>
+    <string name="edit_limit_menu">Edit limit</string>
+    <string name="saving_edit_limits">Edit limit</string>
+    <string name="deactivate_limit">Deactivate limit</string>
+    <string name="deactivate_limit_menu">Deactivate limit</string>
+    <string name="savings_deactivate_limit">Deactivate limit</string>
+    <string name="of_format">%1$s %.2f of %2$s %.2f</string>
+
+    <!-- Settings Screen -->
+    <string name="configuration">Settings</string>
+    <string name="profile_settings_title">Profile / Settings</string>
+    <string name="user">User</string>
+    <string name="example_email">email@example.com</string>
+    <string name="google_account">Google Account</string>
+    <string name="google_account_label">Google Account</string>
+    <string name="edit_profile">Edit Profile</string>
+    <string name="edit_profile_button">Edit Profile</string>
+    <string name="cannot_edit_google_profile">Cannot edit Google profile</string>
+    <string name="cannot_edit_google_profile_text">Cannot edit Google profile</string>
+    <string name="spending_configuration">Spending Settings</string>
+    <string name="spending_settings_title">Spending Settings</string>
+    <string name="expenses_configuration">Spending Settings</string>
+    <string name="expense_notifications">Expense Notifications</string>
+    <string name="expense_notifications_label">Expense Notifications</string>
+    <string name="expenses_notifications">Expense Notifications</string>
+    <string name="set_category_limits_label">Set Limits by Category</string>
+    <string name="limits_per_category_stablish">Set Limits by Category</string>
+    <string name="general">General</string>
+    <string name="general_title">General</string>
+    <string name="dark_theme">Dark Theme</string>
+    <string name="dark_theme_label">Dark Theme</string>
+    <string name="about_app">About the app</string>
+    <string name="about_app_label">About the app</string>
+    <string name="version">Version 1.0.1</string>
+    <string name="version_label">Version 1.0.1</string>
+    <string name="version_prefix">Version:</string>
+    <string name="sign_out">Sign out</string>
+    <string name="profile_picture">Profile picture</string>
+
+    <!-- Budget Limits Screen -->
+    <string name="budget_limits_title">Spending Limits</string>
+    <string name="budget_limits_subtitle">Manage your limits by category</string>
+    <string name="with_limit_set">With limit set</string>
+    <string name="without_limit">Without limit</string>
+    <string name="limit_amount_format">Limit: %1$s %2$.2f</string>
+    <string name="active_status">Active</string>
+
+    <!-- Edit Budget Form Screen -->
+    <string name="edit_limit_title">Edit Limit</string>
+    <string name="new_limit_title">New Limit</string>
+    <string name="set_your_budget">Set your budget</string>
+    <string name="category_label">Category</string>
+    <string name="category">Category</string>
+    <string name="no_category">No category</string>
+    <string name="limit_amount_label">Limit amount</string>
+    <string name="monthly_limit_label">Monthly limit</string>
+    <string name="enter_valid_amount">Enter a valid amount greater than 0</string>
+    <string name="maximum_spending_category">Maximum you can spend on this category</string>
+    <string name="validity_period_label">Validity period</string>
+    <string name="valid_until_label">Valid until</string>
+    <string name="date_format_pattern">dd \'of\' MMMM, yyyy</string>
+    <string name="select_date">Select date</string>
+    <string name="notification_info_text">We will notify you when you reach 80% of the limit and when you exceed it</string>
+
+    <!-- Movement Form Screen -->
+    <string name="new_movement">New Movement</string>
+    <string name="new_movement_title">New Movement</string>
+    <string name="register_new_movement_subtitle">Register a new income or expense</string>
+    <string name="register_a_new_income_or_expense">Register a new income or expense</string>
+    <string name="movement_type">Movement type</string>
+    <string name="movement_type_label">Movement type</string>
+    <string name="new_mvm_type_label">Type of Movement</string>
+    <string name="income_button">Income</string>
+    <string name="expense_button">Expense</string>
+    <string name="movement_name">Movement name</string>
+    <string name="movement_name_label">Movement name</string>
+    <string name="new_mov_name_label">Name</string>
+    <string name="name">Name</string>
+    <string name="movement_name_placeholder">e.g.: Salary, Shopping, etc.</string>
+    <string name="name_example">e.g.: Salary, Shopping, etc.</string>
+    <string name="name_required_error">Name is required</string>
+    <string name="amount">Amount</string>
+    <string name="amount_label">Amount</string>
+    <string name="amount_placeholder">0.00</string>
+    <string name="enter_valid_amount_error">Enter a valid amount greater than 0</string>
+    <string name="enter_a_new_amount">Enter a valid amount greater than 0</string>
+    <string name="select_category_label">Select a category</string>
+    <string name="select_a_category">Select a category</string>
+    <string name="must_select_category_error">You must select a category</string>
+    <string name="must_select_a_category">You must select a category</string>
+    <string name="create_new_category_option">Create new category</string>
+    <string name="create_new_category">Create new category</string>
+    <string name="add_new_category">Create new category</string>
+    <string name="description_optional_label">Description (optional)</string>
+    <string name="optional_description">Description (optional)</string>
+    <string name="add_description_placeholder">Add a description</string>
+    <string name="add_a_description">Add a description</string>
+    <string name="expense_details">Expense details</string>
+    <string name="expense_details_title">Expense details</string>
+    <string name="single_item">Single item</string>
+    <string name="single_item_label">Single item</string>
+    <string name="receipt_invoice">Receipt/Invoice</string>
+    <string name="receipt_invoice_label">Receipt/Invoice</string>
+    <string name="item_name">Item name</string>
+    <string name="item_name_label">Item name</string>
+    <string name="item_name_placeholder">e.g.: Laptop, Food, etc.</string>
+    <string name="item_name_example">e.g.: Laptop, Food, etc.</string>
+    <string name="quantity">Quantity</string>
+    <string name="quantity_label">Quantity</string>
+    <string name="quantity_placeholder">1</string>
+    <string name="enter_valid_quantity">Enter a valid quantity</string>
+    <string name="enter_valid_quantity_error">Enter a valid quantity</string>
+    <string name="unit_price">Unit price</string>
+    <string name="unit_price_label">Unit price</string>
+    <string name="price_label">Price</string>
+    <string name="price_placeholder">0.00</string>
+    <string name="enter_valid_price">Enter a valid price</string>
+    <string name="enter_valid_price_error">Enter a valid price</string>
+    <string name="receipt_description">Receipt description (optional)</string>
+    <string name="receipt_description_optional">Receipt description (optional)</string>
+    <string name="receipt_description_placeholder">e.g.: Supermarket, Hardware store, etc.</string>
+    <string name="receipt_example">e.g.: Supermarket, Hardware store, etc.</string>
+    <string name="items">Items</string>
+    <string name="items_label">Items</string>
+    <string name="add_item">Add item</string>
+    <string name="add_item_button">Add item</string>
+    <string name="add_item_description">Add item</string>
+    <string name="item_number">Item %1$d</string>
+    <string name="item_number_format">Item %1$d</string>
+
+    <!-- Category Form Screen -->
+    <string name="new_category">New Category</string>
+    <string name="new_category_title">New Category</string>
+    <string name="create_category_subtitle">Create a new category to organize your movements</string>
+    <string name="category_creation_subtitle">Create a new category to organize your movements</string>
+    <string name="category_name">Category name</string>
+    <string name="category_name_label">Category name</string>
+    <string name="category_name_placeholder">e.g.: Food, Transportation, Entertainment</string>
+    <string name="category_example">e.g.: Food, Transportation, Entertainment</string>
+    <string name="name_min_3_chars">Name must be at least 3 characters</string>
+    <string name="name_min_3_chars_error">Name must be at least 3 characters</string>
+    <string name="description_placeholder">Add a description for this category</string>
+    <string name="category_description">Add a description for this category</string>
+
+    <!-- Category Names (for icon matching) -->
+    <string name="category_food">food</string>
+    <string name="category_restaurant">restaurant</string>
+    <string name="category_transportation">transportation</string>
+    <string name="category_taxi">taxi</string>
+    <string name="category_uber">uber</string>
+    <string name="category_entertainment">entertainment</string>
+    <string name="category_health">health</string>
+    <string name="category_medicine">medicine</string>
+    <string name="category_home">home</string>
+    <string name="category_shopping">shopping</string>
+    <string name="category_education">education</string>
+    <string name="category_services">services</string>
+    <string name="category_clothing">clothing</string>
+    <string name="category_technology">technology</string>
+
+    <!-- Shopping List Screen -->
+    <string name="shopping_list">Shopping List</string>
+    <string name="shopping_list_title">Shopping Lists</string>
+
+    <!-- Modal Bottom Sheet -->
+    <string name="add_movement">Add a movement</string>
+    <string name="button_add_movement">Add a movement</string>
+    <string name="add_movement_by_form">Add movement by form</string>
+    <string name="button_add_movement_by_form">Add movement by form</string>
+    <string name="add_type_by_form">Add type by form</string>
+    <string name="button_add_category_by_form">Add category by form</string>
+
+    <!-- Movement Card -->
+    <string name="no_name_label">No name</string>
+    <string name="arrow_up_description">Arrow Up</string>
+    <string name="arrow_down_description">Arrow Down</string>
+    <string name="expenses_limits">Expenses limits</string>
 </resources>

@@ -1,13 +1,16 @@
-package com.grupo03.solea.presentation.viewmodels
+package com.grupo03.solea.presentation.viewmodels.shared
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.grupo03.solea.data.models.User
-import com.grupo03.solea.data.repositories.UsersRepository
-import com.grupo03.solea.data.services.AuthService
-import com.grupo03.solea.presentation.states.AuthState
-import com.grupo03.solea.utils.ErrorCode
+import com.grupo03.solea.data.services.interfaces.AuthService
+import com.grupo03.solea.presentation.states.screens.SignInFormState
+import com.grupo03.solea.presentation.states.screens.SignUpFormState
+import com.grupo03.solea.presentation.states.shared.AuthState
+import com.grupo03.solea.presentation.states.shared.FormType
+import com.grupo03.solea.utils.AuthError
+import com.grupo03.solea.utils.AuthResult
 import com.grupo03.solea.utils.Validation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,76 +18,90 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-
 class AuthViewModel(
-    private val authService: AuthService,
-    private val usersRepository: UsersRepository
+    private val authService: AuthService
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AuthState.State())
-    val uiState: StateFlow<AuthState.State> = _uiState.asStateFlow()
+    private val _authState = MutableStateFlow(AuthState())
+    val authState: StateFlow<AuthState> = _authState.asStateFlow()
+    private val _signInFormState = MutableStateFlow(SignInFormState())
+    val signInFormState: StateFlow<SignInFormState> = _signInFormState.asStateFlow()
+    private val _signUpFormState = MutableStateFlow(SignUpFormState())
+    val signUpFormState: StateFlow<SignUpFormState> = _signUpFormState.asStateFlow()
 
     init {
         checkAuthState()
     }
 
-    private fun setLoading(isLoading: Boolean) {
-        _uiState.update { it.copy(isLoading = isLoading) }
-    }
+    private fun setLoading(isLoading: Boolean, formType: FormType?) {
+        if (formType == null) {
+            _signInFormState.update { it.copy(isLoading = isLoading) }
+            _signUpFormState.update { it.copy(isLoading = isLoading) }
+            return
+        }
+        when (formType) {
+            FormType.SIGN_IN -> {
+                _signInFormState.update { it.copy(isLoading = isLoading) }
+            }
 
-    private fun setUser(user: User?) {
-        _uiState.update { it.copy(user = user) }
-    }
-
-    private fun setSignInForm(change: (AuthState.SignInFormState) -> AuthState.SignInFormState) {
-        val newLoginFormState = change(_uiState.value.signInFormState)
-        _uiState.update { it.copy(signInFormState = newLoginFormState) }
-    }
-
-    private fun setSignUpForm(change: (AuthState.SignUpFormState) -> AuthState.SignUpFormState) {
-        val newSignUpForm = change(_uiState.value.signUpFormState)
-        _uiState.update { it.copy(signUpFormState = newSignUpForm) }
-    }
-
-    private fun setErrorCode(errorCode: ErrorCode.Auth?) {
-        _uiState.update { it.copy(errorCode = errorCode) }
-    }
-
-    private fun isEmailError(): Boolean {
-        return _uiState.value.errorCode == ErrorCode.Auth.EMAIL_INVALID ||
-                _uiState.value.errorCode == ErrorCode.Auth.EMAIL_ERROR ||
-                _uiState.value.errorCode == ErrorCode.Auth.EMAIL_EMPTY ||
-                _uiState.value.errorCode == ErrorCode.Auth.EMAIL_TOO_LONG
-    }
-
-    private fun isPasswordError(): Boolean {
-        return _uiState.value.errorCode == ErrorCode.Auth.WEAK_PASSWORD ||
-                _uiState.value.errorCode == ErrorCode.Auth.PASSWORDS_DO_NOT_MATCH ||
-                _uiState.value.errorCode == ErrorCode.Auth.PASSWORD_EMPTY
-    }
-
-    private fun isUsernameError(): Boolean {
-        return _uiState.value.errorCode == ErrorCode.Auth.USERNAME_INVALID
-    }
-
-    fun checkAuthState() {
-        setLoading(true)
-        viewModelScope.launch {
-            val user = authService.getCurrentUser()
-            setUser(user)
-            setLoading(false)
+            FormType.SIGN_UP -> {
+                _signUpFormState.update { it.copy(isLoading = isLoading) }
+            }
         }
     }
 
-    fun onEmailChange(formType: AuthState.FormType, newEmail: String) {
+    private fun setUser(user: User?) {
+        _authState.update { it.copy(user = user) }
+    }
+
+    private fun setSignInForm(change: (SignInFormState) -> SignInFormState) {
+        _signInFormState.value = change(_signInFormState.value)
+    }
+
+    private fun setSignUpForm(change: (SignUpFormState) -> SignUpFormState) {
+        _signUpFormState.value = change(_signUpFormState.value)
+    }
+
+    private fun setErrorCode(errorCode: AuthError?) {
+        _authState.update { it.copy(errorCode = errorCode) }
+    }
+
+    private fun isEmailError(): Boolean {
+        return _authState.value.errorCode == AuthError.EMAIL_INVALID ||
+                _authState.value.errorCode == AuthError.EMAIL_ERROR ||
+                _authState.value.errorCode == AuthError.EMAIL_EMPTY ||
+                _authState.value.errorCode == AuthError.EMAIL_TOO_LONG
+    }
+
+    private fun isPasswordError(): Boolean {
+        return _authState.value.errorCode == AuthError.WEAK_PASSWORD ||
+                _authState.value.errorCode == AuthError.PASSWORDS_DO_NOT_MATCH ||
+                _authState.value.errorCode == AuthError.PASSWORD_EMPTY
+    }
+
+    private fun isUsernameError(): Boolean {
+        return _authState.value.errorCode == AuthError.USERNAME_INVALID
+    }
+
+    fun checkAuthState() {
+        setLoading(true, null)
+        viewModelScope.launch {
+            val user = authService.getCurrentUser()
+            setUser(user)
+            setLoading(false, null)
+        }
+    }
+
+    fun onEmailChange(formType: FormType, newEmail: String) {
         when (formType) {
-            AuthState.FormType.LOGIN -> onSignInEmailChange(newEmail)
-            AuthState.FormType.REGISTER -> onSignUpEmailChange(newEmail)
+            FormType.SIGN_IN -> onSignInEmailChange(newEmail)
+            FormType.SIGN_UP -> onSignUpEmailChange(newEmail)
         }
     }
 
     private fun onSignInEmailChange(newEmail: String) {
         val errorCode = Validation.checkEmail(newEmail)
+
         setSignInForm {
             it.copy(
                 email = newEmail,
@@ -137,10 +154,16 @@ class AuthViewModel(
         }
     }
 
-    fun onPasswordChange(formType: AuthState.FormType, newPassword: String) {
+    fun onSignUpPhotoChange(photoUri: String?) {
+        setSignUpForm {
+            it.copy(photoUri = photoUri)
+        }
+    }
+
+    fun onPasswordChange(formType: FormType, newPassword: String) {
         when (formType) {
-            AuthState.FormType.LOGIN -> onSignInPasswordChange(newPassword)
-            AuthState.FormType.REGISTER -> onSignUpPasswordChange(newPassword)
+            FormType.SIGN_IN -> onSignInPasswordChange(newPassword)
+            FormType.SIGN_UP -> onSignUpPasswordChange(newPassword)
         }
     }
 
@@ -176,12 +199,12 @@ class AuthViewModel(
                 confirmPassword = newPassword,
             )
         }
-        if (newPassword != _uiState.value.signUpFormState.password) {
-            setErrorCode(ErrorCode.Auth.PASSWORDS_DO_NOT_MATCH)
+        if (newPassword != _signUpFormState.value.password) {
+            setErrorCode(AuthError.PASSWORDS_DO_NOT_MATCH)
             setSignUpForm {
                 it.copy(isPasswordValid = false)
             }
-        } else if (_uiState.value.errorCode == ErrorCode.Auth.PASSWORDS_DO_NOT_MATCH) {
+        } else if (_authState.value.errorCode == AuthError.PASSWORDS_DO_NOT_MATCH) {
             setErrorCode(null)
             setSignUpForm {
                 it.copy(isPasswordValid = true)
@@ -190,96 +213,80 @@ class AuthViewModel(
     }
 
     fun signInWithEmailAndPassword() {
-        val formState = _uiState.value.signInFormState
+        val formState = _signInFormState.value
         if (!formState.isEmailValid) {
             return
         }
         viewModelScope.launch {
             setErrorCode(null)
-            setLoading(true)
+            setLoading(true, FormType.SIGN_IN)
             val result =
                 authService.signInWithEmailAndPassword(
                     formState.email,
                     formState.password
                 )
-            if (result.user != null) {
-                val displayName = usersRepository.getDisplayName(result.user.uid)
-                val userWithDisplayName = result.user.copy(displayName = displayName)
-                setUser(userWithDisplayName)
+            result.onSuccess { user, _ ->
+                setUser(user)
+            }.onError { error ->
+                setErrorCode(error)
             }
-            if (result.user == null) {
-                setUser(null)
-            }
-            setErrorCode(result.errorCode)
-            setLoading(false)
+            setLoading(false, FormType.SIGN_IN)
         }
     }
 
     fun signUpWithEmailAndPassword() {
-        val formState = _uiState.value.signUpFormState
+        val formState = _signUpFormState.value
         if (!formState.isEmailValid || !formState.isPasswordValid || !formState.isNameValid) {
             return
         }
         viewModelScope.launch {
-            setLoading(true)
+            setLoading(true, FormType.SIGN_UP)
             setErrorCode(null)
             val result =
                 authService.signUpWithEmailAndPassword(
-                    formState.email,
-                    formState.password
+                    email = formState.email,
+                    password = formState.password,
+                    displayName = formState.name
                 )
-            val user = result.user
-            var createdUser: User? = null
-            if (user != null) {
-                val newUser = User(
-                    uid = user.uid,
-                    displayName = formState.name,
-                    email = formState.email
-                )
-                createdUser = usersRepository.createUser(newUser)
-                if (createdUser != null) {
-                    setUser(createdUser)
-                } else {
-                    setErrorCode(ErrorCode.Auth.USER_CREATION_FAILED)
-                }
+            result.onSuccess { user, _ ->
+                setUser(user)
+            }.onError { error ->
+                setErrorCode(error)
             }
-            if (createdUser == null) {
-                setUser(null)
-            }
-            if (user == null) {
-                setErrorCode(result.errorCode)
-            }
-            setLoading(false)
+            setLoading(false, FormType.SIGN_UP)
         }
     }
 
     fun signInWithGoogle(context: Context) {
         val request = authService.generateGoogleRequest()
         if (request == null) {
-            setErrorCode(ErrorCode.Auth.GOOGLE_SIGN_IN_FAILED)
+            setErrorCode(AuthError.GOOGLE_SIGN_IN_FAILED)
             return
         }
         viewModelScope.launch {
-            setLoading(true)
+            setLoading(true, FormType.SIGN_IN)
             setErrorCode(null)
             val result = authService.signInWithGoogle(context, request)
-            setUser(result.user)
-            setErrorCode(result.errorCode)
-            setLoading(false)
+            result.onSuccess { user, _ ->
+                setUser(user)
+            }.onError { error ->
+                setErrorCode(error)
+            }
+            setLoading(false, FormType.SIGN_IN)
         }
     }
 
     fun signOut() {
-        setLoading(true)
+        setLoading(true, null)
         setErrorCode(null)
         viewModelScope.launch {
             val result = authService.signOut()
-            if (result.errorCode == null) {
+            result.onSuccess { _, _ ->
                 setUser(null)
-            } else {
-                setErrorCode(result.errorCode)
+            }.onError { error ->
+                setErrorCode(error)
             }
-            setLoading(false)
+            setLoading(false, null)
         }
     }
 
