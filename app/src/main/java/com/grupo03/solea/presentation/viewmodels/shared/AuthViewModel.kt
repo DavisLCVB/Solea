@@ -236,9 +236,34 @@ class AuthViewModel(
 
     fun signUpWithEmailAndPassword() {
         val formState = _signUpFormState.value
-        if (!formState.isEmailValid || !formState.isPasswordValid || !formState.isNameValid) {
+
+        // Validar email
+        if (!formState.isEmailValid) {
+            val emailError = Validation.checkEmail(formState.email)
+            setErrorCode(emailError ?: AuthError.EMAIL_INVALID)
             return
         }
+
+        // Validar nombre
+        if (!formState.isNameValid) {
+            val nameError = Validation.checkName(formState.name)
+            setErrorCode(nameError ?: AuthError.USERNAME_INVALID)
+            return
+        }
+
+        // Validar contraseña
+        if (!formState.isPasswordValid) {
+            val passwordError = Validation.checkPassword(formState.password)
+            setErrorCode(passwordError ?: AuthError.WEAK_PASSWORD)
+            return
+        }
+
+        // Validar que las contraseñas coincidan
+        if (formState.password != formState.confirmPassword) {
+            setErrorCode(AuthError.PASSWORDS_DO_NOT_MATCH)
+            return
+        }
+
         viewModelScope.launch {
             setLoading(true, FormType.SIGN_UP)
             setErrorCode(null)
