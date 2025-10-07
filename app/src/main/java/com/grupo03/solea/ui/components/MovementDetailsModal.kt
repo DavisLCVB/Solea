@@ -13,9 +13,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.MonetizationOn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,13 +27,21 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.grupo03.solea.R
 import com.grupo03.solea.data.models.MovementType
 import com.grupo03.solea.presentation.states.screens.HistoryMovementItem
 import com.grupo03.solea.ui.theme.soleaGreen
@@ -42,8 +54,10 @@ import java.util.Locale
 @Composable
 fun MovementDetailsModal(
     movement: HistoryMovementItem,
-    onDismissRequest: () -> Unit
+    onDismissRequest: () -> Unit,
+    onDelete: (() -> Unit)? = null
 ) {
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
     val movementDetails = when (movement) {
         is HistoryMovementItem.IncomeItem -> movement.incomeDetails.movement
         is HistoryMovementItem.ExpenseItem -> movement.expenseDetails.movement
@@ -69,7 +83,9 @@ fun MovementDetailsModal(
         ) {
             // Header with type
             Text(
-                text = if (isIncome) "Ingreso" else "Gasto",
+                text = stringResource(
+                    if (isIncome) R.string.movement_type_income else R.string.movement_type_expense
+                ),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -108,7 +124,7 @@ fun MovementDetailsModal(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             },
-                            label = "Nombre",
+                            label = stringResource(R.string.detail_name_label),
                             value = movementDetails.name
                         )
                     }
@@ -123,7 +139,7 @@ fun MovementDetailsModal(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             },
-                            label = "Categoría",
+                            label = stringResource(R.string.detail_category_label),
                             value = movementDetails.category
                         )
                     }
@@ -137,7 +153,7 @@ fun MovementDetailsModal(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         },
-                        label = "Fecha",
+                        label = stringResource(R.string.detail_date_label),
                         value = "$dateText - $timeText"
                     )
 
@@ -150,7 +166,7 @@ fun MovementDetailsModal(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         },
-                        label = "Moneda",
+                        label = stringResource(R.string.detail_currency_label),
                         value = "${movementDetails.currency} ($currencySymbol)"
                     )
 
@@ -169,7 +185,7 @@ fun MovementDetailsModal(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Descripción",
+                                        text = stringResource(R.string.detail_description_label),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -186,8 +202,60 @@ fun MovementDetailsModal(
                 }
             }
 
+            // Delete button (only show if onDelete is provided)
+            if (onDelete != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = { showDeleteConfirmation = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(stringResource(R.string.detail_delete_button))
+                }
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteConfirmation && onDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = {
+                Text(stringResource(R.string.detail_delete_confirm_title))
+            },
+            text = {
+                Text(stringResource(R.string.detail_delete_confirm_message))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirmation = false
+                        onDelete()
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text(stringResource(R.string.detail_delete_confirm_yes))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteConfirmation = false }
+                ) {
+                    Text(stringResource(R.string.detail_delete_confirm_no))
+                }
+            }
+        )
     }
 }
 

@@ -176,7 +176,7 @@
 
     <!-- Home Screen -->
     <string name="home">Home</string>
-    <string name="home_title">Home</string>
+    <string name="home_title">Solea</string>
     <string name="current_balance">Current balance</string>
     <string name="current_balance_label">Current balance</string>
     <string name="home_current_balance">Current balance</string>
@@ -424,4 +424,49 @@
     <string name="arrow_up_description">Arrow Up</string>
     <string name="arrow_down_description">Arrow Down</string>
     <string name="expenses_limits">Expenses limits</string>
+
+    <!-- Receipt Scanner -->
+    <string name="scan_receipt">Scan Receipt</string>
+    <string name="scan_receipt_title">Scan Receipt</string>
+    <string name="button_scan_receipt">Scan Receipt</string>
+    <string name="camera_permission_required">Camera permission is required to scan receipts</string>
+    <string name="scanning_receipt">Scanning receipt…</string>
+    <string name="error_scanning_receipt">Error scanning receipt. Please try again.</string>
+    <string name="capture">Capture</string>
+    <string name="convert_to_your_currency">Convert to your currency</string>
+    <string name="convert_currency_format">Convert from %1$s to %2$s</string>
+    <string name="gallery">Gallery</string>
+    <string name="select_from_gallery">Select from Gallery</string>
+    <string name="review_receipt">Review Receipt</string>
+    <string name="review_receipt_title">Review Receipt</string>
+    <string name="review_edit_detected_info">Review and edit detected information</string>
+    <string name="confidence_format">Confidence: %d%%</string>
+    <string name="establishment">Establishment</string>
+    <string name="establishment_label">Establishment</string>
+    <string name="total">Total</string>
+    <string name="total_label">Total</string>
+    <string name="article">Item</string>
+    <string name="article_label">Item</string>
+    <string name="articles">Items</string>
+    <string name="articles_label">Items</string>
+    <string name="description">Description</string>
+    <string name="description_label">Description</string>
+    <string name="category_optional">Category (optional)</string>
+    <string name="category_optional_label">Category (optional)</string>
+    <string name="create_movement">Create Movement</string>
+    <string name="create_movement_button">Create Movement</string>
+
+    <!-- Movement Details Modal -->
+    <string name="movement_type_income">Income</string>
+    <string name="movement_type_expense">Expense</string>
+    <string name="detail_name_label">Name</string>
+    <string name="detail_category_label">Category</string>
+    <string name="detail_date_label">Date</string>
+    <string name="detail_currency_label">Currency</string>
+    <string name="detail_description_label">Description</string>
+    <string name="detail_delete_button">Delete Movement</string>
+    <string name="detail_delete_confirm_title">Delete Movement?</string>
+    <string name="detail_delete_confirm_message">Are you sure you want to delete this movement? This action cannot be undone.</string>
+    <string name="detail_delete_confirm_yes">Delete</string>
+    <string name="detail_delete_confirm_no">Cancel</string>
 </resources>

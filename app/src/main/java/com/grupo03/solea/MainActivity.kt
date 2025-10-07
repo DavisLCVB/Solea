@@ -7,7 +7,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -23,6 +22,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.grupo03.solea.presentation.viewmodels.screens.BudgetViewModel
+import com.grupo03.solea.presentation.viewmodels.screens.ScanReceiptViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.MovementsViewModel
 import com.grupo03.solea.ui.components.BottomNavigationBar
@@ -39,9 +39,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
-            SoleaTheme {
+            val settingsViewModel: com.grupo03.solea.presentation.viewmodels.screens.SettingsViewModel = koinViewModel()
+            val settingsState = settingsViewModel.uiState.collectAsState()
+
+            SoleaTheme(darkTheme = settingsState.value.isDarkTheme) {
                 val surfaceColor = MaterialTheme.colorScheme.surface
-                val isDarkTheme = isSystemInDarkTheme()
+                val isDarkTheme = settingsState.value.isDarkTheme
 
                 SideEffect {
                     window.statusBarColor = surfaceColor.toArgb()
@@ -95,6 +98,8 @@ fun MainAppContent(
     budgetViewModel: BudgetViewModel,
     movementsViewModel: MovementsViewModel
 ) {
+    val scanReceiptViewModel: ScanReceiptViewModel = koinViewModel()
+
     Scaffold(
         bottomBar = {
             BottomNavigationBar(
@@ -112,6 +117,7 @@ fun MainAppContent(
                 authViewModel = authViewModel,
                 budgetViewModel = budgetViewModel,
                 movementsViewModel = movementsViewModel,
+                scanReceiptViewModel = scanReceiptViewModel,
                 contentPadding = PaddingValues(0.dp)
             )
 

@@ -126,4 +126,18 @@ class MovementsViewModel(
             )
         }
     }
+
+    fun deleteMovement(movementId: String, onSuccess: () -> Unit, onError: (com.grupo03.solea.utils.AppError) -> Unit) {
+        viewModelScope.launch {
+            val result = movementRepository.deleteMovement(movementId)
+            when (result) {
+                is RepositoryResult.Success -> {
+                    onSuccess()
+                }
+                is RepositoryResult.Error -> {
+                    onError(result.error)
+                }
+            }
+        }
+    }
 }

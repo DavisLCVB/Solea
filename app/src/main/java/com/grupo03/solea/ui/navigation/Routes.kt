@@ -18,4 +18,6 @@ object AppRoutes {
     const val NEW_MOVEMENT = "solea/new_movement"
     const val BUDGET_LIMITS = "solea/budget_limits"
     const val EDIT_BUDGET = "solea/edit_budget"
+    const val SCAN_RECEIPT = "solea/scan_receipt"
+    const val EDIT_SCANNED_RECEIPT = "solea/edit_scanned_receipt"
 }

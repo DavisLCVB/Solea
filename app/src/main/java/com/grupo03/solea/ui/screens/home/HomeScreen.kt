@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
@@ -43,6 +44,8 @@ import com.grupo03.solea.data.models.Category
 import com.grupo03.solea.data.models.ExpenseDetails
 import com.grupo03.solea.data.models.IncomeDetails
 import com.grupo03.solea.data.models.Movement
+import com.grupo03.solea.presentation.states.screens.HistoryMovementItem
+import com.grupo03.solea.presentation.states.screens.toHistoryMovementItem
 import com.grupo03.solea.presentation.states.shared.MovementsState
 import com.grupo03.solea.presentation.viewmodels.screens.HomeViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
@@ -50,6 +53,7 @@ import com.grupo03.solea.presentation.viewmodels.shared.MovementsViewModel
 import com.grupo03.solea.ui.components.ExpandableFab
 import com.grupo03.solea.ui.components.FabMenuItem
 import com.grupo03.solea.ui.components.MovementCard
+import com.grupo03.solea.ui.components.MovementDetailsModal
 import com.grupo03.solea.ui.components.SectionTitle
 import com.grupo03.solea.ui.components.TopBar
 import com.grupo03.solea.ui.theme.SoleaTheme
@@ -94,7 +98,8 @@ fun HomeScreen(
     authViewModel: AuthViewModel,
     movementsViewModel: MovementsViewModel,
     onNavigateToNewMovement: () -> Unit,
-    onNavigateToNewCategory: () -> Unit
+    onNavigateToNewCategory: () -> Unit,
+    onNavigateToScanReceipt: () -> Unit
 ) {
     val homeState = homeViewModel.homeState.collectAsState()
     val movementsState = movementsViewModel.movementsState.collectAsState()
@@ -114,7 +119,11 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             HomeScreenContent(
-                movementsState = movementsState.value
+                movementsState = movementsState.value,
+                homeViewModel = homeViewModel,
+                homeState = homeState.value,
+                movementsViewModel = movementsViewModel,
+                userId = userId
             )
 
             ExpandableFab(
@@ -127,6 +136,14 @@ fun HomeScreen(
                         onClick = {
                             homeViewModel.onCollapseFab()
                             onNavigateToNewMovement()
+                        }
+                    ),
+                    FabMenuItem(
+                        icon = Icons.Default.CameraAlt,
+                        label = stringResource(R.string.button_scan_receipt),
+                        onClick = {
+                            homeViewModel.onCollapseFab()
+                            onNavigateToScanReceipt()
                         }
                     ),
                     FabMenuItem(
@@ -148,7 +165,11 @@ fun HomeScreen(
 @Composable
 fun HomeScreenContent(
     modifier: Modifier = Modifier,
-    movementsState: MovementsState = MovementsState()
+    movementsState: MovementsState = MovementsState(),
+    homeViewModel: HomeViewModel? = null,
+    homeState: com.grupo03.solea.presentation.states.screens.HomeScreenState? = null,
+    movementsViewModel: MovementsViewModel? = null,
+    userId: String = ""
 ) {
     // Calculate balance from movements
     val totalIncome = movementsState.incomeDetailsList.sumOf { it.movement.total }
@@ -208,19 +229,45 @@ fun HomeScreenContent(
                 allMovements.forEach { movementItem ->
                     when (movementItem) {
                         is MovementItem.IncomeItem -> {
-                            MovementCard(
-                                incomeDetails = movementItem.incomeDetails,
-                                expenseDetails = null,
-                                category = Category() // TODO: Get actual category from movementsState
-                            )
+                            Card(
+                                onClick = {
+                                    homeViewModel?.onMovementSelected(
+                                        movementItem.incomeDetails.toHistoryMovementItem()
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                )
+                            ) {
+                                MovementCard(
+                                    incomeDetails = movementItem.incomeDetails,
+                                    expenseDetails = null,
+                                    category = Category() // TODO: Get actual category from movementsState
+                                )
+                            }
                         }
 
                         is MovementItem.ExpenseItem -> {
-                            MovementCard(
-                                incomeDetails = null,
-                                expenseDetails = movementItem.expenseDetails,
-                                category = Category() // TODO: Get actual category from movementsState
-                            )
+                            Card(
+                                onClick = {
+                                    homeViewModel?.onMovementSelected(
+                                        movementItem.expenseDetails.toHistoryMovementItem()
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                )
+                            ) {
+                                MovementCard(
+                                    incomeDetails = null,
+                                    expenseDetails = movementItem.expenseDetails,
+                                    category = Category() // TODO: Get actual category from movementsState
+                                )
+                            }
                         }
                     }
                 }
@@ -228,6 +275,33 @@ fun HomeScreenContent(
 
             // Add some bottom spacing
             Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Show movement details modal
+        homeState?.selectedMovement?.let { movement ->
+            val movementId = when (movement) {
+                is HistoryMovementItem.IncomeItem -> movement.incomeDetails.movement.id
+                is HistoryMovementItem.ExpenseItem -> movement.expenseDetails.movement.id
+            }
+
+            MovementDetailsModal(
+                movement = movement,
+                onDismissRequest = { homeViewModel?.onMovementSelected(null) },
+                onDelete = if (movementsViewModel != null && userId.isNotEmpty()) {
+                    {
+                        movementsViewModel.deleteMovement(
+                            movementId = movementId,
+                            onSuccess = {
+                                homeViewModel?.onMovementSelected(null)
+                            },
+                            onError = { error ->
+                                // TODO: Show error to user
+                                homeViewModel?.onMovementSelected(null)
+                            }
+                        )
+                    }
+                } else null
+            )
         }
     }
 }

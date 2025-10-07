@@ -400,4 +400,30 @@ class NewMovementFormViewModel(
     fun clearForm() {
         _formState.value = NewMovementFormState()
     }
+
+    fun loadFromScannedReceipt(
+        establishmentName: String,
+        total: String,
+        currency: String,
+        items: List<com.grupo03.solea.data.models.EditableScannedItem>
+    ) {
+        val receiptItems = items.map { item ->
+            ReceiptItemData(
+                name = item.description,
+                quantity = item.quantity,
+                unitPrice = item.unitPrice,
+                category = item.category
+            )
+        }
+
+        _formState.value = _formState.value.copy(
+            name = establishmentName,
+            amount = total,
+            currency = currency,
+            movementType = MovementType.EXPENSE,
+            sourceType = SourceType.RECEIPT,
+            receiptDescription = establishmentName,
+            receiptItems = receiptItems
+        )
+    }
 }

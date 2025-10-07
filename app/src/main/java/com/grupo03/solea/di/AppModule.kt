@@ -15,13 +15,16 @@ import com.grupo03.solea.data.repositories.interfaces.MovementRepository
 import com.grupo03.solea.data.repositories.interfaces.ReceiptRepository
 import com.grupo03.solea.data.repositories.interfaces.UserPreferencesRepository
 import com.grupo03.solea.data.repositories.local.DataStoreUserPreferencesRepository
+import com.grupo03.solea.data.services.api.RetrofitReceiptScannerService
 import com.grupo03.solea.data.services.firebase.FirebaseAuthService
 import com.grupo03.solea.data.services.interfaces.AuthService
+import com.grupo03.solea.data.services.interfaces.ReceiptScannerService
 import com.grupo03.solea.presentation.viewmodels.screens.BudgetViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.HistoryViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.HomeViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.NewCategoryFormViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.NewMovementFormViewModel
+import com.grupo03.solea.presentation.viewmodels.screens.ScanReceiptViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.SettingsViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.MovementsViewModel
@@ -36,6 +39,7 @@ val appModule = module {
 
     // Services
     single<AuthService> { FirebaseAuthService(get()) }
+    single<ReceiptScannerService> { RetrofitReceiptScannerService() }
 
     // Repositories
     single<MovementRepository> { FirebaseMovementRepository(get()) }
@@ -54,4 +58,5 @@ val appModule = module {
     viewModel { BudgetViewModel(get(), get()) }
     viewModel { SettingsViewModel(get()) }
     viewModel { HistoryViewModel(get()) }
+    viewModel { ScanReceiptViewModel(get()) }
 }

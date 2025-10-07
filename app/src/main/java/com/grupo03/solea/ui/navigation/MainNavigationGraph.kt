@@ -9,12 +9,15 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.grupo03.solea.presentation.viewmodels.screens.BudgetViewModel
+import com.grupo03.solea.presentation.viewmodels.screens.ScanReceiptViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.MovementsViewModel
 import com.grupo03.solea.ui.screens.forms.NewCategoryFormScreen
 import com.grupo03.solea.ui.screens.forms.NewMovementFormScreen
 import com.grupo03.solea.ui.screens.history.HistoryScreen
 import com.grupo03.solea.ui.screens.home.HomeScreen
+import com.grupo03.solea.ui.screens.scanner.EditScannedReceiptScreen
+import com.grupo03.solea.ui.screens.scanner.ScanReceiptScreen
 import com.grupo03.solea.ui.screens.settings.BudgetLimitsScreen
 import com.grupo03.solea.ui.screens.settings.EditBudgetForm
 import com.grupo03.solea.ui.screens.settings.SettingsScreen
@@ -25,6 +28,7 @@ fun NavGraphBuilder.mainNavigationGraph(
     authViewModel: AuthViewModel,
     budgetViewModel: BudgetViewModel,
     movementsViewModel: MovementsViewModel,
+    scanReceiptViewModel: ScanReceiptViewModel,
     contentPadding: PaddingValues,
 ) {
     navigation(
@@ -41,6 +45,9 @@ fun NavGraphBuilder.mainNavigationGraph(
                 },
                 onNavigateToNewCategory = {
                     navController.navigate(AppRoutes.NEW_CATEGORY)
+                },
+                onNavigateToScanReceipt = {
+                    navController.navigate(AppRoutes.SCAN_RECEIPT)
                 }
             )
         }
@@ -165,6 +172,35 @@ fun NavGraphBuilder.mainNavigationGraph(
                     }
                 } else null,
                 modifier = Modifier.padding(contentPadding)
+            )
+        }
+        composable(AppRoutes.SCAN_RECEIPT) {
+            ScanReceiptScreen(
+                scanReceiptViewModel = scanReceiptViewModel,
+                onNavigateBack = {
+                    scanReceiptViewModel.clearState()
+                    navController.popBackStack()
+                },
+                onNavigateToEdit = {
+                    navController.navigate(AppRoutes.EDIT_SCANNED_RECEIPT)
+                }
+            )
+        }
+        composable(AppRoutes.EDIT_SCANNED_RECEIPT) {
+            EditScannedReceiptScreen(
+                scanReceiptViewModel = scanReceiptViewModel,
+                newMovementFormViewModel = koinViewModel(),
+                authViewModel = authViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onSuccess = {
+                    scanReceiptViewModel.clearState()
+                    // Navigate back to home or movement list
+                    navController.navigate(AppRoutes.HOME) {
+                        popUpTo(AppRoutes.HOME) { inclusive = false }
+                    }
+                }
             )
         }
     }

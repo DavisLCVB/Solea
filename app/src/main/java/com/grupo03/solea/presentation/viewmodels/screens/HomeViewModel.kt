@@ -1,6 +1,7 @@
 package com.grupo03.solea.presentation.viewmodels.screens
 
 import androidx.lifecycle.ViewModel
+import com.grupo03.solea.presentation.states.screens.HistoryMovementItem
 import com.grupo03.solea.presentation.states.screens.HomeScreenState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,5 +17,9 @@ class HomeViewModel : ViewModel() {
 
     fun onCollapseFab() {
         _homeState.value = _homeState.value.copy(fabExpanded = false)
+    }
+
+    fun onMovementSelected(movement: HistoryMovementItem?) {
+        _homeState.value = _homeState.value.copy(selectedMovement = movement)
     }
 }

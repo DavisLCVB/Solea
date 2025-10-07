@@ -19,3 +19,7 @@ object DatabaseContants {
     const val STATUS_COLLECTION = "status"
     const val CATEGORIES_COLLECTION = "categories"
 }
+
+object AIConstants {
+    const val RECEIPT_SCANNER_API_URL = "https://gemini-py.onrender.com/"
+}

@@ -230,9 +230,26 @@ fun HistoryScreen(
 
             // Show details modal
             historyState.value.selectedMovement?.let { movement ->
+                val movementId = when (movement) {
+                    is HistoryMovementItem.IncomeItem -> movement.incomeDetails.movement.id
+                    is HistoryMovementItem.ExpenseItem -> movement.expenseDetails.movement.id
+                }
+
                 MovementDetailsModal(
                     movement = movement,
-                    onDismissRequest = { historyViewModel.onMovementSelected(null) }
+                    onDismissRequest = { historyViewModel.onMovementSelected(null) },
+                    onDelete = {
+                        movementsViewModel.deleteMovement(
+                            movementId = movementId,
+                            onSuccess = {
+                                historyViewModel.onMovementSelected(null)
+                            },
+                            onError = { error ->
+                                // TODO: Show error to user
+                                historyViewModel.onMovementSelected(null)
+                            }
+                        )
+                    }
                 )
             }
         }

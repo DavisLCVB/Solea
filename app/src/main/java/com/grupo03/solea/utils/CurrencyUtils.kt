@@ -90,4 +90,55 @@ object CurrencyUtils {
         val symbol = getCurrencySymbol(currencyCode)
         return "$symbol ${String.format(Locale.getDefault(), "%.2f", amount)}"
     }
+
+    /**
+     * Tasas de cambio aproximadas respecto al USD (actualizar periódicamente)
+     * Para una solución en producción, usar una API de tasas de cambio
+     */
+    private val exchangeRates = mapOf(
+        "USD" to 1.0,
+        "EUR" to 0.92,
+        "ARS" to 1000.0,
+        "BOB" to 6.91,
+        "BRL" to 5.0,
+        "CLP" to 950.0,
+        "COP" to 4000.0,
+        "CRC" to 520.0,
+        "CUP" to 24.0,
+        "DOP" to 59.0,
+        "GTQ" to 7.8,
+        "HNL" to 24.7,
+        "MXN" to 17.0,
+        "NIO" to 36.5,
+        "PAB" to 1.0,
+        "PYG" to 7300.0,
+        "PEN" to 3.7,
+        "UYU" to 39.0,
+        "VES" to 36.0
+    )
+
+    /**
+     * Convierte un monto de una moneda a otra
+     * @param amount Monto a convertir
+     * @param fromCurrency Moneda origen
+     * @param toCurrency Moneda destino
+     * @return Monto convertido, o el monto original si no se puede convertir
+     */
+    fun convertCurrency(amount: Double, fromCurrency: String, toCurrency: String): Double {
+        if (fromCurrency == toCurrency) return amount
+
+        val fromRate = exchangeRates[fromCurrency] ?: return amount
+        val toRate = exchangeRates[toCurrency] ?: return amount
+
+        // Convertir a USD primero, luego a la moneda destino
+        val amountInUSD = amount / fromRate
+        return amountInUSD * toRate
+    }
+
+    /**
+     * Verifica si se puede convertir entre dos monedas
+     */
+    fun canConvert(fromCurrency: String, toCurrency: String): Boolean {
+        return exchangeRates.containsKey(fromCurrency) && exchangeRates.containsKey(toCurrency)
+    }
 }
