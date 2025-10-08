@@ -27,6 +27,9 @@ data class ScannedReceiptData(
     @SerializedName("items")
     val items: List<ScannedItemData> = emptyList(),
 
+    @SerializedName("suggestedCategory")
+    val suggestedCategory: String? = null,
+
     @SerializedName("confidence")
     val confidence: Double = 0.0
 )
@@ -42,10 +45,7 @@ data class ScannedItemData(
     val unitPrice: Double = 0.0,
 
     @SerializedName("totalPrice")
-    val totalPrice: Double = 0.0,
-
-    @SerializedName("category")
-    val category: String? = null
+    val totalPrice: Double = 0.0
 )
 
 /**
@@ -57,6 +57,7 @@ data class EditableScannedReceipt(
     val total: String = "",
     val currency: String = "USD",
     val items: List<EditableScannedItem> = emptyList(),
+    val suggestedCategory: String? = null,
     val confidence: Double = 0.0
 )
 
@@ -64,6 +65,5 @@ data class EditableScannedItem(
     val id: String = java.util.UUID.randomUUID().toString(),
     val description: String = "",
     val quantity: String = "",
-    val unitPrice: String = "",
-    val category: String = ""
+    val unitPrice: String = ""
 )

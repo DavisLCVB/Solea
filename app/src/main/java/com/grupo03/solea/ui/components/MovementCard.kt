@@ -191,11 +191,13 @@ fun ExpenseCard(
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium
                 )
-                Text(
-                    text = movement.category,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (!movement.category.isNullOrEmpty()) {
+                    Text(
+                        text = movement.category,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Text(
                     text = dateFormated,
                     style = MaterialTheme.typography.bodySmall,
@@ -233,7 +235,7 @@ val incomeDetailsMockup = IncomeDetails(
         datetime = LocalDateTime.now(),
         currency = "USD",
         total = 2500.0,
-        category = incomeCategoryMockup.name,
+        category = null,
         createdAt = LocalDateTime.now()
     )
 )

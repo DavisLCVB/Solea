@@ -130,7 +130,7 @@ fun MovementDetailsModal(
                     }
 
                     // Category (only for expenses)
-                    if (!isIncome && movementDetails.category.isNotEmpty()) {
+                    if (!isIncome && !movementDetails.category.isNullOrEmpty()) {
                         DetailRow(
                             icon = {
                                 Icon(
@@ -140,7 +140,7 @@ fun MovementDetailsModal(
                                 )
                             },
                             label = stringResource(R.string.detail_category_label),
-                            value = movementDetails.category
+                            value = movementDetails.category!!
                         )
                     }
 

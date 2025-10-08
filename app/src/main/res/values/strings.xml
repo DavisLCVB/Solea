@@ -390,6 +390,15 @@
     <string name="name_min_3_chars_error">Name must be at least 3 characters</string>
     <string name="description_placeholder">Add a description for this category</string>
     <string name="category_description">Add a description for this category</string>
+    <string name="category_description_ai_helper">This description will be used by AI to automatically classify expenses when you upload receipts via photo or voice.</string>
+
+    <!-- New Categories Dialog -->
+    <string name="new_categories_detected_title">New categories detected</string>
+    <string name="new_categories_detected_message">The AI suggested the following categories. Would you like to create them?</string>
+    <string name="create_selected_categories">Create selected</string>
+    <string name="skip_button">Skip</string>
+    <string name="select_all">Select all</string>
+    <string name="ai_suggested_category_description">Category automatically detected by AI</string>
 
     <!-- Category Names (for icon matching) -->
     <string name="category_food">food</string>
@@ -432,6 +441,10 @@
     <string name="camera_permission_required">Camera permission is required to scan receipts</string>
     <string name="scanning_receipt">Scanning receipt…</string>
     <string name="error_scanning_receipt">Error scanning receipt. Please try again.</string>
+    <string name="processing_receipt_title">Processing receipt</string>
+    <string name="processing_receipt_message">Please wait while we analyze your receipt using AI. This may take up to 2 minutes.</string>
+    <string name="analyzing_receipt">Analyzing receipt…</string>
+    <string name="this_may_take_time">This process may take up to 2 minutes</string>
     <string name="capture">Capture</string>
     <string name="convert_to_your_currency">Convert to your currency</string>
     <string name="convert_currency_format">Convert from %1$s to %2$s</string>
@@ -453,6 +466,8 @@
     <string name="description_label">Description</string>
     <string name="category_optional">Category (optional)</string>
     <string name="category_optional_label">Category (optional)</string>
+    <string name="new_category_suggested_title">New Category Suggested</string>
+    <string name="new_category_suggested_message">The AI suggested the category \"%1$s\". Would you like to create it?</string>
     <string name="create_movement">Create Movement</string>
     <string name="create_movement_button">Create Movement</string>
 

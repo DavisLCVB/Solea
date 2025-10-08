@@ -17,6 +17,7 @@ import com.grupo03.solea.ui.screens.forms.NewMovementFormScreen
 import com.grupo03.solea.ui.screens.history.HistoryScreen
 import com.grupo03.solea.ui.screens.home.HomeScreen
 import com.grupo03.solea.ui.screens.scanner.EditScannedReceiptScreen
+import com.grupo03.solea.ui.screens.scanner.LoadingScanScreen
 import com.grupo03.solea.ui.screens.scanner.ScanReceiptScreen
 import com.grupo03.solea.ui.screens.settings.BudgetLimitsScreen
 import com.grupo03.solea.ui.screens.settings.EditBudgetForm
@@ -177,12 +178,27 @@ fun NavGraphBuilder.mainNavigationGraph(
         composable(AppRoutes.SCAN_RECEIPT) {
             ScanReceiptScreen(
                 scanReceiptViewModel = scanReceiptViewModel,
+                authViewModel = authViewModel,
                 onNavigateBack = {
                     scanReceiptViewModel.clearState()
                     navController.popBackStack()
                 },
+                onNavigateToLoading = {
+                    navController.navigate(AppRoutes.LOADING_SCAN)
+                }
+            )
+        }
+        composable(AppRoutes.LOADING_SCAN) {
+            LoadingScanScreen(
+                scanReceiptViewModel = scanReceiptViewModel,
                 onNavigateToEdit = {
-                    navController.navigate(AppRoutes.EDIT_SCANNED_RECEIPT)
+                    navController.navigate(AppRoutes.EDIT_SCANNED_RECEIPT) {
+                        popUpTo(AppRoutes.SCAN_RECEIPT) { inclusive = false }
+                    }
+                },
+                onNavigateBack = {
+                    scanReceiptViewModel.clearState()
+                    navController.popBackStack()
                 }
             )
         }
@@ -190,6 +206,7 @@ fun NavGraphBuilder.mainNavigationGraph(
             EditScannedReceiptScreen(
                 scanReceiptViewModel = scanReceiptViewModel,
                 newMovementFormViewModel = koinViewModel(),
+                newCategoryFormViewModel = koinViewModel(),
                 authViewModel = authViewModel,
                 onNavigateBack = {
                     navController.popBackStack()

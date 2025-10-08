@@ -58,5 +58,5 @@ val appModule = module {
     viewModel { BudgetViewModel(get(), get()) }
     viewModel { SettingsViewModel(get()) }
     viewModel { HistoryViewModel(get()) }
-    viewModel { ScanReceiptViewModel(get()) }
+    viewModel { ScanReceiptViewModel(get(), get()) }
 }

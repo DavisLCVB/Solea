@@ -16,6 +16,6 @@ data class Movement(
     val datetime: LocalDateTime = LocalDateTime.now(),
     val currency: String = "USD",
     val total: Double = 0.0,
-    val category: String = "",
+    val category: String? = null,
     val createdAt: LocalDateTime = LocalDateTime.now()
 )

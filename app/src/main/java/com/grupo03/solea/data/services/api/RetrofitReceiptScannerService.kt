@@ -2,6 +2,7 @@ package com.grupo03.solea.data.services.api
 
 import android.util.Log
 import com.google.gson.Gson
+import com.grupo03.solea.data.models.Category
 import com.grupo03.solea.data.models.ScannedReceiptResponse
 import com.grupo03.solea.data.services.interfaces.ReceiptScannerService
 import com.grupo03.solea.utils.AIConstants
@@ -49,8 +50,36 @@ class RetrofitReceiptScannerService : ReceiptScannerService {
     private val api: ReceiptScannerApi
     private val gson = Gson()
 
-    // Optimized prompt for receipt scanning
-    private val promptText = """
+    // Base prompt template for receipt scanning
+    private fun buildPrompt(categories: List<Category>): String {
+        val categoriesSection = if (categories.isNotEmpty()) {
+            val categoriesList = categories.joinToString("\n") { category ->
+                if (category.description.isNotEmpty()) {
+                    "  - \"${category.name}\": ${category.description}"
+                } else {
+                    "  - \"${category.name}\""
+                }
+            }
+            """
+## Available Categories for Classification
+
+The following categories are available in the system. Based on the establishment name and the items purchased in this receipt, **suggest ONE category** that best represents this entire expense. **Prefer to use these categories** if they match:
+
+$categoriesList
+
+If none of these categories fit well, you may suggest a different category name that represents the nature of this purchase.
+
+"""
+        } else {
+            """
+## Category Suggestion
+
+Based on the establishment name and the items purchased in this receipt, suggest ONE category that best represents this entire expense (e.g., "Groceries", "Restaurant", "Pharmacy", etc.).
+
+"""
+        }
+
+        return """
 You are a reliable receipt and sales ticket data extractor. Your job is to read receipts (image or OCR text) and return **only JSON** with structured and enriched information. **Do not invent data**. If something is not visible or does not exist, **leave it empty** (`null`, `""` or `[]` as appropriate).
 
 ## General Rules (Very Important)
@@ -76,10 +105,10 @@ Return ONLY the JSON structured exactly as follows (no additional text, comments
         "description": "Item description (string)",
         "quantity": 1.0,
         "unitPrice": 0.00,
-        "totalPrice": 0.00,
-        "category": "Inferred category if possible, otherwise null"
+        "totalPrice": 0.00
       }
     ],
+    "suggestedCategory": "Category name that best represents this purchase (string or null)",
     "confidence": 0.95
   }
 }
@@ -95,7 +124,7 @@ Return ONLY the JSON structured exactly as follows (no additional text, comments
   - `quantity`: Numeric quantity (default 1.0 if not shown)
   - `unitPrice`: Price per unit
   - `totalPrice`: Total for this line item (quantity × unitPrice)
-  - `category`: Optional. Infer from description if possible (e.g., "Food", "Beverages", "Household")
+- `suggestedCategory`: ONE category that best represents this entire purchase based on the establishment and items. Prefer categories from the provided list if applicable, or suggest a new one if none fit well. Use null if you cannot determine a suitable category.
 - `confidence`: Your confidence level in the extraction (0.0 to 1.0)
 
 ## Extraction Guidelines:
@@ -108,8 +137,10 @@ Return ONLY the JSON structured exactly as follows (no additional text, comments
 6. Total should match the final amount paid
 7. Currency should match country/region indicators
 
+$categoriesSection
 Return ONLY the JSON object. No markdown, no explanations.
 """.trimIndent()
+    }
 
     init {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
@@ -146,10 +177,14 @@ Return ONLY the JSON object. No markdown, no explanations.
         api = retrofit.create(ReceiptScannerApi::class.java)
     }
 
-    override suspend fun scanReceipt(imageFile: File): Result<ScannedReceiptResponse> {
+    override suspend fun scanReceipt(imageFile: File, categories: List<Category>): Result<ScannedReceiptResponse> {
         return try {
             Log.d("ReceiptScanner", "Starting receipt scan for file: ${imageFile.name}")
             Log.d("ReceiptScanner", "File size: ${imageFile.length()} bytes")
+            Log.d("ReceiptScanner", "Categories provided: ${categories.size}")
+
+            // Build prompt with categories
+            val promptText = buildPrompt(categories)
 
             // Determine MIME type based on file extension
             val mimeType = when {

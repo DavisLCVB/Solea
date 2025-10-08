@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,6 +27,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -39,6 +41,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,12 +57,15 @@ import com.grupo03.solea.presentation.viewmodels.screens.NewMovementFormViewMode
 import com.grupo03.solea.presentation.viewmodels.screens.ScanReceiptViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
 import com.grupo03.solea.utils.CurrencyUtils
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditScannedReceiptScreen(
     scanReceiptViewModel: ScanReceiptViewModel,
     newMovementFormViewModel: NewMovementFormViewModel,
+    newCategoryFormViewModel: com.grupo03.solea.presentation.viewmodels.screens.NewCategoryFormViewModel,
     authViewModel: AuthViewModel,
     onNavigateBack: () -> Unit,
     onSuccess: () -> Unit
@@ -72,7 +78,7 @@ fun EditScannedReceiptScreen(
 
     val userCurrency = CurrencyUtils.getCurrencyByCountry()
     val needsConversion = scannedReceipt.currency != userCurrency &&
-                         CurrencyUtils.canConvert(scannedReceipt.currency, userCurrency)
+            CurrencyUtils.canConvert(scannedReceipt.currency, userCurrency)
 
     var editableItems by remember { mutableStateOf(scannedReceipt.items) }
     var establishmentName by remember { mutableStateOf(scannedReceipt.establishmentName) }
@@ -81,6 +87,32 @@ fun EditScannedReceiptScreen(
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
     var expandedCategory by remember { mutableStateOf(false) }
     var convertToUserCurrency by remember { mutableStateOf(needsConversion) }
+    var showNewCategoryDialog by remember { mutableStateOf(false) }
+    var newCategoryName by remember { mutableStateOf("") }
+
+    val coroutineScope = rememberCoroutineScope()
+    val aiCategoryDescription = stringResource(R.string.ai_suggested_category_description)
+    val locale = java.util.Locale.getDefault()
+
+    // Auto-assign suggested category when screen loads
+    LaunchedEffect(scannedReceipt.suggestedCategory, formState.value.categories) {
+        if (selectedCategory == null && !scannedReceipt.suggestedCategory.isNullOrBlank()) {
+            val suggested = scannedReceipt.suggestedCategory
+            // Try to find existing category (case-insensitive)
+            val existingCategory = formState.value.categories.find {
+                it.name.equals(suggested, ignoreCase = true)
+            }
+
+            if (existingCategory != null) {
+                // Auto-select existing category
+                selectedCategory = existingCategory
+            } else {
+                // Show dialog to create new category
+                newCategoryName = suggested
+                showNewCategoryDialog = true
+            }
+        }
+    }
 
     // Apply currency conversion when toggled
     LaunchedEffect(convertToUserCurrency) {
@@ -91,7 +123,7 @@ fun EditScannedReceiptScreen(
                 scannedReceipt.currency,
                 userCurrency
             )
-            total = String.format("%.2f", convertedTotal)
+            total = String.format(locale, "%.2f", convertedTotal)
             currentCurrency = userCurrency
 
             editableItems = scannedReceipt.items.map { item ->
@@ -100,7 +132,7 @@ fun EditScannedReceiptScreen(
                     scannedReceipt.currency,
                     userCurrency
                 )
-                item.copy(unitPrice = String.format("%.2f", convertedPrice))
+                item.copy(unitPrice = String.format(locale, "%.2f", convertedPrice))
             }
         } else {
             // Reset to original currency
@@ -115,6 +147,8 @@ fun EditScannedReceiptScreen(
         newMovementFormViewModel.fetchCategories(userId)
     }
 
+    // Note: Category detection logic removed - categories are now only at movement level, not per item
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -126,7 +160,8 @@ fun EditScannedReceiptScreen(
                             contentDescription = stringResource(R.string.back)
                         )
                     }
-                }
+                },
+                windowInsets = WindowInsets(0.dp)
             )
         }
     ) { paddingValues ->
@@ -147,7 +182,10 @@ fun EditScannedReceiptScreen(
             // Confidence indicator
             if (scannedReceipt.confidence > 0) {
                 Text(
-                    text = stringResource(R.string.confidence_format, (scannedReceipt.confidence * 100).toInt()),
+                    text = stringResource(
+                        R.string.confidence_format,
+                        (scannedReceipt.confidence * 100).toInt()
+                    ),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
@@ -170,7 +208,7 @@ fun EditScannedReceiptScreen(
                 value = total,
                 onValueChange = { total = it },
                 label = { Text(stringResource(R.string.total_label)) },
-                prefix = { Text("${currentCurrency} ") },
+                prefix = { Text("$currentCurrency ") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
@@ -221,7 +259,7 @@ fun EditScannedReceiptScreen(
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .menuAnchor(),
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable),
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                     isError = selectedCategory == null
                 )
@@ -289,7 +327,10 @@ fun EditScannedReceiptScreen(
                                     }
                                 }
                             ) {
-                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = stringResource(R.string.delete)
+                                )
                             }
                         }
 
@@ -332,26 +373,12 @@ fun EditScannedReceiptScreen(
                                     }
                                 },
                                 label = { Text(stringResource(R.string.price_label)) },
-                                prefix = { Text("${currentCurrency} ") },
+                                prefix = { Text("$currentCurrency ") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                 modifier = Modifier.weight(1f),
                                 singleLine = true
                             )
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        OutlinedTextField(
-                            value = item.category,
-                            onValueChange = { newCat ->
-                                editableItems = editableItems.toMutableList().apply {
-                                    this[index] = this[index].copy(category = newCat)
-                                }
-                            },
-                            label = { Text(stringResource(R.string.category_optional_label)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -395,12 +422,12 @@ fun EditScannedReceiptScreen(
                         }
                     },
                     enabled = selectedCategory != null &&
-                              editableItems.isNotEmpty() &&
-                              editableItems.all {
-                                  it.description.isNotBlank() &&
-                                  it.quantity.toDoubleOrNull() != null &&
-                                  it.unitPrice.toDoubleOrNull() != null
-                              },
+                            editableItems.isNotEmpty() &&
+                            editableItems.all {
+                                it.description.isNotBlank() &&
+                                        it.quantity.toDoubleOrNull() != null &&
+                                        it.unitPrice.toDoubleOrNull() != null
+                            },
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp)
@@ -412,6 +439,66 @@ fun EditScannedReceiptScreen(
                     )
                 }
             }
+        }
+
+        // Dialog for creating new category
+        if (showNewCategoryDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showNewCategoryDialog = false },
+                title = { Text(stringResource(R.string.new_category_suggested_title)) },
+                text = {
+                    Column {
+                        Text(
+                            text = stringResource(
+                                R.string.new_category_suggested_message,
+                                newCategoryName
+                            ),
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        OutlinedTextField(
+                            value = newCategoryName,
+                            onValueChange = { newCategoryName = it },
+                            label = { Text(stringResource(R.string.category_name_label)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            // Create the category
+                            newCategoryFormViewModel.onNameChange(newCategoryName)
+                            newCategoryFormViewModel.onDescriptionChange(aiCategoryDescription)
+                            newCategoryFormViewModel.createCategory(
+                                userId = userId,
+                                onSuccess = {
+                                    // Refresh categories and auto-select the new one
+                                    newMovementFormViewModel.fetchCategories(userId)
+                                    showNewCategoryDialog = false
+
+                                    // Auto-select the newly created category
+                                    // Wait a bit for categories to refresh, then select
+                                    coroutineScope.launch {
+                                        delay(500)
+                                        selectedCategory = formState.value.categories.find {
+                                            it.name.equals(newCategoryName, ignoreCase = true)
+                                        }
+                                    }
+                                }
+                            )
+                        },
+                        enabled = newCategoryName.isNotBlank()
+                    ) {
+                        Text(stringResource(R.string.create_button))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showNewCategoryDialog = false }) {
+                        Text(stringResource(R.string.skip_button))
+                    }
+                }
+            )
         }
     }
 }

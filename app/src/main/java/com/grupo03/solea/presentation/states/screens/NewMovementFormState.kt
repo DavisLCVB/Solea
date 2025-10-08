@@ -34,6 +34,5 @@ data class NewMovementFormState(
 data class ReceiptItemData(
     val name: String = "",
     val quantity: String = "",
-    val unitPrice: String = "",
-    val category: String = ""
+    val unitPrice: String = ""
 )

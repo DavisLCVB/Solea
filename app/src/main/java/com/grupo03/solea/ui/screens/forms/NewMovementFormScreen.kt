@@ -196,69 +196,71 @@ fun NewMovementFormScreen(
                 prefix = { Text(formState.value.currency + " ") }
             )
 
-            // Category selector with option to create new
-            var expandedCategory by remember { mutableStateOf(false) }
+            // Category selector with option to create new - only for expenses
+            if (formState.value.movementType == MovementType.EXPENSE) {
+                var expandedCategory by remember { mutableStateOf(false) }
 
-            Text(
-                text = stringResource(R.string.category),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-            )
-
-            ExposedDropdownMenuBox(
-                expanded = expandedCategory,
-                onExpandedChange = { expandedCategory = !expandedCategory }
-            ) {
-                OutlinedTextField(
-                    value = formState.value.selectedCategory?.name ?: "",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text(stringResource(R.string.select_category_label)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory) },
-                    isError = !formState.value.isCategorySelected,
-                    supportingText = {
-                        if (!formState.value.isCategorySelected) {
-                            Text(
-                                text = stringResource(R.string.must_select_category_error),
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
-                    enabled = !formState.value.isLoading
+                Text(
+                    text = stringResource(R.string.category),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
                 )
 
-                ExposedDropdownMenu(
+                ExposedDropdownMenuBox(
                     expanded = expandedCategory,
-                    onDismissRequest = { expandedCategory = false }
+                    onExpandedChange = { expandedCategory = !expandedCategory }
                 ) {
-                    // Option to create new category
-                    DropdownMenuItem(
-                        text = {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = null)
-                                Text(stringResource(R.string.create_new_category_option))
+                    OutlinedTextField(
+                        value = formState.value.selectedCategory?.name ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.select_category_label)) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory) },
+                        isError = !formState.value.isCategorySelected,
+                        supportingText = {
+                            if (!formState.value.isCategorySelected) {
+                                Text(
+                                    text = stringResource(R.string.must_select_category_error),
+                                    color = MaterialTheme.colorScheme.error
+                                )
                             }
                         },
-                        onClick = {
-                            expandedCategory = false
-                            onNavigateToNewCategory()
-                        }
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
+                        enabled = !formState.value.isLoading
                     )
 
-                    // Existing categories
-                    formState.value.categories.forEach { category ->
+                    ExposedDropdownMenu(
+                        expanded = expandedCategory,
+                        onDismissRequest = { expandedCategory = false }
+                    ) {
+                        // Option to create new category
                         DropdownMenuItem(
-                            text = { Text(category.name) },
+                            text = {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = null)
+                                    Text(stringResource(R.string.create_new_category_option))
+                                }
+                            },
                             onClick = {
-                                newMovementFormViewModel.onCategorySelected(category)
                                 expandedCategory = false
+                                onNavigateToNewCategory()
                             }
                         )
+
+                        // Existing categories
+                        formState.value.categories.forEach { category ->
+                            DropdownMenuItem(
+                                text = { Text(category.name) },
+                                onClick = {
+                                    newMovementFormViewModel.onCategorySelected(category)
+                                    expandedCategory = false
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -534,7 +536,8 @@ fun NewMovementFormScreen(
                             formState.value.name.isNotBlank() &&
                             formState.value.isAmountValid &&
                             formState.value.amount.isNotBlank() &&
-                            formState.value.selectedCategory != null &&
+                            // Category is only required for expenses
+                            (formState.value.movementType == MovementType.INCOME || formState.value.selectedCategory != null) &&
                             // Additional validation for expenses
                             (formState.value.movementType != MovementType.EXPENSE ||
                                     when (formState.value.sourceType) {

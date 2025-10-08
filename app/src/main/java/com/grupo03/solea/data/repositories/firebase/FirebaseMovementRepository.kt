@@ -529,7 +529,9 @@ class FirebaseMovementRepository(
                 return movementsResult
             }
             val movements = (movementsResult as RepositoryResult.Success).data
-            val expensesByCategory = movements.groupBy { it.category }
+            val expensesByCategory = movements
+                .filter { it.category != null }
+                .groupBy { it.category!! }
                 .mapValues { (_, movements) -> movements.sumOf { it.total } }
             RepositoryResult.Success(expensesByCategory)
         } catch (e: FirebaseFirestoreException) {
@@ -627,19 +629,19 @@ class FirebaseMovementRepository(
     }
 
     // Helper extension functions
-    private fun Movement.toMap(): Map<String, Any> {
-        return mapOf(
-            "id" to id,
-            "userUid" to userUid,
-            "type" to type.name,
-            "name" to name,
-            "description" to description,
-            "datetimeTimestamp" to datetime.toEpochSecond(ZoneOffset.UTC),
-            "currency" to currency,
-            "total" to total,
-            "category" to category,
-            "createdAtTimestamp" to createdAt.toEpochSecond(ZoneOffset.UTC)
-        )
+    private fun Movement.toMap(): Map<String, Any?> {
+        return buildMap {
+            put("id", id)
+            put("userUid", userUid)
+            put("type", type.name)
+            put("name", name)
+            put("description", description)
+            put("datetimeTimestamp", datetime.toEpochSecond(ZoneOffset.UTC))
+            put("currency", currency)
+            put("total", total)
+            category?.let { put("category", it) }
+            put("createdAtTimestamp", createdAt.toEpochSecond(ZoneOffset.UTC))
+        }
     }
 
     private fun Source.toMap(): Map<String, Any> {
@@ -682,7 +684,7 @@ class FirebaseMovementRepository(
                 ),
                 currency = getString("currency") ?: "ARS",
                 total = getDouble("total") ?: 0.0,
-                category = getString("category") ?: "",
+                category = getString("category"),
                 createdAt = LocalDateTime.ofEpochSecond(
                     getLong("createdAtTimestamp") ?: 0,
                     0,

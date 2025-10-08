@@ -75,4 +75,57 @@ class NewCategoryFormViewModel(
     fun clearForm() {
         _formState.value = NewCategoryFormState()
     }
+
+    /**
+     * Creates multiple categories in batch (used for AI-suggested categories)
+     * @param userId The user ID to associate the categories with
+     * @param categoryNames List of category names to create
+     * @param onSuccess Callback when all categories are created successfully
+     * @param onError Callback when there's an error
+     */
+    fun createCategoriesInBatch(
+        userId: String,
+        categoryNames: List<String>,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        if (categoryNames.isEmpty()) {
+            onSuccess()
+            return
+        }
+
+        viewModelScope.launch {
+            val description = "Category automatically detected by AI"
+            var successCount = 0
+            var errorOccurred = false
+
+            for (categoryName in categoryNames) {
+                // Skip if category name is too short
+                if (categoryName.length < 3) continue
+
+                val category = Category(
+                    id = UUID.randomUUID().toString(),
+                    name = categoryName,
+                    description = description,
+                    userId = userId
+                )
+
+                val result = categoryRepository.createCategory(category)
+
+                if (result.isSuccess) {
+                    successCount++
+                } else {
+                    errorOccurred = true
+                    onError("Failed to create category: $categoryName")
+                    break
+                }
+            }
+
+            if (!errorOccurred && successCount > 0) {
+                onSuccess()
+            } else if (!errorOccurred && successCount == 0) {
+                onError("No valid categories to create")
+            }
+        }
+    }
 }

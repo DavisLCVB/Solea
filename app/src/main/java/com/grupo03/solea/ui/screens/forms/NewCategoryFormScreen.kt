@@ -132,6 +132,14 @@ fun NewCategoryFormScreen(
                 maxLines = 5
             )
 
+            // AI Helper Text
+            Text(
+                text = stringResource(com.grupo03.solea.R.string.category_description_ai_helper),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Action buttons

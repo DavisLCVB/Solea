@@ -147,8 +147,8 @@ class NewMovementFormViewModel(
             return
         }
 
-        // Validate category
-        if (currentState.selectedCategory == null) {
+        // Validate category - only required for expenses
+        if (currentState.movementType == MovementType.EXPENSE && currentState.selectedCategory == null) {
             _formState.value = currentState.copy(
                 isCategorySelected = false,
                 error = MovementError.INVALID_TYPE
@@ -171,6 +171,7 @@ class NewMovementFormViewModel(
                         return
                     }
                 }
+
                 SourceType.RECEIPT -> {
                     if (currentState.receiptItems.isEmpty()) {
                         _formState.value = currentState.copy(
@@ -208,7 +209,7 @@ class NewMovementFormViewModel(
                 datetime = LocalDateTime.now(),
                 currency = currentState.currency,
                 total = amount,
-                category = currentState.selectedCategory.name,
+                category = if (currentState.movementType == MovementType.EXPENSE) currentState.selectedCategory?.name else null,
                 createdAt = LocalDateTime.now()
             )
 
@@ -252,7 +253,7 @@ class NewMovementFormViewModel(
                                 quantity = currentState.itemQuantity.toDouble(),
                                 currency = currentState.currency,
                                 unitPrice = currentState.itemUnitPrice.toDouble(),
-                                category = currentState.selectedCategory.name,
+                                category = currentState.selectedCategory?.name ?: "",
                                 createdAt = LocalDateTime.now()
                             )
 
@@ -300,6 +301,7 @@ class NewMovementFormViewModel(
                                 return@launch
                             }
                         }
+
                         SourceType.RECEIPT -> {
                             // Create Receipt first
                             val receiptId = UUID.randomUUID().toString()
@@ -337,7 +339,8 @@ class NewMovementFormViewModel(
                                     quantity = receiptItemData.quantity.toDouble(),
                                     currency = currentState.currency,
                                     unitPrice = receiptItemData.unitPrice.toDouble(),
-                                    category = receiptItemData.category.ifBlank { currentState.selectedCategory.name },
+                                    // Receipt items use the movement's category, not individual categories
+                                    category = currentState.selectedCategory?.name ?: "",
                                     createdAt = LocalDateTime.now()
                                 )
 
@@ -411,8 +414,7 @@ class NewMovementFormViewModel(
             ReceiptItemData(
                 name = item.description,
                 quantity = item.quantity,
-                unitPrice = item.unitPrice,
-                category = item.category
+                unitPrice = item.unitPrice
             )
         }
 

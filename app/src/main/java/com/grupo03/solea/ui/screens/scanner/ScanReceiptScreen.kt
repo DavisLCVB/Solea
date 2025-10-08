@@ -63,10 +63,13 @@ import kotlin.coroutines.suspendCoroutine
 @Composable
 fun ScanReceiptScreen(
     scanReceiptViewModel: ScanReceiptViewModel,
+    authViewModel: com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToEdit: () -> Unit
+    onNavigateToLoading: () -> Unit
 ) {
     val state = scanReceiptViewModel.state.collectAsState()
+    val authState = authViewModel.authState.collectAsState()
+    val userId = authState.value.user?.uid ?: ""
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -83,19 +86,13 @@ fun ScanReceiptScreen(
     ) { uri: Uri? ->
         uri?.let {
             scanReceiptViewModel.onImageCaptured(it)
-            scanReceiptViewModel.scanReceipt(context, it)
+            scanReceiptViewModel.scanReceipt(context, it, userId)
+            onNavigateToLoading()
         }
     }
 
     LaunchedEffect(Unit) {
         permissionLauncher.launch(Manifest.permission.CAMERA)
-    }
-
-    // Navigate to edit screen when scanning is complete
-    LaunchedEffect(state.value.scannedReceipt) {
-        if (state.value.scannedReceipt != null) {
-            onNavigateToEdit()
-        }
     }
 
     // Show error messages
@@ -131,7 +128,8 @@ fun ScanReceiptScreen(
                 CameraPreview(
                     onImageCaptured = { uri ->
                         scanReceiptViewModel.onImageCaptured(uri)
-                        scanReceiptViewModel.scanReceipt(context, uri)
+                        scanReceiptViewModel.scanReceipt(context, uri, userId)
+                        onNavigateToLoading()
                     },
                     onGalleryClick = {
                         galleryLauncher.launch(
@@ -154,27 +152,6 @@ fun ScanReceiptScreen(
                         stringResource(R.string.camera_permission_required),
                         style = MaterialTheme.typography.bodyLarge
                     )
-                }
-            }
-
-            // Show loading overlay
-            if (state.value.isScanning) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        CircularProgressIndicator()
-                        Text(
-                            stringResource(R.string.scanning_receipt),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
                 }
             }
         }

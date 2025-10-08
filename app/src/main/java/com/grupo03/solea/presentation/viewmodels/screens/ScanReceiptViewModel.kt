@@ -4,8 +4,10 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.grupo03.solea.data.models.Category
 import com.grupo03.solea.data.models.EditableScannedItem
 import com.grupo03.solea.data.models.EditableScannedReceipt
+import com.grupo03.solea.data.repositories.interfaces.CategoryRepository
 import com.grupo03.solea.data.services.interfaces.ReceiptScannerService
 import com.grupo03.solea.presentation.states.screens.ScanReceiptState
 import com.grupo03.solea.utils.MovementError
@@ -19,7 +21,8 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class ScanReceiptViewModel(
-    private val receiptScannerService: ReceiptScannerService
+    private val receiptScannerService: ReceiptScannerService,
+    private val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ScanReceiptState())
@@ -32,16 +35,29 @@ class ScanReceiptViewModel(
         )
     }
 
-    fun scanReceipt(context: Context, imageUri: Uri) {
+    fun scanReceipt(context: Context, imageUri: Uri, userId: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isScanning = true, error = null)
 
             try {
+                // Fetch categories (default + user categories)
+                val categories = mutableListOf<Category>()
+
+                val defaultCategoriesResult = categoryRepository.getDefaultCategories()
+                if (defaultCategoriesResult.isSuccess) {
+                    categories.addAll(defaultCategoriesResult.getOrNull() ?: emptyList())
+                }
+
+                val userCategoriesResult = categoryRepository.getCategoriesByUser(userId)
+                if (userCategoriesResult.isSuccess) {
+                    categories.addAll(userCategoriesResult.getOrNull() ?: emptyList())
+                }
+
                 // Convert Uri to File
                 val imageFile = uriToFile(context, imageUri)
 
-                // Call scanner service
-                val result = receiptScannerService.scanReceipt(imageFile)
+                // Call scanner service with categories
+                val result = receiptScannerService.scanReceipt(imageFile, categories)
 
                 if (result.isSuccess) {
                     val scannedData = result.getOrNull()!!.receipt
@@ -56,10 +72,10 @@ class ScanReceiptViewModel(
                             EditableScannedItem(
                                 description = item.description,
                                 quantity = item.quantity.toString(),
-                                unitPrice = item.unitPrice.toString(),
-                                category = item.category ?: ""
+                                unitPrice = item.unitPrice.toString()
                             )
                         },
+                        suggestedCategory = scannedData.suggestedCategory,
                         confidence = scannedData.confidence
                     )
 
