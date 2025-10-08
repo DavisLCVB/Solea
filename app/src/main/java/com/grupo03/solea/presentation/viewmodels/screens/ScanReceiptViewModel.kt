@@ -20,14 +20,30 @@ import java.io.FileOutputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+/**
+ * ViewModel for the receipt scanning screen.
+ *
+ * Manages the AI-powered receipt scanning workflow, from image capture to OCR processing.
+ * Uses the Gemini API via ReceiptScannerService to extract receipt data including
+ * establishment name, items, prices, and suggested categories.
+ *
+ * @property receiptScannerService Service for AI-powered receipt OCR
+ * @property categoryRepository Repository for fetching categories for AI categorization
+ */
 class ScanReceiptViewModel(
     private val receiptScannerService: ReceiptScannerService,
     private val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
+    /** Receipt scanning state including captured image, scanning status, and extracted data */
     private val _state = MutableStateFlow(ScanReceiptState())
     val state: StateFlow<ScanReceiptState> = _state.asStateFlow()
 
+    /**
+     * Handles image capture completion.
+     *
+     * @param uri URI of the captured receipt image
+     */
     fun onImageCaptured(uri: Uri) {
         _state.value = _state.value.copy(
             capturedImageUri = uri,
@@ -35,6 +51,17 @@ class ScanReceiptViewModel(
         )
     }
 
+    /**
+     * Scans a receipt image using AI OCR.
+     *
+     * Fetches available categories, converts the image URI to a file, and sends it to
+     * the ReceiptScannerService for AI processing. Converts the scanner result to
+     * editable format for user review before saving as a movement.
+     *
+     * @param context Android context for URI to file conversion
+     * @param imageUri URI of the receipt image to scan
+     * @param userId User ID for fetching user-specific categories
+     */
     fun scanReceipt(context: Context, imageUri: Uri, userId: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isScanning = true, error = null)
@@ -101,6 +128,15 @@ class ScanReceiptViewModel(
         }
     }
 
+    /**
+     * Converts an Android URI to a temporary file.
+     *
+     * Creates a temporary file in the app's cache directory and copies the URI content to it.
+     *
+     * @param context Android context
+     * @param uri URI to convert
+     * @return Temporary file containing the URI content
+     */
     private fun uriToFile(context: Context, uri: Uri): File {
         val inputStream = context.contentResolver.openInputStream(uri)
         val tempFile = File.createTempFile("receipt", ".jpg", context.cacheDir)
@@ -114,6 +150,12 @@ class ScanReceiptViewModel(
         return tempFile
     }
 
+    /**
+     * Parses a date-time string to LocalDateTime.
+     *
+     * @param dateString ISO 8601 date-time string
+     * @return Parsed LocalDateTime, or null if parsing fails or string is blank
+     */
     private fun parseDateTime(dateString: String?): LocalDateTime? {
         if (dateString.isNullOrBlank()) return null
 
@@ -124,6 +166,9 @@ class ScanReceiptViewModel(
         }
     }
 
+    /**
+     * Clears the scanning state, resetting all fields to default values.
+     */
     fun clearState() {
         _state.value = ScanReceiptState()
     }

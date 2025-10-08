@@ -1,5 +1,20 @@
 package com.grupo03.solea.presentation.states.screens
 
+/**
+ * UI state for the sign-up (registration) form.
+ *
+ * Tracks all registration form fields, their validation status, and loading state.
+ *
+ * @property name User's display name
+ * @property email User's email address
+ * @property password User's chosen password
+ * @property confirmPassword Password confirmation for validation
+ * @property photoUri Optional URI to user's profile photo
+ * @property isNameValid Whether the name meets validation requirements
+ * @property isEmailValid Whether the email format is valid
+ * @property isPasswordValid Whether the password meets strength requirements
+ * @property isLoading Whether a registration operation is in progress
+ */
 data class SignUpFormState(
     val name: String = "",
     val email: String = "",

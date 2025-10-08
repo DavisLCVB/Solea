@@ -2,11 +2,34 @@ package com.grupo03.solea.data.models
 
 import java.time.LocalDateTime
 
+/**
+ * Type of financial movement.
+ */
 enum class MovementType {
+    /** A financial outflow (gasto) */
     EXPENSE,
+
+    /** A financial inflow (ingreso) */
     INCOME
 }
 
+/**
+ * Represents a financial movement (transaction) in the application.
+ *
+ * A Movement can be either an expense or an income. This is the base entity
+ * that tracks all financial transactions for a user.
+ *
+ * @property id Unique identifier for the movement
+ * @property userUid ID of the user who owns this movement
+ * @property type Type of movement (EXPENSE or INCOME)
+ * @property name Short name or title of the movement
+ * @property description Detailed description of the movement
+ * @property datetime Date and time when the movement occurred
+ * @property currency Currency code (e.g., "USD", "EUR", "ARS")
+ * @property total Total amount of the movement
+ * @property category Optional category name for classification
+ * @property createdAt Timestamp when this record was created
+ */
 data class Movement(
     val id: String = "",
     val userUid: String = "",

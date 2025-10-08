@@ -3,6 +3,20 @@ package com.grupo03.solea.data.models
 import com.grupo03.solea.utils.FromMap
 import com.grupo03.solea.utils.ToMap
 import java.time.Instant
+
+/**
+ * Represents a budget limit for a specific category.
+ *
+ * Budgets allow users to set spending limits on categories for a specific time period.
+ * Each budget has a status that indicates if it's active, expired, exceeded, etc.
+ *
+ * @property id Unique identifier for the budget
+ * @property userId ID of the user who created this budget
+ * @property category Name of the category this budget applies to
+ * @property amount Maximum amount allowed for this budget period
+ * @property until Expiration date/time of this budget
+ * @property statusId ID of the current status of this budget
+ */
 data class Budget(
     val id: String = "",
     val userId: String = "",
@@ -49,6 +63,15 @@ data class Budget(
     }
 }
 
+/**
+ * Represents the status of a budget.
+ *
+ * Status values are predefined in the system and indicate the current state
+ * of a budget (e.g., "active", "expired", "exceeded").
+ *
+ * @property id Unique identifier for the status
+ * @property value Human-readable status value
+ */
 data class Status(
     val id: String = "",
     val value: String = ""

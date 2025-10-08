@@ -5,14 +5,31 @@ import com.grupo03.solea.data.models.ScannedReceiptResponse
 import java.io.File
 
 /**
- * Service interface for scanning receipts using AI
+ * Service interface for scanning and extracting data from receipt images using AI.
+ *
+ * This service communicates with an external AI-powered OCR service to extract
+ * structured data from receipt images, including items, prices, and suggested categories.
  */
 interface ReceiptScannerService {
+
     /**
-     * Scans a receipt image and returns extracted data
-     * @param imageFile The receipt image file
-     * @param categories List of available categories (default + user categories) to help AI classify items
-     * @return Result containing ScannedReceiptResponse or error
+     * Scans a receipt image and extracts structured data using AI.
+     *
+     * The AI service analyzes the receipt image and extracts:
+     * - Establishment/store name
+     * - Purchase date
+     * - Individual items with quantities and prices
+     * - Total amount
+     * - Suggested category based on the items and establishment
+     *
+     * @param imageFile The receipt image file to scan (supported formats: JPG, PNG)
+     * @param categories List of available categories (both default and user-created)
+     *                   to help the AI suggest the most appropriate category
+     * @return Result containing ScannedReceiptResponse with extracted data on success,
+     *         or an error if scanning fails
      */
-    suspend fun scanReceipt(imageFile: File, categories: List<Category> = emptyList()): Result<ScannedReceiptResponse>
+    suspend fun scanReceipt(
+        imageFile: File,
+        categories: List<Category> = emptyList()
+    ): Result<ScannedReceiptResponse>
 }

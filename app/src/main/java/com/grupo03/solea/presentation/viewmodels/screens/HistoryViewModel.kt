@@ -17,13 +17,31 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+/**
+ * ViewModel for the movement history screen.
+ *
+ * Manages the display and filtering of financial movement history. Supports multiple
+ * date filter options (TODAY, WEEK, MONTH, YEAR, CUSTOM) and groups movements by
+ * date labels (HOY, AYER, or specific dates) for better organization.
+ *
+ * @property movementRepository Repository for fetching movements
+ */
 class HistoryViewModel(
     private val movementRepository: MovementRepository
 ) : ViewModel() {
 
+    /** History state including filtered movements, date filter, and grouping */
     private val _historyState = MutableStateFlow(HistoryState())
     val historyState = _historyState.asStateFlow()
 
+    /**
+     * Fetches and filters movements for the current date filter.
+     *
+     * Retrieves all incomes and expenses, filters them by the selected date range,
+     * and groups them by date for display.
+     *
+     * @param userId The ID of the user whose movements to fetch
+     */
     fun fetchMovements(userId: String) {
         viewModelScope.launch {
             _historyState.value = _historyState.value.copy(isLoading = true)
@@ -74,6 +92,13 @@ class HistoryViewModel(
         }
     }
 
+    /**
+     * Changes the active date filter and re-filters movements.
+     *
+     * Re-applies the new filter to the currently loaded movements without fetching again.
+     *
+     * @param filter The new date filter to apply
+     */
     fun onFilterSelected(filter: DateFilter) {
         _historyState.value = _historyState.value.copy(selectedFilter = filter)
         // Re-apply filtering to current movements
@@ -93,6 +118,14 @@ class HistoryViewModel(
         )
     }
 
+    /**
+     * Sets a custom date range filter.
+     *
+     * Updates the filter to CUSTOM and applies the specified date range to filter movements.
+     *
+     * @param startDate Start date of the custom range (inclusive)
+     * @param endDate End date of the custom range (inclusive)
+     */
     fun onCustomDateRangeSelected(startDate: LocalDate, endDate: LocalDate) {
         _historyState.value = _historyState.value.copy(
             selectedFilter = DateFilter.CUSTOM,
@@ -117,10 +150,21 @@ class HistoryViewModel(
         )
     }
 
+    /**
+     * Sets the selected movement for detail viewing.
+     *
+     * @param movement The movement to select, or null to clear selection
+     */
     fun onMovementSelected(movement: HistoryMovementItem?) {
         _historyState.value = _historyState.value.copy(selectedMovement = movement)
     }
 
+    /**
+     * Calculates the date range for a given filter.
+     *
+     * @param filter The date filter to calculate range for
+     * @return Pair of start and end LocalDateTime for the filter
+     */
     private fun calculateDateRange(filter: DateFilter): Pair<LocalDateTime, LocalDateTime> {
         val now = LocalDateTime.now()
         val today = LocalDate.now()
@@ -158,6 +202,16 @@ class HistoryViewModel(
         }
     }
 
+    /**
+     * Groups movements by date with localized labels.
+     *
+     * Creates MovementGroup objects with labels like "HOY" (today), "AYER" (yesterday),
+     * or formatted dates (e.g., "15 Marzo 2025"). Movements within each group are sorted
+     * by datetime descending.
+     *
+     * @param movements List of movements to group
+     * @return List of MovementGroup sorted by date descending
+     */
     private fun groupMovementsByDate(movements: List<HistoryMovementItem>): List<MovementGroup> {
         val today = LocalDate.now()
         val yesterday = today.minusDays(1)
@@ -185,6 +239,11 @@ class HistoryViewModel(
             }
     }
 
+    /**
+     * Gets a formatted text representation of the current date range.
+     *
+     * @return Formatted date range string (e.g., "15 Marzo 2025" for TODAY, or "1 Marzo 2025 - 31 Marzo 2025" for MONTH)
+     */
     fun getDateRangeText(): String {
         val (startDate, endDate) = calculateDateRange(_historyState.value.selectedFilter)
         val formatter = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.getDefault())
@@ -198,6 +257,15 @@ class HistoryViewModel(
         }
     }
 
+    /**
+     * Updates movements from external sources (e.g., real-time observers).
+     *
+     * Filters and groups the provided movements according to the current date filter.
+     * Useful for updating the history when observing movements in real-time.
+     *
+     * @param incomeDetails List of income details
+     * @param expenseDetails List of expense details
+     */
     fun updateMovements(
         incomeDetails: List<com.grupo03.solea.data.models.IncomeDetails>,
         expenseDetails: List<com.grupo03.solea.data.models.ExpenseDetails>

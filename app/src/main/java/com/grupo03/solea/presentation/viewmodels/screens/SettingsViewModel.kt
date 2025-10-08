@@ -10,10 +10,20 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
+/**
+ * ViewModel for the settings screen.
+ *
+ * Manages user preferences including notifications, theme (dark/light), and language settings.
+ * Automatically loads current preferences from DataStore on initialization and provides
+ * methods to update individual preferences.
+ *
+ * @property userPreferencesRepository Repository for persisting user preferences
+ */
 class SettingsViewModel(
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
+    /** Settings state including notifications, theme, and language preferences */
     private val _uiState = MutableStateFlow(SettingsState())
     val uiState: StateFlow<SettingsState> = _uiState.asStateFlow()
 
@@ -21,6 +31,12 @@ class SettingsViewModel(
         loadPreferences()
     }
 
+    /**
+     * Loads user preferences from DataStore.
+     *
+     * Combines all preference flows (notifications, theme, language) and updates
+     * the UI state reactively whenever any preference changes.
+     */
     private fun loadPreferences() {
         viewModelScope.launch {
             combine(
@@ -39,6 +55,11 @@ class SettingsViewModel(
         }
     }
 
+    /**
+     * Toggles notification preferences.
+     *
+     * @param enabled Whether notifications should be enabled
+     */
     fun toggleNotifications(enabled: Boolean) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
@@ -57,6 +78,11 @@ class SettingsViewModel(
         }
     }
 
+    /**
+     * Toggles theme preference between dark and light mode.
+     *
+     * @param isDark Whether dark theme should be enabled
+     */
     fun toggleTheme(isDark: Boolean) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
@@ -75,6 +101,11 @@ class SettingsViewModel(
         }
     }
 
+    /**
+     * Changes the application language preference.
+     *
+     * @param languageCode Language code (e.g., "en", "es")
+     */
     fun changeLanguage(languageCode: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
@@ -93,6 +124,9 @@ class SettingsViewModel(
         }
     }
 
+    /**
+     * Clears any error message from the settings state.
+     */
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }

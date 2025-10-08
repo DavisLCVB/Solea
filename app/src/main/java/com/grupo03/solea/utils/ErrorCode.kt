@@ -17,7 +17,7 @@ sealed interface AppError {
      */
     val context: Map<String, Any>
         get() = emptyMap()
-    
+
 }
 
 /**
@@ -39,7 +39,6 @@ enum class AuthError(
     PASSWORD_EMPTY("AUTH_010", R.string.error_auth_password_empty),
     PASSWORDS_DO_NOT_MATCH("AUTH_011", R.string.error_auth_passwords_do_not_match),
     GOOGLE_SIGN_IN_FAILED("AUTH_012", R.string.error_auth_google_sign_in_failed),
-    USER_CREATION_FAILED("AUTH_013", R.string.error_auth_user_creation_failed),
     UNKNOWN_ERROR("AUTH_999", R.string.error_auth_unknown);
 }
 
@@ -57,10 +56,6 @@ enum class MovementError(
     FETCH_FAILED("MOV_005", R.string.error_movement_fetch_failed),
     INVALID_AMOUNT("MOV_006", R.string.error_movement_invalid_amount),
     INVALID_TYPE("MOV_007", R.string.error_movement_invalid_type),
-    INVALID_NOTE("MOV_008", R.string.error_movement_invalid_note),
-    INVALID_NAME("MOV_009", R.string.error_movement_invalid_name),
-    INVALID_DESCRIPTION("MOV_010", R.string.error_movement_invalid_description),
-    INVALID_DATA("MOV_011", R.string.error_movement_invalid_data),
     PERMISSION_DENIED("MOV_012", R.string.error_movement_permission_denied),
     NETWORK_ERROR("MOV_013", R.string.error_movement_network_error),
     UNKNOWN_ERROR("MOV_999", R.string.error_movement_unknown);
@@ -80,9 +75,6 @@ enum class BudgetError(
     FETCH_FAILED("BDG_005", R.string.error_budget_fetch_failed),
     INVALID_AMOUNT("BDG_006", R.string.error_budget_invalid_amount),
     INVALID_CATEGORY("BDG_007", R.string.error_budget_invalid_category),
-    INVALID_DATE("BDG_008", R.string.error_budget_invalid_date),
-    INVALID_DATA("BDG_009", R.string.error_budget_invalid_data),
-    BUDGET_ALREADY_EXISTS("BDG_010", R.string.error_budget_already_exists),
     PERMISSION_DENIED("BDG_011", R.string.error_budget_permission_denied),
     NETWORK_ERROR("BDG_012", R.string.error_budget_network_error),
     UNKNOWN_ERROR("BDG_999", R.string.error_budget_unknown);
@@ -100,7 +92,6 @@ enum class ReceiptError(
     UPDATE_FAILED("RCP_003", R.string.error_receipt_update_failed),
     DELETE_FAILED("RCP_004", R.string.error_receipt_delete_failed),
     FETCH_FAILED("RCP_005", R.string.error_receipt_fetch_failed),
-    INVALID_DATA("RCP_006", R.string.error_receipt_invalid_data),
     PERMISSION_DENIED("RCP_007", R.string.error_receipt_permission_denied),
     NETWORK_ERROR("RCP_008", R.string.error_receipt_network_error),
     UNKNOWN_ERROR("RCP_999", R.string.error_receipt_unknown);
@@ -118,7 +109,6 @@ enum class ItemError(
     UPDATE_FAILED("ITM_003", R.string.error_item_update_failed),
     DELETE_FAILED("ITM_004", R.string.error_item_delete_failed),
     FETCH_FAILED("ITM_005", R.string.error_item_fetch_failed),
-    INVALID_DATA("ITM_006", R.string.error_item_invalid_data),
     PERMISSION_DENIED("ITM_007", R.string.error_item_permission_denied),
     NETWORK_ERROR("ITM_008", R.string.error_item_network_error),
     UNKNOWN_ERROR("ITM_999", R.string.error_item_unknown);
@@ -132,8 +122,13 @@ enum class RepositoryError(
     override val code: String,
     @StringRes override val messageRes: Int
 ) : AppError {
+    @Suppress("unused")
     DATABASE_CONNECTION_FAILED("REP_001", R.string.error_repository_database_connection_failed),
+
+    @Suppress("unused")
     TRANSACTION_FAILED("REP_002", R.string.error_repository_transaction_failed),
+
+    @Suppress("unused")
     SERIALIZATION_ERROR("REP_003", R.string.error_repository_serialization_error),
     UNKNOWN_ERROR("REP_999", R.string.error_repository_unknown);
 }
@@ -151,7 +146,6 @@ enum class CategoryError(
     DELETE_FAILED("CAT_004", R.string.error_category_delete_failed),
     FETCH_FAILED("CAT_005", R.string.error_category_fetch_failed),
     INVALID_NAME("CAT_006", R.string.error_category_invalid_name),
-    INVALID_DATA("CAT_007", R.string.error_category_invalid_data),
     ALREADY_EXISTS("CAT_008", R.string.error_category_already_exists),
     PERMISSION_DENIED("CAT_009", R.string.error_category_permission_denied),
     NETWORK_ERROR("CAT_010", R.string.error_category_network_error),
@@ -166,10 +160,20 @@ enum class SourceError(
     @StringRes override val messageRes: Int
 ) : AppError {
     NOT_FOUND("SRC_001", R.string.error_source_not_found),
+
+    @Suppress("unused")
     CREATION_FAILED("SRC_002", R.string.error_source_creation_failed),
+
+    @Suppress("unused")
     UPDATE_FAILED("SRC_003", R.string.error_source_update_failed),
+
+    @Suppress("unused")
     DELETE_FAILED("SRC_004", R.string.error_source_delete_failed),
+
+    @Suppress("unused")
     FETCH_FAILED("SRC_005", R.string.error_source_fetch_failed),
+
+    @Suppress("unused")
     INVALID_DATA("SRC_006", R.string.error_source_invalid_data),
     PERMISSION_DENIED("SRC_007", R.string.error_source_permission_denied),
     NETWORK_ERROR("SRC_008", R.string.error_source_network_error),
@@ -184,10 +188,20 @@ enum class UserError(
     @StringRes override val messageRes: Int
 ) : AppError {
     NOT_FOUND("USR_001", R.string.error_user_not_found),
+
+    @Suppress("unused")
     CREATION_FAILED("USR_002", R.string.error_user_creation_failed),
+
+    @Suppress("unused")
     UPDATE_FAILED("USR_003", R.string.error_user_update_failed),
+
+    @Suppress("unused")
     DELETE_FAILED("USR_004", R.string.error_user_delete_failed),
+
+    @Suppress("unused")
     FETCH_FAILED("USR_005", R.string.error_user_fetch_failed),
+
+    @Suppress("unused")
     INVALID_DATA("USR_006", R.string.error_user_invalid_data),
     PERMISSION_DENIED("USR_007", R.string.error_user_permission_denied),
     NETWORK_ERROR("USR_008", R.string.error_user_network_error),
@@ -203,23 +217,5 @@ fun AppError.getStringRes(): Int = messageRes
 /**
  * Extension function to get error code from any AppError
  */
+@Suppress("unused")
 fun AppError.getCode(): String = code
-
-// Backward compatibility aliases (deprecated)
-@Deprecated("Use AuthError instead", ReplaceWith("AuthError"))
-typealias Auth = AuthError
-
-@Deprecated("Use MovementError instead", ReplaceWith("MovementError"))
-typealias Movement = MovementError
-
-@Deprecated("Use BudgetError instead", ReplaceWith("BudgetError"))
-typealias Budget = BudgetError
-
-@Deprecated("Use ReceiptError instead", ReplaceWith("ReceiptError"))
-typealias Receipt = ReceiptError
-
-@Deprecated("Use ItemError instead", ReplaceWith("ItemError"))
-typealias Item = ItemError
-
-@Deprecated("Use RepositoryError instead", ReplaceWith("RepositoryError"))
-typealias Repository = RepositoryError

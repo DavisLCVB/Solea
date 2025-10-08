@@ -19,23 +19,44 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.Instant
 
+/**
+ * ViewModel for budget management screens.
+ *
+ * Manages three related screens: budget list, budget limits (categories with their budgets),
+ * and budget creation/edit form. Handles budget CRUD operations, budget status tracking
+ * based on spending, and category-budget associations.
+ *
+ * @property budgetRepository Repository for budget operations
+ * @property categoryRepository Repository for category operations
+ */
 class BudgetViewModel(
     private val budgetRepository: BudgetRepository,
     private val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
+    /** Budget list state */
     private val _budgetState = MutableStateFlow(BudgetState())
     val budgetState: StateFlow<BudgetState> = _budgetState.asStateFlow()
 
+    /** Budget limits screen state showing categories paired with their budgets */
     private val _budgetLimitsScreenState = MutableStateFlow(BudgetLimitsScreenState())
     val budgetLimitsScreenState: StateFlow<BudgetLimitsScreenState> = _budgetLimitsScreenState.asStateFlow()
 
+    /** Budget creation/edit form state */
     private val _editBudgetFormState = MutableStateFlow(EditBudgetFormState())
     val editBudgetFormState: StateFlow<EditBudgetFormState> = _editBudgetFormState.asStateFlow()
 
+    /** Cached categories (user + default) */
     private var categories: List<Category> = emptyList()
 
-    // Fetch budgets and categories
+    /**
+     * Fetches budgets and categories for the user.
+     *
+     * Retrieves all budgets and combines them with categories (user + default) to create
+     * category-budget pairs for the budget limits screen.
+     *
+     * @param userId The ID of the user
+     */
     fun fetchBudgetsAndCategories(userId: String) {
         viewModelScope.launch {
             _budgetLimitsScreenState.value = _budgetLimitsScreenState.value.copy(isLoading = true)
@@ -65,7 +86,9 @@ class BudgetViewModel(
         }
     }
 
-    // Fetch available statuses
+    /**
+     * Fetches available budget statuses from the repository.
+     */
     fun fetchStatuses() {
         viewModelScope.launch {
             val statusesResult = budgetRepository.getAllStatus()
@@ -76,7 +99,13 @@ class BudgetViewModel(
         }
     }
 
-    // Select category for editing
+    /**
+     * Selects a category for budget editing.
+     *
+     * Loads the existing budget for the category (if any) into the edit form.
+     *
+     * @param category The category to edit budget for
+     */
     fun onSelectCategory(category: Category) {
         val budget = _budgetState.value.budgets.find { it.category == category.name }
         _editBudgetFormState.value = EditBudgetFormState(
@@ -88,7 +117,11 @@ class BudgetViewModel(
         )
     }
 
-    // Update amount
+    /**
+     * Handles budget amount field changes with validation.
+     *
+     * @param newAmount The new amount value as string
+     */
     fun onAmountChange(newAmount: String) {
         val amount = newAmount.toDoubleOrNull()
         val isValid = amount != null && amount > 0
@@ -99,14 +132,26 @@ class BudgetViewModel(
         )
     }
 
-    // Update date
+    /**
+     * Handles budget expiration date field changes.
+     *
+     * @param newDate The new expiration date
+     */
     fun onDateChange(newDate: Instant) {
         _editBudgetFormState.value = _editBudgetFormState.value.copy(
             selectedDate = newDate
         )
     }
 
-    // Save budget (create or update)
+    /**
+     * Saves a budget (creates new or updates existing).
+     *
+     * Validates the form fields, then creates a new budget or updates the existing one
+     * based on whether existingBudget is present in the form state.
+     *
+     * @param userId The ID of the user
+     * @param onSuccess Callback invoked when budget is saved successfully
+     */
     fun saveBudget(userId: String, onSuccess: () -> Unit) {
         val currentState = _editBudgetFormState.value
         val amount = currentState.budgetAmount.toDoubleOrNull()
@@ -184,7 +229,13 @@ class BudgetViewModel(
         }
     }
 
-    // Delete budget
+    /**
+     * Deletes a budget.
+     *
+     * @param userId The ID of the user
+     * @param budgetId The ID of the budget to delete
+     * @param onSuccess Callback invoked when budget is deleted successfully
+     */
     fun deleteBudget(userId: String, budgetId: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _editBudgetFormState.value = _editBudgetFormState.value.copy(isLoading = true)
@@ -206,7 +257,16 @@ class BudgetViewModel(
         }
     }
 
-    // Calculate budget progress (for future use with notifications)
+    /**
+     * Calculates budget progress and updates budget statuses.
+     *
+     * Analyzes spending by category and automatically updates budget statuses based on
+     * percentage spent and expiration date. Used for budget notifications and tracking.
+     * Statuses: active (<80%), warning (80-100%), exceeded (>100%), inactive (expired).
+     *
+     * @param userId The ID of the user
+     * @param movements List of movements to calculate spending from
+     */
     fun calculateBudgetProgress(userId: String, movements: List<Movement>) {
         viewModelScope.launch {
             val budgets = _budgetState.value.budgets
@@ -249,7 +309,9 @@ class BudgetViewModel(
         }
     }
 
-    // Clear form
+    /**
+     * Clears the budget edit form, resetting all fields except available statuses.
+     */
     fun clearForm() {
         _editBudgetFormState.value = EditBudgetFormState(
             availableStatus = _editBudgetFormState.value.availableStatus

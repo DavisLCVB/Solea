@@ -3,7 +3,18 @@ package com.grupo03.solea.utils
 import com.google.firebase.firestore.FirebaseFirestoreException
 
 /**
- * Generic function to map Firestore exceptions to domain-specific errors
+ * Generic function to map Firestore exceptions to domain-specific errors.
+ *
+ * This function translates Firebase Firestore exception codes into application-specific
+ * error types, providing better type safety and error handling throughout the application.
+ *
+ * @param T The type of AppError to return
+ * @param e The FirebaseFirestoreException to map
+ * @param defaultError The error to return for unmapped exceptions
+ * @param notFound The error to return when the document/collection is not found
+ * @param permissionDenied The error to return when access is denied
+ * @param networkError The error to return when the network is unavailable
+ * @return The appropriate domain-specific error
  */
 inline fun <reified T : AppError> mapFirestoreException(
     e: FirebaseFirestoreException,
@@ -20,8 +31,13 @@ inline fun <reified T : AppError> mapFirestoreException(
     }
 }
 
-// Convenience functions for each domain
-
+/**
+ * Maps FirebaseFirestoreException to BudgetError.
+ *
+ * @param e The exception to map
+ * @param defaultError The default error to use for unmapped exceptions
+ * @return The appropriate BudgetError
+ */
 fun mapFirestoreException(
     e: FirebaseFirestoreException,
     defaultError: BudgetError
@@ -35,6 +51,13 @@ fun mapFirestoreException(
     )
 }
 
+/**
+ * Maps FirebaseFirestoreException to MovementError.
+ *
+ * @param e The exception to map
+ * @param defaultError The default error to use for unmapped exceptions
+ * @return The appropriate MovementError
+ */
 fun mapFirestoreException(
     e: FirebaseFirestoreException,
     defaultError: MovementError
@@ -48,6 +71,13 @@ fun mapFirestoreException(
     )
 }
 
+/**
+ * Maps FirebaseFirestoreException to CategoryError.
+ *
+ * @param e The exception to map
+ * @param defaultError The default error to use for unmapped exceptions
+ * @return The appropriate CategoryError
+ */
 fun mapFirestoreException(
     e: FirebaseFirestoreException,
     defaultError: CategoryError
@@ -61,6 +91,13 @@ fun mapFirestoreException(
     )
 }
 
+/**
+ * Maps FirebaseFirestoreException to ItemError.
+ *
+ * @param e The exception to map
+ * @param defaultError The default error to use for unmapped exceptions
+ * @return The appropriate ItemError
+ */
 fun mapFirestoreException(
     e: FirebaseFirestoreException,
     defaultError: ItemError
@@ -74,6 +111,13 @@ fun mapFirestoreException(
     )
 }
 
+/**
+ * Maps FirebaseFirestoreException to ReceiptError.
+ *
+ * @param e The exception to map
+ * @param defaultError The default error to use for unmapped exceptions
+ * @return The appropriate ReceiptError
+ */
 fun mapFirestoreException(
     e: FirebaseFirestoreException,
     defaultError: ReceiptError
@@ -87,6 +131,14 @@ fun mapFirestoreException(
     )
 }
 
+/**
+ * Maps FirebaseFirestoreException to SourceError.
+ *
+ * @param e The exception to map
+ * @param defaultError The default error to use for unmapped exceptions
+ * @return The appropriate SourceError
+ */
+@Suppress("unused")
 fun mapFirestoreException(
     e: FirebaseFirestoreException,
     defaultError: SourceError
@@ -100,6 +152,14 @@ fun mapFirestoreException(
     )
 }
 
+/**
+ * Maps FirebaseFirestoreException to UserError.
+ *
+ * @param e The exception to map
+ * @param defaultError The default error to use for unmapped exceptions
+ * @return The appropriate UserError
+ */
+@Suppress("unused")
 fun mapFirestoreException(
     e: FirebaseFirestoreException,
     defaultError: UserError

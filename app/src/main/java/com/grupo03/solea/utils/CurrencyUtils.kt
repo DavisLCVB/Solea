@@ -3,97 +3,113 @@ package com.grupo03.solea.utils
 import java.util.Currency
 import java.util.Locale
 
+/**
+ * Utility object for currency handling and conversion.
+ *
+ * Provides functions for:
+ * - Detecting device currency based on locale
+ * - Getting currency symbols
+ * - Formatting amounts with currency
+ * - Converting between currencies (using static exchange rates)
+ *
+ * Note: Exchange rates are static and should be updated periodically.
+ * For production use, consider integrating a real-time currency API.
+ */
 object CurrencyUtils {
     /**
-     * Obtiene el código de moneda basado en el Locale del dispositivo
+     * Gets the currency code based on the device's locale.
+     *
+     * @return Currency code (e.g., "USD", "EUR", "ARS"). Defaults to "USD" if unavailable.
      */
     fun getDeviceCurrency(): String {
         return try {
             val locale = Locale.getDefault()
             val currency = Currency.getInstance(locale)
             currency.currencyCode
-        } catch (e: Exception) {
-            // Si no se puede obtener la moneda, usar USD por defecto
+        } catch (_: Exception) {
             "USD"
         }
     }
 
     /**
-     * Obtiene el símbolo de moneda basado en el Locale del dispositivo
+     * Gets the currency symbol based on the device's locale.
+     *
+     * @return Currency symbol (e.g., "$", "€", "AR$"). Defaults to "$" if unavailable.
      */
     fun getDeviceCurrencySymbol(): String {
         return try {
             val locale = Locale.getDefault()
             val currency = Currency.getInstance(locale)
             currency.symbol
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             "$"
         }
     }
 
     /**
-     * Mapeo de códigos de país a códigos de moneda comunes
+     * Mapping of country codes to currency codes for common Latin American and European countries.
      */
     private val countryToCurrency = mapOf(
         "AR" to "ARS", // Argentina
         "BO" to "BOB", // Bolivia
-        "BR" to "BRL", // Brasil
+        "BR" to "BRL", // Brazil
         "CL" to "CLP", // Chile
         "CO" to "COP", // Colombia
         "CR" to "CRC", // Costa Rica
         "CU" to "CUP", // Cuba
-        "DO" to "DOP", // República Dominicana
-        "EC" to "USD", // Ecuador (usa USD)
-        "SV" to "USD", // El Salvador (usa USD)
+        "DO" to "DOP", // Dominican Republic
+        "EC" to "USD", // Ecuador (uses USD)
+        "SV" to "USD", // El Salvador (uses USD)
         "GT" to "GTQ", // Guatemala
         "HN" to "HNL", // Honduras
-        "MX" to "MXN", // México
+        "MX" to "MXN", // Mexico
         "NI" to "NIO", // Nicaragua
-        "PA" to "PAB", // Panamá
+        "PA" to "PAB", // Panama
         "PY" to "PYG", // Paraguay
-        "PE" to "PEN", // Perú
+        "PE" to "PEN", // Peru
         "UY" to "UYU", // Uruguay
         "VE" to "VES", // Venezuela
-        "ES" to "EUR", // España
-        "US" to "USD", // Estados Unidos
+        "ES" to "EUR", // Spain
+        "US" to "USD", // United States
     )
 
     /**
-     * Obtiene la moneda basándose en el código de país del Locale
+     * Gets the currency based on the country code from the device's locale.
+     *
+     * Uses a predefined mapping for common countries, falls back to device currency if not mapped.
+     *
+     * @return Currency code (e.g., "USD", "EUR"). Defaults to "USD" if unavailable.
      */
     fun getCurrencyByCountry(): String {
         return try {
             val locale = Locale.getDefault()
             val countryCode = locale.country
             countryToCurrency[countryCode] ?: getDeviceCurrency()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             "USD"
         }
     }
 
     /**
-     * Obtiene el símbolo de una moneda específica
+     * Gets the symbol for a specific currency code.
+     *
+     * @param currencyCode The ISO 4217 currency code (e.g., "USD", "EUR")
+     * @return The currency symbol. Returns the currency code itself if symbol is unavailable.
      */
     fun getCurrencySymbol(currencyCode: String): String {
         return try {
             val currency = Currency.getInstance(currencyCode)
             currency.symbol
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             currencyCode
         }
     }
 
     /**
-     * Formatea un monto con su moneda
-     */
-    fun formatAmount(amount: Double, currencyCode: String): String {
-        val symbol = getCurrencySymbol(currencyCode)
-        return "$symbol ${String.format(Locale.getDefault(), "%.2f", amount)}"
-    }
-
-    /**
-     * Tasas de cambio aproximadas respecto al USD (actualizar periódicamente)
-     * Para una solución en producción, usar una API de tasas de cambio
+     * Static exchange rates relative to USD.
+     *
+     * Note: These are approximate rates and should be updated periodically.
+     * For production applications, use a real-time currency exchange rate API.
      */
     private val exchangeRates = mapOf(
         "USD" to 1.0,
@@ -118,11 +134,16 @@ object CurrencyUtils {
     )
 
     /**
-     * Convierte un monto de una moneda a otra
-     * @param amount Monto a convertir
-     * @param fromCurrency Moneda origen
-     * @param toCurrency Moneda destino
-     * @return Monto convertido, o el monto original si no se puede convertir
+     * Converts an amount from one currency to another using static exchange rates.
+     *
+     * The conversion uses USD as an intermediary:
+     * 1. Convert from source currency to USD
+     * 2. Convert from USD to target currency
+     *
+     * @param amount The amount to convert
+     * @param fromCurrency The source currency code
+     * @param toCurrency The target currency code
+     * @return The converted amount. Returns the original amount if conversion is not possible.
      */
     fun convertCurrency(amount: Double, fromCurrency: String, toCurrency: String): Double {
         if (fromCurrency == toCurrency) return amount
@@ -130,13 +151,17 @@ object CurrencyUtils {
         val fromRate = exchangeRates[fromCurrency] ?: return amount
         val toRate = exchangeRates[toCurrency] ?: return amount
 
-        // Convertir a USD primero, luego a la moneda destino
+        // Convert to USD first, then to target currency
         val amountInUSD = amount / fromRate
         return amountInUSD * toRate
     }
 
     /**
-     * Verifica si se puede convertir entre dos monedas
+     * Checks if conversion is possible between two currencies.
+     *
+     * @param fromCurrency The source currency code
+     * @param toCurrency The target currency code
+     * @return True if both currencies are supported in the exchange rates table, false otherwise
      */
     fun canConvert(fromCurrency: String, toCurrency: String): Boolean {
         return exchangeRates.containsKey(fromCurrency) && exchangeRates.containsKey(toCurrency)

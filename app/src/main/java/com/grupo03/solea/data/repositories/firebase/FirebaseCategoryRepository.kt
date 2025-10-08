@@ -23,11 +23,26 @@ class FirebaseCategoryRepository(
 
     override suspend fun createCategory(category: Category): RepositoryResult<Category> {
         return try {
+            // Verificar si ya existe una categoría con el mismo nombre y userId
+            val existingQuery = firestore
+                .collection(DatabaseContants.CATEGORIES_COLLECTION)
+                .whereEqualTo("name", category.name)
+                .whereEqualTo("userId", category.userId)
+                .get()
+                .await()
+
+            if (!existingQuery.isEmpty) {
+                Log.w(TAG, "createCategory: Category already exists - name=${category.name}, userId=${category.userId}")
+                return RepositoryResult.Error(CategoryError.ALREADY_EXISTS)
+            }
+
+            // Si no existe, crear la nueva categoría
             val doc = firestore
                 .collection(DatabaseContants.CATEGORIES_COLLECTION)
                 .document()
             val categoryWithId = category.copy(id = doc.id)
             doc.set(categoryWithId).await()
+            Log.d(TAG, "createCategory: Category created successfully with ID: ${doc.id}")
             RepositoryResult.Success(categoryWithId)
         } catch (e: FirebaseFirestoreException) {
             Log.e(TAG, "createCategory: FirebaseFirestoreException", e)

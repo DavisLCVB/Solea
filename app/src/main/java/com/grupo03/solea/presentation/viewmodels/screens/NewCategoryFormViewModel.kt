@@ -12,13 +12,29 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
 
+/**
+ * ViewModel for the new category creation form.
+ *
+ * Manages the state of creating new custom categories, including form validation
+ * and submission. Also supports batch creation of AI-suggested categories.
+ *
+ * @property categoryRepository Repository for category operations
+ */
 class NewCategoryFormViewModel(
     private val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
+    /** Form state including field values, validation, and operation status */
     private val _formState = MutableStateFlow(NewCategoryFormState())
     val formState: StateFlow<NewCategoryFormState> = _formState.asStateFlow()
 
+    /**
+     * Handles category name field changes with validation.
+     *
+     * Category names must be at least 3 characters long and non-blank.
+     *
+     * @param newName The new category name value
+     */
     fun onNameChange(newName: String) {
         val isValid = newName.isNotBlank() && newName.length >= 3
         _formState.value = _formState.value.copy(
@@ -28,12 +44,28 @@ class NewCategoryFormViewModel(
         )
     }
 
+    /**
+     * Handles category description field changes.
+     *
+     * The description is used by AI for suggesting categories automatically.
+     *
+     * @param newDescription The new description value
+     */
     fun onDescriptionChange(newDescription: String) {
         _formState.value = _formState.value.copy(
             description = newDescription
         )
     }
 
+    /**
+     * Creates a new category.
+     *
+     * Validates the category name before attempting to create. The category is checked
+     * for duplicates in the repository (see FirebaseCategoryRepository.createCategory).
+     *
+     * @param userId The ID of the user creating the category
+     * @param onSuccess Callback invoked when category is created successfully
+     */
     fun createCategory(userId: String, onSuccess: () -> Unit) {
         val currentState = _formState.value
 
@@ -72,16 +104,24 @@ class NewCategoryFormViewModel(
         }
     }
 
+    /**
+     * Clears the form state, resetting all fields to default values.
+     */
     fun clearForm() {
         _formState.value = NewCategoryFormState()
     }
 
     /**
-     * Creates multiple categories in batch (used for AI-suggested categories)
+     * Creates multiple categories in batch (used for AI-suggested categories).
+     *
+     * Iterates through the provided category names and creates each one. Stops
+     * on first error or continues until all are created. Category names shorter
+     * than 3 characters are skipped.
+     *
      * @param userId The user ID to associate the categories with
      * @param categoryNames List of category names to create
      * @param onSuccess Callback when all categories are created successfully
-     * @param onError Callback when there's an error
+     * @param onError Callback when there's an error, receives error message
      */
     fun createCategoriesInBatch(
         userId: String,

@@ -18,14 +18,31 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/**
+ * ViewModel for managing authentication state and operations.
+ *
+ * Handles user authentication including email/password sign-in, email/password registration,
+ * Google OAuth sign-in, and sign-out. Manages three separate UI states: authentication state,
+ * sign-in form state, and sign-up form state.
+ *
+ * This ViewModel provides real-time validation for form fields and coordinates between
+ * the AuthService and the UI layer, exposing StateFlows for reactive UI updates.
+ *
+ * @property authService Service for performing authentication operations
+ */
 class AuthViewModel(
     private val authService: AuthService
 ) : ViewModel() {
 
+    /** Authentication state including current user and error status */
     private val _authState = MutableStateFlow(AuthState())
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
+
+    /** Sign-in form state including field values, validation, and loading status */
     private val _signInFormState = MutableStateFlow(SignInFormState())
     val signInFormState: StateFlow<SignInFormState> = _signInFormState.asStateFlow()
+
+    /** Sign-up form state including field values, validation, and loading status */
     private val _signUpFormState = MutableStateFlow(SignUpFormState())
     val signUpFormState: StateFlow<SignUpFormState> = _signUpFormState.asStateFlow()
 
@@ -33,6 +50,12 @@ class AuthViewModel(
         checkAuthState()
     }
 
+    /**
+     * Sets loading state for authentication forms.
+     *
+     * @param isLoading Whether a loading operation is in progress
+     * @param formType Which form to update (SIGN_IN, SIGN_UP), or null to update both
+     */
     private fun setLoading(isLoading: Boolean, formType: FormType?) {
         if (formType == null) {
             _signInFormState.update { it.copy(isLoading = isLoading) }
@@ -50,22 +73,47 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Updates the current authenticated user in the auth state.
+     *
+     * @param user The authenticated user, or null if signed out
+     */
     private fun setUser(user: User?) {
         _authState.update { it.copy(user = user) }
     }
 
+    /**
+     * Updates the sign-in form state.
+     *
+     * @param change Function to transform the current sign-in form state
+     */
     private fun setSignInForm(change: (SignInFormState) -> SignInFormState) {
         _signInFormState.value = change(_signInFormState.value)
     }
 
+    /**
+     * Updates the sign-up form state.
+     *
+     * @param change Function to transform the current sign-up form state
+     */
     private fun setSignUpForm(change: (SignUpFormState) -> SignUpFormState) {
         _signUpFormState.value = change(_signUpFormState.value)
     }
 
+    /**
+     * Sets the current authentication error.
+     *
+     * @param errorCode The authentication error, or null to clear the error
+     */
     private fun setErrorCode(errorCode: AuthError?) {
         _authState.update { it.copy(errorCode = errorCode) }
     }
 
+    /**
+     * Checks if the current error is related to email validation.
+     *
+     * @return True if the current error is an email-related error
+     */
     private fun isEmailError(): Boolean {
         return _authState.value.errorCode == AuthError.EMAIL_INVALID ||
                 _authState.value.errorCode == AuthError.EMAIL_ERROR ||
@@ -73,16 +121,32 @@ class AuthViewModel(
                 _authState.value.errorCode == AuthError.EMAIL_TOO_LONG
     }
 
+    /**
+     * Checks if the current error is related to password validation.
+     *
+     * @return True if the current error is a password-related error
+     */
     private fun isPasswordError(): Boolean {
         return _authState.value.errorCode == AuthError.WEAK_PASSWORD ||
                 _authState.value.errorCode == AuthError.PASSWORDS_DO_NOT_MATCH ||
                 _authState.value.errorCode == AuthError.PASSWORD_EMPTY
     }
 
+    /**
+     * Checks if the current error is related to username validation.
+     *
+     * @return True if the current error is a username-related error
+     */
     private fun isUsernameError(): Boolean {
         return _authState.value.errorCode == AuthError.USERNAME_INVALID
     }
 
+    /**
+     * Checks and updates the current authentication state.
+     *
+     * Queries the auth service for the current user and updates the auth state accordingly.
+     * Called automatically during initialization and can be called manually to refresh state.
+     */
     fun checkAuthState() {
         setLoading(true, null)
         viewModelScope.launch {
@@ -92,6 +156,14 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Handles email field changes for authentication forms.
+     *
+     * Delegates to the appropriate handler based on form type and performs real-time validation.
+     *
+     * @param formType The form being updated (SIGN_IN or SIGN_UP)
+     * @param newEmail The new email value
+     */
     fun onEmailChange(formType: FormType, newEmail: String) {
         when (formType) {
             FormType.SIGN_IN -> onSignInEmailChange(newEmail)
@@ -99,6 +171,11 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Handles email changes in the sign-in form with validation.
+     *
+     * @param newEmail The new email value
+     */
     private fun onSignInEmailChange(newEmail: String) {
         val errorCode = Validation.checkEmail(newEmail)
 
@@ -118,6 +195,11 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Handles email changes in the sign-up form with validation.
+     *
+     * @param newEmail The new email value
+     */
     private fun onSignUpEmailChange(newEmail: String) {
         val errorCode = Validation.checkEmail(newEmail)
         setSignUpForm {
@@ -136,6 +218,11 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Handles name field changes in the sign-up form with validation.
+     *
+     * @param newName The new name value
+     */
     fun onSignUpNameChange(newName: String) {
         val errorCode = Validation.checkName(newName)
         setSignUpForm {
@@ -154,12 +241,25 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Handles photo URI changes in the sign-up form.
+     *
+     * @param photoUri The new photo URI value, or null to remove
+     */
     fun onSignUpPhotoChange(photoUri: String?) {
         setSignUpForm {
             it.copy(photoUri = photoUri)
         }
     }
 
+    /**
+     * Handles password field changes for authentication forms.
+     *
+     * Delegates to the appropriate handler based on form type. Sign-up includes validation.
+     *
+     * @param formType The form being updated (SIGN_IN or SIGN_UP)
+     * @param newPassword The new password value
+     */
     fun onPasswordChange(formType: FormType, newPassword: String) {
         when (formType) {
             FormType.SIGN_IN -> onSignInPasswordChange(newPassword)
@@ -167,6 +267,11 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Handles password changes in the sign-in form.
+     *
+     * @param newPassword The new password value
+     */
     private fun onSignInPasswordChange(newPassword: String) {
         setSignInForm {
             it.copy(
@@ -175,6 +280,11 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Handles password changes in the sign-up form with validation.
+     *
+     * @param newPassword The new password value
+     */
     private fun onSignUpPasswordChange(newPassword: String) {
         val errorCode = Validation.checkPassword(newPassword)
         setSignUpForm {
@@ -193,6 +303,13 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Handles confirm password field changes in the sign-up form.
+     *
+     * Validates that the confirmation password matches the main password.
+     *
+     * @param newPassword The new confirm password value
+     */
     fun onSignUpConfirmPasswordChange(newPassword: String) {
         setSignUpForm {
             it.copy(
@@ -212,6 +329,12 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Performs sign-in with email and password.
+     *
+     * Validates that the email is valid, then attempts to sign in using the auth service.
+     * Updates the auth state with the user on success or error on failure.
+     */
     fun signInWithEmailAndPassword() {
         val formState = _signInFormState.value
         if (!formState.isEmailValid) {
@@ -234,6 +357,13 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Performs sign-up with email and password.
+     *
+     * Validates all form fields (email, name, password, password confirmation) before
+     * attempting to create a new account using the auth service. Updates the auth state
+     * with the new user on success or error on failure.
+     */
     fun signUpWithEmailAndPassword() {
         val formState = _signUpFormState.value
 
@@ -282,6 +412,14 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Performs sign-in with Google OAuth.
+     *
+     * Generates a Google sign-in request and attempts to authenticate using the Google
+     * identity provider. Requires an Android context for the Google sign-in flow.
+     *
+     * @param context Android context required for Google sign-in
+     */
     fun signInWithGoogle(context: Context) {
         val request = authService.generateGoogleRequest()
         if (request == null) {
@@ -301,6 +439,12 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Signs out the current user.
+     *
+     * Clears the user from the auth state and signs out from all providers
+     * (email/password and Google).
+     */
     fun signOut() {
         setLoading(true, null)
         setErrorCode(null)
