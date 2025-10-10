@@ -46,64 +46,26 @@ import org.koin.dsl.module
  * @see org.koin.core.module.Module
  */
 val appModule = module {
-    // ==================== Firebase instances ====================
-    // Singleton Firebase Authentication instance
     single { Firebase.auth }
-
-    // Singleton Firebase Firestore instance
     single { Firebase.firestore }
-
-    // ==================== Services ====================
-    // Authentication service using Firebase
     single<AuthService> { FirebaseAuthService(get()) }
 
-    // Receipt scanning service using Retrofit API
     single<ReceiptScannerService> { RetrofitReceiptScannerService() }
 
-    // ==================== Repositories ====================
-    // Movement repository for financial transactions
     single<MovementRepository> { FirebaseMovementRepository(get()) }
-
-    // Budget repository for spending limits
     single<BudgetRepository> { FirebaseBudgetRepository(get()) }
-
-    // Category repository for expense classification
     single<CategoryRepository> { FirebaseCategoryRepository(get()) }
-
-    // Item repository for purchase items
     single<ItemRepository> { FirebaseItemRepository(get()) }
-
-    // Receipt repository for scanned receipts
     single<ReceiptRepository> { FirebaseReceiptRepository(get()) }
-
-    // User preferences repository using DataStore
     single<UserPreferencesRepository> { DataStoreUserPreferencesRepository(androidContext()) }
 
-    // ==================== ViewModels ====================
-    // Shared view model for authentication state
     viewModel { AuthViewModel(get()) }
-
-    // Home screen view model
     viewModel { HomeViewModel() }
-
-    // Shared view model for movements data
     viewModel { MovementsViewModel(get(), get()) }
-
-    // View model for creating new categories
     viewModel { NewCategoryFormViewModel(get()) }
-
-    // View model for creating new movements
     viewModel { NewMovementFormViewModel(get(), get(), get(), get()) }
-
-    // View model for budget management
     viewModel { BudgetViewModel(get(), get()) }
-
-    // View model for application settings
     viewModel { SettingsViewModel(get()) }
-
-    // View model for transaction history
     viewModel { HistoryViewModel(get()) }
-
-    // View model for receipt scanning feature
     viewModel { ScanReceiptViewModel(get(), get()) }
 }
