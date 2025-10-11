@@ -1322,31 +1322,3 @@ LaunchedEffect(Unit) {
     permissionLauncher.launch(Manifest.permission.CAMERA)
 }
 ```
-
----
-
-## 📊 Métricas y Analytics
-
-### Eventos Rastreados
-
-1. **scan_receipt_started** - Usuario inicia escaneo
-2. **scan_receipt_completed** - Escaneo exitoso
-3. **scan_receipt_failed** - Error en escaneo
-4. **receipt_edited** - Usuario edita datos
-5. **receipt_saved** - Recibo guardado exitosamente
-
-```kotlin
-// Ejemplo de tracking
-fun trackScanEvent(eventName: String, params: Map<String, Any>) {
-    FirebaseAnalytics.getInstance(context).logEvent(eventName, Bundle().apply {
-        params.forEach { (key, value) ->
-            when (value) {
-                is String -> putString(key, value)
-                is Int -> putInt(key, value)
-                is Double -> putDouble(key, value)
-                is Boolean -> putBoolean(key, value)
-            }
-        }
-    })
-}
-```
