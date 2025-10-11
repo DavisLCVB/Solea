@@ -10,6 +10,7 @@ import com.grupo03.solea.data.models.EditableScannedReceipt
 import com.grupo03.solea.data.repositories.interfaces.CategoryRepository
 import com.grupo03.solea.data.services.interfaces.ReceiptScannerService
 import com.grupo03.solea.presentation.states.screens.ScanReceiptState
+import com.grupo03.solea.utils.CurrencyUtils
 import com.grupo03.solea.utils.MovementError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,12 +43,16 @@ class ScanReceiptViewModel(
     /**
      * Handles image capture completion.
      *
+     * Clears any previous errors and scanned data to ensure a fresh scan state.
+     *
      * @param uri URI of the captured receipt image
      */
     fun onImageCaptured(uri: Uri) {
         _state.value = _state.value.copy(
             capturedImageUri = uri,
-            error = null
+            scannedReceipt = null,
+            error = null,
+            isScanning = false
         )
     }
 
@@ -83,8 +88,11 @@ class ScanReceiptViewModel(
                 // Convert Uri to File
                 val imageFile = uriToFile(context, imageUri)
 
-                // Call scanner service with categories
-                val result = receiptScannerService.scanReceipt(imageFile, categories)
+                // Get device currency
+                val deviceCurrency = CurrencyUtils.getCurrencyByCountry()
+
+                // Call scanner service with categories and device currency
+                val result = receiptScannerService.scanReceipt(imageFile, categories, deviceCurrency)
 
                 if (result.isSuccess) {
                     val scannedData = result.getOrNull()!!.receipt

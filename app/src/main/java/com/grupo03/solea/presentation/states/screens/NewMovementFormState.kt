@@ -4,6 +4,7 @@ import com.grupo03.solea.data.models.Category
 import com.grupo03.solea.data.models.MovementType
 import com.grupo03.solea.data.models.SourceType
 import com.grupo03.solea.utils.AppError
+import com.grupo03.solea.utils.CurrencyUtils
 
 /**
  * UI state for the new movement form.
@@ -38,7 +39,7 @@ data class NewMovementFormState(
     val amount: String = "",
     val selectedCategory: Category? = null,
     val movementType: MovementType = MovementType.EXPENSE,
-    val currency: String = "USD",
+    val currency: String = CurrencyUtils.getCurrencyByCountry(),
     val categories: List<Category> = emptyList(),
     val isNameValid: Boolean = true,
     val isAmountValid: Boolean = true,

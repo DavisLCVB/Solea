@@ -311,7 +311,7 @@ fun BalanceCard(
     currentBalance: Double = 0.0,
     income: Double = 0.0,
     outcome: Double = 0.0,
-    currency: String = "USD"
+    currency: String = CurrencyUtils.getCurrencyByCountry()
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -377,9 +377,9 @@ fun BalanceCard(
 
 @Composable
 fun ChartCard(
-    income: Double,
-    expenses: Double,
-    currency: String
+    income: Double = 0.0,
+    expenses: Double = 0.0,
+    currency: String = CurrencyUtils.getCurrencyByCountry()
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 

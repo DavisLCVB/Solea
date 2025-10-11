@@ -209,6 +209,7 @@ fun NavGraphBuilder.mainNavigationGraph(
                 newCategoryFormViewModel = koinViewModel(),
                 authViewModel = authViewModel,
                 onNavigateBack = {
+                    scanReceiptViewModel.clearState()
                     navController.popBackStack()
                 },
                 onSuccess = {
