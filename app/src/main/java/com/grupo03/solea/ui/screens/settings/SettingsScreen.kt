@@ -270,7 +270,6 @@ private fun UserProfileCard(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // User Info
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = userName,
@@ -296,7 +295,6 @@ private fun UserProfileCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Edit Profile Button
             Button(
                 onClick = onEditProfile,
                 enabled = !isGoogleUser,

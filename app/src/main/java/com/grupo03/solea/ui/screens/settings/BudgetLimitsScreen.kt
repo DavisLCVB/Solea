@@ -154,7 +154,6 @@ fun BudgetLimitsScreen(
     }
 }
 
-// Helper function to get icon for category
 @Composable
 fun getCategoryIcon(categoryName: String): ImageVector {
     val categoryFood = stringResource(R.string.category_food)
@@ -212,7 +211,6 @@ fun CategoryBudgetCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Category Icon with background
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -240,7 +238,6 @@ fun CategoryBudgetCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Category info
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = category.name,
@@ -257,7 +254,6 @@ fun CategoryBudgetCard(
                 }
             }
 
-            // Status indicator
             if (budget != null) {
                 AssistChip(
                     onClick = { },

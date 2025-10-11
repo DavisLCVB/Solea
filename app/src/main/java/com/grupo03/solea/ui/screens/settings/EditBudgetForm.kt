@@ -89,7 +89,6 @@ fun EditBudgetForm(
             .fillMaxSize()
             .verticalScroll(scrollState)
     ) {
-        // Top App Bar Style Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
