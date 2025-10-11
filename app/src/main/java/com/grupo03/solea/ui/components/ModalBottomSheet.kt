@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.grupo03.solea.R
 
@@ -26,7 +27,7 @@ import com.grupo03.solea.R
 fun MovementModalBottomSheet(
     onDismissRequest: () -> Unit = {},
     onAddMovement: () -> Unit = {},
-    onAddMovementType: () -> Unit = {}
+    onAddCategory: () -> Unit = {}
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -36,7 +37,7 @@ fun MovementModalBottomSheet(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
         ) {
-            Text(text = "Add a movement")
+            Text(text = stringResource(R.string.button_add_movement))
             Spacer(modifier = Modifier.height(10.dp))
             Row {
                 Spacer(modifier = Modifier.weight(1f))
@@ -57,17 +58,17 @@ fun MovementModalBottomSheet(
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.form),
-                                    contentDescription = "Add movement by form",
+                                    contentDescription = stringResource(R.string.button_add_movement_by_form),
                                 )
                             }
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text(text = "Add movement by form")
+                            Text(text = stringResource(R.string.button_add_movement_by_form))
                         }
                     }
                     OutlinedButton(
                         onClick = {
                             onDismissRequest()
-                            onAddMovementType()
+                            onAddCategory()
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -80,11 +81,11 @@ fun MovementModalBottomSheet(
                                 ) {
                                 Icon(
                                     painter = painterResource(R.drawable.form),
-                                    contentDescription = "Add type by form",
+                                    contentDescription = stringResource(R.string.button_add_category_by_form)
                                 )
                             }
                             Spacer(Modifier.width(10.dp))
-                            Text(text = "Add type by form")
+                            Text(text = stringResource(R.string.button_add_category_by_form))
                         }
                     }
                 }

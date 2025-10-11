@@ -1,118 +1,154 @@
 package com.grupo03.solea.ui.screens.savings
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.grupo03.solea.data.models.Budget
-import com.grupo03.solea.data.models.Movement
-import com.grupo03.solea.data.models.MovementType
-import com.grupo03.solea.presentation.viewmodels.AuthViewModel
-import com.grupo03.solea.presentation.viewmodels.CoreViewModel
-import java.time.format.DateTimeFormatter
-import java.time.ZoneId
-import kotlin.math.abs
+import com.grupo03.solea.R
+import com.grupo03.solea.presentation.viewmodels.screens.BudgetViewModel
+import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
+import com.grupo03.solea.presentation.viewmodels.shared.MovementsViewModel
+import com.grupo03.solea.ui.components.SectionTitle
+import com.grupo03.solea.ui.components.TopBar
+import com.grupo03.solea.utils.CurrencyUtils
+import java.util.Locale
 
 @Composable
 fun SavingsScreen(
     authViewModel: AuthViewModel,
-    coreViewModel: CoreViewModel,
+    budgetViewModel: BudgetViewModel,
+    movementsViewModel: MovementsViewModel,
     onNavigateToBudgetLimits: () -> Unit,
-    onEditBudget: (MovementType) -> Unit,
+    onEditBudget: (String) -> Unit, // category name
     modifier: Modifier = Modifier
 ) {
-    val coreState = coreViewModel.uiState.collectAsState()
-    val authState = authViewModel.uiState.collectAsState()
+    val budgetState = budgetViewModel.budgetState.collectAsState()
+    val movementsState = movementsViewModel.movementsState.collectAsState()
+    val authState = authViewModel.authState.collectAsState()
     val userId = authState.value.user?.uid ?: ""
 
     // Cargar datos
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
-            coreViewModel.fetchMovements(userId)
-            coreViewModel.fetchBudgets(userId)
+            movementsViewModel.fetchMovements(userId)
+            budgetViewModel.fetchBudgetsAndCategories(userId)
         }
     }
 
     // Calcular gastos por categoría
-    val spendingByCategory = remember(coreState.value.movements) {
-        coreState.value.movements
-            .filter { it.amount < 0 }
-            .groupBy { it.typeId }
-            .mapValues { entry -> abs(entry.value.sumOf { it.amount }) }
+    val spendingByCategory = remember(movementsState.value.expenseDetailsList) {
+        movementsState.value.expenseDetailsList
+            .groupBy { it.movement.category }
+            .mapValues { (_, expenseDetails) ->
+                expenseDetails.sumOf { it.movement.total }
+            }
     }
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 12.dp)
+        modifier = modifier.fillMaxSize()
     ) {
-        Text(
-            text = "Metas",
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-        )
+        TopBar(title = stringResource(R.string.savings_title))
 
-        // Aquí irían las metas (Goals) - mock data por ahora
-        GoalCard(
-            name = "Laptop",
-            percent = 50,
-            amount = 3200.0,
-            date = "21 de Julio, 2025",
-            color = Color(0xFF2196F3)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        GoalCard(
-            name = "PC",
-            percent = 20,
-            amount = 7200.0,
-            date = "11 de Junio, 2026",
-            color = Color(0xFFFFC107)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        AddCard(onClick = { /* TODO: Agregar meta */ })
-
-        Text(
-            text = "Límites de gastos",
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)
-        )
-
-        // Mostrar límites registrados
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.weight(1f)
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp)
         ) {
-            // FILTRAR budgets activos
-            val activeBudgets = coreState.value.budgets.filter { budget ->
-                budget.statusId != "inactive" && budget.statusId.isNotEmpty()
-            }
+            Spacer(modifier = Modifier.height(16.dp))
 
-            items(activeBudgets) { budget ->
-                val category = coreState.value.movementTypes.find { it.id == budget.movementTypeId }
-                val spent = spendingByCategory[budget.movementTypeId] ?: 0.0
-                val percent = if (budget.amount > 0) {
-                    ((spent / budget.amount) * 100).toInt()
-                } else 0
+            SectionTitle(
+                text = stringResource(R.string.saving_goals),
+                icon = Icons.Default.Savings
+            )
+            Spacer(modifier = Modifier.height(12.dp))
 
-                if (category != null) {
+            // Aquí irían las metas (Goals) - mock data por ahora
+            GoalCard(
+                name = "Laptop",
+                percent = 50,
+                amount = 3200.0,
+                date = "21 de Julio, 2025",
+                color = Color(0xFF2196F3)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            GoalCard(
+                name = "PC",
+                percent = 20,
+                amount = 7200.0,
+                date = "11 de Junio, 2026",
+                color = Color(0xFFFFC107)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            AddCard(onClick = { /* TODO: Agregar meta */ })
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            SectionTitle(
+                text = stringResource(R.string.expenses_limits),
+                icon = Icons.Default.Receipt
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Mostrar límites registrados
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                // FILTRAR budgets activos
+                val activeBudgets = budgetState.value.budgets.filter { budget ->
+                    budget.statusId != "inactive" && budget.statusId.isNotEmpty()
+                }
+
+                items(activeBudgets) { budget ->
+                    val spent: Double = spendingByCategory[budget.category] ?: 0.0
+                    val percent = if (budget.amount > 0.0) {
+                        ((spent / budget.amount) * 100.0).toInt()
+                    } else 0
+
                     LimitCard(
-                        name = category.value,
+                        name = budget.category,
                         percent = percent,
                         spent = spent,
                         limit = budget.amount,
@@ -121,75 +157,97 @@ fun SavingsScreen(
                             percent >= 80 -> Color(0xFFFFC107)
                             else -> Color(0xFF4CAF50)
                         },
-                        onEditClick = { onEditBudget(category) },  // PASAR EL CALLBACK
+                        onEditClick = { onEditBudget(budget.category) },
                         onDeactivateClick = {
-                            // TODO: Desactivar budget
+                            budgetViewModel.deleteBudget(userId, budget.id) {}
                         }
                     )
                 }
-            }
 
-            item {
-                AddCard(onClick = onNavigateToBudgetLimits)
+                item {
+                    AddCard(onClick = onNavigateToBudgetLimits)
+                }
             }
         }
     }
-
-
 }
 
 @Composable
 fun GoalCard(name: String, percent: Int, amount: Double, date: String, color: Color) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(28.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
+            // Icon with background
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .padding(2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Savings,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(name, fontWeight = FontWeight.Medium, fontSize = 15.sp)
+                Text(
+                    name,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "$percent%",
                         color = color,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
+                        fontSize = 14.sp
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     LinearProgressIndicator(
                         progress = { percent / 100f },
                         color = color,
+                        trackColor = color.copy(alpha = 0.2f),
                         modifier = Modifier
-                            .height(6.dp)
-                            .width(60.dp)
-                            .clip(RoundedCornerShape(3.dp))
+                            .height(8.dp)
+                            .weight(1f)
+                            .clip(RoundedCornerShape(4.dp))
                     )
                 }
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "S/ %.2f".format(amount),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
-                )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = date,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
             }
-            IconButton(onClick = { }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+            Column(horizontalAlignment = Alignment.End) {
+                val currencySymbol = CurrencyUtils.getDeviceCurrencySymbol()
+                Text(
+                    text = "%s %.2f".format(Locale.getDefault(), currencySymbol, amount),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                IconButton(onClick = { }) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.options),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -210,69 +268,139 @@ fun LimitCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(
-                imageVector = if (percent >= 100) Icons.Default.Close else Icons.Default.CheckCircle,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(28.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(name, fontWeight = FontWeight.Medium, fontSize = 15.sp)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "$percent%",
-                        color = color,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    LinearProgressIndicator(
-                        progress = { (percent.coerceAtMost(100) / 100f) },
-                        color = color,
-                        modifier = Modifier
-                            .height(6.dp)
-                            .width(60.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                    )
-                }
-                Text(
-                    text = "Gastado: S/ %.2f de S/ %.2f".format(spent, limit),
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            // Status indicator bar
+            Box(
+                modifier = Modifier
+                    .width(6.dp)
+                    .height(90.dp)
+                    .clip(RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp))
+                    .padding(end = 0.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(vertical = 8.dp, horizontal = 0.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .run {
+                            background(color)
+                        }
                 )
             }
 
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Status icon
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .run {
+                                background(color.copy(alpha = 0.15f))
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = when {
+                                percent >= 100 -> Icons.Default.Warning
+                                percent >= 80 -> Icons.Outlined.Info
+                                else -> Icons.Default.CheckCircle
+                            },
+                            contentDescription = null,
+                            tint = color,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            name,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val currencySymbol = CurrencyUtils.getDeviceCurrencySymbol()
+                        Text(
+                            text = "%s %.2f de %s %.2f".format(
+                                Locale.getDefault(),
+                                currencySymbol,
+                                spent,
+                                currencySymbol,
+                                limit
+                            ),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = stringResource(R.string.options),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.saving_edit_limits)) },
+                                onClick = {
+                                    showMenu = false
+                                    onEditClick()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.savings_deactivate_limit)) },
+                                onClick = {
+                                    showMenu = false
+                                    onDeactivateClick()
+                                }
+                            )
+                        }
+                    }
                 }
 
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
+                // Progress bar
+                Column(
+                    modifier = Modifier.padding(start = 12.dp, end = 16.dp, bottom = 16.dp)
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("Editar límite") },
-                        onClick = {
-                            showMenu = false
-                            onEditClick()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Desactivar límite") },
-                        onClick = {
-                            showMenu = false
-                            onDeactivateClick()
-                        }
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "$percent%",
+                            color = color,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        LinearProgressIndicator(
+                            progress = { (percent.coerceAtMost(100) / 100f) },
+                            color = color,
+                            trackColor = color.copy(alpha = 0.2f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                        )
+                    }
                 }
             }
         }
@@ -285,19 +413,31 @@ fun AddCard(onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(36.dp),
+            .height(56.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Box(
+        Row(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Agregar", tint = MaterialTheme.colorScheme.primary)
+            Icon(
+                Icons.Default.Add,
+                contentDescription = stringResource(R.string.add),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.add_new),
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium,
+                fontSize = 15.sp
+            )
         }
     }
 }
-
-/*
-* comment
-* */

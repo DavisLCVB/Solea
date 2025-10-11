@@ -4,7 +4,7 @@ object ValidationConstants {
     const val MAX_EMAIL_LENGTH = 254
     const val MIN_PASSWORD_LENGTH = 6
     const val MAX_PASSWORD_LENGTH = 20
-    const val NAME_REGEX = "^[a-zA-ZÀ-ÿ\\s]{3,40}$"
+    const val NAME_REGEX = "^[a-zA-ZÀ-ÿ0-9\\s.]{3,40}$"
 }
 
 object ServiceConstants {
@@ -15,7 +15,7 @@ object ServiceConstants {
 object DatabaseContants {
     const val USERS_COLLECTION = "users"
     const val MOVEMENTS_COLLECTION = "movements"
-    const val MOVEMENT_TYPES_COLLECTION = "movement_types"
-    const val BUDGETS_COLLECTION = "budgets"  // AGREGAR ESTA LÍNEA
-    const val STATUS_COLLECTION = "status"     // AGREGAR ESTA LÍNEA
+    const val BUDGETS_COLLECTION = "budgets"
+    const val STATUS_COLLECTION = "status"
+    const val CATEGORIES_COLLECTION = "categories"
 }

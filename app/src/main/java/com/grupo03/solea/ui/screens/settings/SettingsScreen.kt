@@ -1,92 +1,312 @@
 package com.grupo03.solea.ui.screens.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Wallet
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.grupo03.solea.data.models.MovementType
-import com.grupo03.solea.presentation.states.CoreState
-import com.grupo03.solea.presentation.viewmodels.AuthViewModel
-import com.grupo03.solea.presentation.viewmodels.CoreViewModel
+import coil3.compose.AsyncImage
+import com.grupo03.solea.R
+import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
+import com.grupo03.solea.ui.components.SectionTitle
+import com.grupo03.solea.ui.components.TopBar
 
 @Composable
 fun SettingsScreen(
     authViewModel: AuthViewModel,
-    coreViewModel: CoreViewModel,  // CAMBIAR: agregar coreViewModel
+    settingsViewModel: com.grupo03.solea.presentation.viewmodels.screens.SettingsViewModel,
+    onNavigateToBudgetLimits: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val coreState = coreViewModel.uiState.collectAsState()
-    val authState = authViewModel.uiState.collectAsState()
-    val userId = authState.value.user?.uid ?: ""
+    val authState = authViewModel.authState.collectAsState()
+    val settingsState = settingsViewModel.uiState.collectAsState()
 
-    // AGREGAR: Cargar budgets al iniciar
-    LaunchedEffect(userId) {
-        if (userId.isNotEmpty()) {
-            coreViewModel.fetchBudgets(userId)
+    SettingsContent(
+        user = authState.value.user,
+        settingsState = settingsState.value,
+        onToggleNotifications = settingsViewModel::toggleNotifications,
+        onToggleTheme = settingsViewModel::toggleTheme,
+        onSignOut = { authViewModel.signOut() },
+        onNavigateToBudgetLimits = onNavigateToBudgetLimits,
+        modifier = modifier
+    )
+}
+
+
+@Composable
+private fun SettingsContent(
+    user: com.grupo03.solea.data.models.User?,
+    settingsState: com.grupo03.solea.presentation.states.screens.SettingsState,
+    onToggleNotifications: (Boolean) -> Unit,
+    onToggleTheme: (Boolean) -> Unit,
+    onSignOut: () -> Unit,
+    onNavigateToBudgetLimits: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val userName = user?.displayName ?: "Usuario"
+    val userEmail = user?.email ?: "correo@ejemplo.com"
+    val isGoogleUser = user?.photoUrl?.contains("googleusercontent.com") == true
+
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = modifier.fillMaxSize()
+    ) {
+        TopBar(title = stringResource(R.string.configuration))
+
+        Column(
+            modifier = Modifier
+                .verticalScroll(scrollState)
+                .padding(horizontal = 16.dp)
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // User Profile Card
+            UserProfileCard(
+                userName = userName,
+                userEmail = userEmail,
+                photoUrl = user?.photoUrl,
+                isGoogleUser = isGoogleUser,
+                onEditProfile = { }
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Gastos Section
+            SectionTitle(
+                text = stringResource(R.string.expenses_configuration),
+                icon = Icons.Default.Wallet
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    SettingItemWithSwitch(
+                        icon = Icons.Default.Notifications,
+                        title = stringResource(R.string.expenses_notifications),
+                        checked = settingsState.notificationsEnabled,
+                        onCheckedChange = onToggleNotifications
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SettingNavigationCard(
+                icon = Icons.Default.Receipt,
+                title = stringResource(R.string.limits_per_category_stablish),
+                onClick = onNavigateToBudgetLimits
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // General Section
+            SectionTitle(text = "General", icon = Icons.Default.Language)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    SettingItemWithSwitch(
+                        icon = Icons.Default.DarkMode,
+                        title = stringResource(R.string.dark_theme),
+                        checked = settingsState.isDarkTheme,
+                        onCheckedChange = onToggleTheme
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    val context = LocalContext.current
+                    val appVersion = try {
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                    } catch (_: Exception) {
+                        "1.0.0"
+                    }
+                    val appVersionPrefix = stringResource(R.string.version_prefix)
+                    Text(
+                        text = stringResource(R.string.about_app),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "$appVersionPrefix $appVersion",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Sign Out Button
+            Button(
+                onClick = onSignOut,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.sign_out))
+            }
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
 
-    when (coreState.value.currentSettingsContent) {
-        CoreState.SettingsContent.SETTINGS -> {
-            SettingsContent(
-                authViewModel = authViewModel,
-                onNavigateToBudgetLimits = {
-                    coreViewModel.changeSettingsContent(CoreState.SettingsContent.BUDGET_LIMITS)
-                },
-                modifier = modifier
-            )
-        }
-        CoreState.SettingsContent.BUDGET_LIMITS -> {
-            val budgetState = coreState.value.budgetLimitsState
-            if (budgetState.selectedCategory != null) {
-                val existingBudget = coreState.value.budgets.find {
-                    it.movementTypeId == budgetState.selectedCategory.id
-                }
-                // Obtener status disponibles (por ahora hardcoded, idealmente desde ViewModel)
-                val availableStatus = listOf(
-                    com.grupo03.solea.data.models.Status("active", "ACTIVE"),
-                    com.grupo03.solea.data.models.Status("exceeded", "EXCEEDED"),
-                    com.grupo03.solea.data.models.Status("inactive", "INACTIVE")
-                )
-
-                EditBudgetForm(
-                    category = budgetState.selectedCategory,
-                    existingBudget = existingBudget,
-                    budgetAmount = budgetState.budgetAmount,
-                    onAmountChange = coreViewModel::onBudgetAmountChange,
-                    onSave = { statusId, untilDate ->
-                        coreViewModel.saveBudgetLimit(userId, statusId, untilDate)
-                    },
-                    onCancel = coreViewModel::cancelBudgetEdit,
-                    onDelete = if (existingBudget != null) {
-                        { coreViewModel.deleteBudgetLimit(userId, existingBudget.id) }
-                    } else null,
-                    isAmountValid = budgetState.isAmountValid,
-                    availableStatus = availableStatus
-                )
-            } else {
-                BudgetLimitsScreen(
-                    budgetLimitsState = budgetState,
-                    onSelectCategory = coreViewModel::onSelectCategoryForBudget,
-                    onBack = {
-                        coreViewModel.changeSettingsContent(CoreState.SettingsContent.SETTINGS)
+@Composable
+private fun UserProfileCard(
+    userName: String,
+    userEmail: String,
+    photoUrl: String?,
+    isGoogleUser: Boolean,
+    onEditProfile: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Profile Picture
+                if (photoUrl != null) {
+                    AsyncImage(
+                        model = photoUrl,
+                        contentDescription = stringResource(R.string.profile_photo),
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = stringResource(R.string.avatar_description),
+                            modifier = Modifier.size(60.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // User Info
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = userName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = userEmail,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (isGoogleUser) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.google_account),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Edit Profile Button
+            Button(
+                onClick = onEditProfile,
+                enabled = !isGoogleUser,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    if (isGoogleUser) stringResource(R.string.cannot_edit_google_profile) else stringResource(
+                        R.string.edit_profile
+                    )
                 )
             }
         }
@@ -95,155 +315,74 @@ fun SettingsScreen(
 
 
 @Composable
-private fun SettingsContent(
-    authViewModel: AuthViewModel,
-    onNavigateToBudgetLimits: () -> Unit,
+private fun SettingItemWithSwitch(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var notificationsEnabled by remember { mutableStateOf(true) }
-    var themeIsLight by remember { mutableStateOf(true) }
-    val userName = "Octavio Suárez" // mock
-    val userEmail = "octavio.suarez@gmail.com" // mock
-
-    val scrollState = rememberScrollState()
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(horizontal = 16.dp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.fillMaxWidth()
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Perfil / Configuración",
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 20.sp,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp)
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        Divider(thickness = 2.dp, color = MaterialTheme.colorScheme.surfaceVariant)
-        Spacer(modifier = Modifier.height(8.dp))
-        // User Info
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = "Información de Usuario",
-            fontWeight = FontWeight.Bold,
-            fontSize = 15.sp
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f)
         )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Avatar",
-                    modifier = Modifier.size(60.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text("Nombre", fontWeight = FontWeight.Medium, fontSize = 13.sp)
-                Text(userName, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 15.sp)
-                Spacer(modifier = Modifier.height(2.dp))
-                Text("Correo", fontWeight = FontWeight.Medium, fontSize = 13.sp)
-                Text(userEmail, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 15.sp)
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(
-            onClick = { /* TODO: Editar perfil */ },
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            Text("Editar Perfil")
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Divider(thickness = 2.dp, color = MaterialTheme.colorScheme.surfaceVariant)
-        Spacer(modifier = Modifier.height(8.dp))
-        // Gastos
-        Text("Configuración de Gastos", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Notificaciones de Gastos", modifier = Modifier.weight(1f))
-            Switch(checked = notificationsEnabled, onCheckedChange = { notificationsEnabled = it })
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        // MODIFICAR la Card de "Establecer Límites por Categoría"
-        Card(
-            shape = RoundedCornerShape(16.dp),
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
+    }
+}
+
+@Composable
+private fun SettingNavigationCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(44.dp)
-                .padding(vertical = 2.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            onClick = onNavigateToBudgetLimits  // AGREGAR onClick
+                .padding(16.dp)
         ) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
-                Text(
-                    "Establecer Límites por Categoría",
-                    modifier = Modifier.padding(start = 16.dp),
-                    fontSize = 15.sp
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "Navegar",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth().height(44.dp).padding(vertical = 2.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
-        ) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Exportar datos",
-                        modifier = Modifier.weight(1f).padding(start = 16.dp),
-                        fontSize = 15.sp
-                    )
-                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Exportar")
-                }
-            }
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Divider(thickness = 2.dp, color = MaterialTheme.colorScheme.surfaceVariant)
-        Spacer(modifier = Modifier.height(8.dp))
-        // General
-        Text("General", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Idioma de la aplicación", modifier = Modifier.weight(1f))
-            Button(
-                onClick = { /* TODO: Cambiar idioma */ },
-                shape = RoundedCornerShape(16.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                modifier = Modifier.height(32.dp)
-            ) {
-                Text("Español", fontSize = 14.sp)
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Tema de Color", modifier = Modifier.weight(1f))
-            Switch(checked = themeIsLight, onCheckedChange = { themeIsLight = it })
-            Text(if (themeIsLight) "Claro" else "Oscuro", fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Sobre la aplicación", fontWeight = FontWeight.Medium, fontSize = 13.sp)
-        Text("Versión 1.0.1", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-        Spacer(modifier = Modifier.height(16.dp))
-        // Cerrar sesión
-        Button(
-            onClick = { authViewModel.signOut() },
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Cerrar sesión", color = Color.White)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }

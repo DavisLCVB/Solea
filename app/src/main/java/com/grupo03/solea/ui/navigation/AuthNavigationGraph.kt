@@ -5,16 +5,17 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
-import com.grupo03.solea.presentation.viewmodels.AuthViewModel
+import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
 import com.grupo03.solea.ui.screens.auth.SignInScreen
 import com.grupo03.solea.ui.screens.auth.SignUpScreen
+import com.grupo03.solea.ui.screens.auth.WelcomeScreen
 
 fun NavGraphBuilder.authNavigationGraph(
     navController: NavHostController,
     authViewModel: AuthViewModel
 ) {
     navigation(
-        startDestination = AuthRoutes.LOGIN,
+        startDestination = AuthRoutes.WELCOME,
         route = AuthRoutes.PREFIX
     ) {
         composable(
@@ -63,6 +64,18 @@ fun NavGraphBuilder.authNavigationGraph(
                     }
                 },
             )
+
         }
+        composable(route = AuthRoutes.WELCOME) {
+            WelcomeScreen(
+                navigateToSignIn = {
+                    navController.navigate(AuthRoutes.LOGIN)
+                },
+                navigateToSignUp = {
+                    navController.navigate(AuthRoutes.SIGN_UP)
+                },
+            )
+        }
+
     }
 }
