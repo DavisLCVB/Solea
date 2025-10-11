@@ -37,14 +37,12 @@ fun LoadingScanScreen(
 ) {
     val state = scanReceiptViewModel.state.collectAsState()
 
-    // Navigate to edit screen when scanning is complete
     LaunchedEffect(state.value.scannedReceipt) {
         if (state.value.scannedReceipt != null) {
             onNavigateToEdit()
         }
     }
 
-    // Navigate back if there's an error
     LaunchedEffect(state.value.error) {
         if (state.value.error != null) {
             onNavigateBack()
