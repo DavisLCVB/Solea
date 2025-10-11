@@ -1402,21 +1402,3 @@ fun `test receipt scanning with valid image`() = runTest {
 ```
 
 ---
-
-## 🚀 Mejoras Futuras
-
-### En Desarrollo
-- [ ] Soporte para OCR offline (ML Kit)
-- [ ] Escaneo de múltiples recibos en lote
-- [ ] Reconocimiento de códigos QR en recibos
-- [ ] Exportación de recibos a PDF
-- [ ] Búsqueda de recibos por texto
-
-### Considerado
-- [ ] Categorización automática mejorada con ML local
-- [ ] Detección automática de duplicados
-- [ ] Integración con sistemas de contabilidad
-- [ ] Análisis de patrones de gasto
-- [ ] Alertas de gastos inusuales
-
----
