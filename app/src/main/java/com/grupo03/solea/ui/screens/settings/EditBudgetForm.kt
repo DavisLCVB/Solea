@@ -138,7 +138,7 @@ fun EditBudgetForm(
         Spacer(modifier = Modifier.height(16.dp))
 
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            // Category Info Card
+
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -191,7 +191,6 @@ fun EditBudgetForm(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Amount Field with better styling
             Text(
                 text = stringResource(R.string.limit_amount_label),
                 style = MaterialTheme.typography.titleSmall,
@@ -235,7 +234,6 @@ fun EditBudgetForm(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            // Date Picker
             OutlinedCard(
                 onClick = { showDatePicker = true },
                 shape = RoundedCornerShape(12.dp),

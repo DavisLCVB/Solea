@@ -110,7 +110,6 @@ fun BudgetLimitsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Categorías con límite
             if (categoriesWithLimit.isNotEmpty()) {
                 item {
                     Text(
@@ -133,8 +132,6 @@ fun BudgetLimitsScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
-
-            // Categorías sin límite
             if (categoriesWithoutLimit.isNotEmpty()) {
                 item {
                     Text(

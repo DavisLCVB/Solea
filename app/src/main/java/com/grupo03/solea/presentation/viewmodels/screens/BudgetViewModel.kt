@@ -135,7 +135,6 @@ class BudgetViewModel(
         _editBudgetFormState.value = currentState.copy(isLoading = true, error = null)
 
         viewModelScope.launch {
-            // Use "active" as the default status or find from available statuses
             val activeStatusId = currentState.availableStatus
                 .find { it.value.equals("ACTIVE", ignoreCase = true) }?.id
                 ?: "active"
@@ -206,19 +205,16 @@ class BudgetViewModel(
         }
     }
 
-    // Calculate budget progress (for future use with notifications)
     fun calculateBudgetProgress(userId: String, movements: List<Movement>) {
         viewModelScope.launch {
             val budgets = _budgetState.value.budgets
             val now = Instant.now()
 
-            // Calculate spending by category
             val spendingByCategory = movements
                 .filter { it.type == MovementType.EXPENSE }
                 .groupBy { it.category }
                 .mapValues { (_, movs) -> movs.sumOf { it.total } }
 
-            // Update budget statuses based on spending
             val updatedBudgets = mutableListOf<Budget>()
             budgets.forEach { budget ->
                 val spent = spendingByCategory[budget.category] ?: 0.0
