@@ -94,30 +94,24 @@ fun EditScannedReceiptScreen(
     val aiCategoryDescription = stringResource(R.string.ai_suggested_category_description)
     val locale = java.util.Locale.getDefault()
 
-    // Auto-assign suggested category when screen loads
     LaunchedEffect(scannedReceipt.suggestedCategory, formState.value.categories) {
         if (selectedCategory == null && !scannedReceipt.suggestedCategory.isNullOrBlank()) {
             val suggested = scannedReceipt.suggestedCategory
-            // Try to find existing category (case-insensitive)
             val existingCategory = formState.value.categories.find {
                 it.name.equals(suggested, ignoreCase = true)
             }
 
             if (existingCategory != null) {
-                // Auto-select existing category
                 selectedCategory = existingCategory
             } else {
-                // Show dialog to create new category
                 newCategoryName = suggested
                 showNewCategoryDialog = true
             }
         }
     }
 
-    // Apply currency conversion when toggled
     LaunchedEffect(convertToUserCurrency) {
         if (convertToUserCurrency && needsConversion) {
-            // Convert to user currency
             val convertedTotal = CurrencyUtils.convertCurrency(
                 scannedReceipt.total.toDoubleOrNull() ?: 0.0,
                 scannedReceipt.currency,
@@ -135,19 +129,15 @@ fun EditScannedReceiptScreen(
                 item.copy(unitPrice = String.format(locale, "%.2f", convertedPrice))
             }
         } else {
-            // Reset to original currency
             total = scannedReceipt.total
             currentCurrency = scannedReceipt.currency
             editableItems = scannedReceipt.items
         }
     }
 
-    // Fetch categories
     LaunchedEffect(userId) {
         newMovementFormViewModel.fetchCategories(userId)
     }
-
-    // Note: Category detection logic removed - categories are now only at movement level, not per item
 
     Scaffold(
         topBar = {
@@ -179,7 +169,6 @@ fun EditScannedReceiptScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // Confidence indicator
             if (scannedReceipt.confidence > 0) {
                 Text(
                     text = stringResource(
@@ -194,7 +183,6 @@ fun EditScannedReceiptScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Establishment name
             OutlinedTextField(
                 value = establishmentName,
                 onValueChange = { establishmentName = it },
@@ -203,7 +191,6 @@ fun EditScannedReceiptScreen(
                 singleLine = true
             )
 
-            // Total
             OutlinedTextField(
                 value = total,
                 onValueChange = { total = it },
@@ -214,7 +201,6 @@ fun EditScannedReceiptScreen(
                 singleLine = true
             )
 
-            // Currency conversion toggle (only show if conversion is possible)
             if (needsConversion) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -246,7 +232,6 @@ fun EditScannedReceiptScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Category selector
             ExposedDropdownMenuBox(
                 expanded = expandedCategory,
                 onExpandedChange = { expandedCategory = it }
@@ -281,7 +266,6 @@ fun EditScannedReceiptScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Items header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -303,7 +287,6 @@ fun EditScannedReceiptScreen(
                 }
             }
 
-            // Items list
             editableItems.forEachIndexed { index, item ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -386,7 +369,6 @@ fun EditScannedReceiptScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Action buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -414,10 +396,8 @@ fun EditScannedReceiptScreen(
                                 items = editableItems
                             )
 
-                            // Set the category
                             newMovementFormViewModel.onCategorySelected(category)
 
-                            // Create the movement
                             newMovementFormViewModel.createMovement(userId, onSuccess)
                         }
                     },
@@ -441,7 +421,6 @@ fun EditScannedReceiptScreen(
             }
         }
 
-        // Dialog for creating new category
         if (showNewCategoryDialog) {
             androidx.compose.material3.AlertDialog(
                 onDismissRequest = { showNewCategoryDialog = false },
@@ -467,18 +446,14 @@ fun EditScannedReceiptScreen(
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            // Create the category
                             newCategoryFormViewModel.onNameChange(newCategoryName)
                             newCategoryFormViewModel.onDescriptionChange(aiCategoryDescription)
                             newCategoryFormViewModel.createCategory(
                                 userId = userId,
                                 onSuccess = {
-                                    // Refresh categories and auto-select the new one
                                     newMovementFormViewModel.fetchCategories(userId)
                                     showNewCategoryDialog = false
 
-                                    // Auto-select the newly created category
-                                    // Wait a bit for categories to refresh, then select
                                     coroutineScope.launch {
                                         delay(500)
                                         selectedCategory = formState.value.categories.find {
