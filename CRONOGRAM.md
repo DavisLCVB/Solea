@@ -15,4 +15,6 @@ CUS-T004	Implementación de dashboard con librería de gráficos
 CUS-007	Visualizar dashboard financiero (ingresos/gastos/ahorro)
 CUS-008	Sincronizar lista de compras con gastos
 CUS-009	Exportar datos financieros (CSV/PDF)
+
+//Presentacion final
 CUS-010	Configurar preferencias de la aplicación (tema, idioma, etc)
