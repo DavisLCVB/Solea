@@ -9,6 +9,8 @@ CUS-T003	Integración de reconocimiento de voz (Speech-to-Text)
 CUS-004	Crear meta de ahorro
 CUS-005	Crear lista de compras
 CUS-006	Registrar gasto mediante nota de voz
+
+//Ultima semana
 CUS-T004	Implementación de dashboard con librería de gráficos
 CUS-007	Visualizar dashboard financiero (ingresos/gastos/ahorro)
 CUS-008	Sincronizar lista de compras con gastos
