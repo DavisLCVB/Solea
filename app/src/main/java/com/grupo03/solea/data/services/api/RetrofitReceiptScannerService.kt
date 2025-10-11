@@ -36,6 +36,8 @@ data class GeminiApiResponse(
 interface ReceiptScannerApi {
     @Multipart
     @POST("analyze-image")
+
+    
     suspend fun scanReceipt(
         @Part file: MultipartBody.Part,
         @Part("prompt") prompt: RequestBody
