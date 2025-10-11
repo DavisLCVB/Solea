@@ -442,7 +442,7 @@
     <string name="scanning_receipt">Scanning receipt…</string>
     <string name="error_scanning_receipt">Error scanning receipt. Please try again.</string>
     <string name="processing_receipt_title">Processing receipt</string>
-    <string name="processing_receipt_message">Please wait while we analyze your receipt using AI. This may take up to 2 minutes.</string>
+    <string name="processing_receipt_message">Please wait while we analyze your receipt using AI.</string>
     <string name="analyzing_receipt">Analyzing receipt…</string>
     <string name="this_may_take_time">This process may take up to 2 minutes</string>
     <string name="capture">Capture</string>
