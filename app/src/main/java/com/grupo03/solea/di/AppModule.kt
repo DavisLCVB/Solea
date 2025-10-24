@@ -8,11 +8,13 @@ import com.grupo03.solea.data.repositories.firebase.FirebaseCategoryRepository
 import com.grupo03.solea.data.repositories.firebase.FirebaseItemRepository
 import com.grupo03.solea.data.repositories.firebase.FirebaseMovementRepository
 import com.grupo03.solea.data.repositories.firebase.FirebaseReceiptRepository
+import com.grupo03.solea.data.repositories.firebase.FirebaseSavingsGoalRepository
 import com.grupo03.solea.data.repositories.interfaces.BudgetRepository
 import com.grupo03.solea.data.repositories.interfaces.CategoryRepository
 import com.grupo03.solea.data.repositories.interfaces.ItemRepository
 import com.grupo03.solea.data.repositories.interfaces.MovementRepository
 import com.grupo03.solea.data.repositories.interfaces.ReceiptRepository
+import com.grupo03.solea.data.repositories.interfaces.SavingsGoalRepository
 import com.grupo03.solea.data.repositories.interfaces.UserPreferencesRepository
 import com.grupo03.solea.data.repositories.local.DataStoreUserPreferencesRepository
 import com.grupo03.solea.data.services.api.RetrofitReceiptScannerService
@@ -57,6 +59,7 @@ val appModule = module {
     single<CategoryRepository> { FirebaseCategoryRepository(get()) }
     single<ItemRepository> { FirebaseItemRepository(get()) }
     single<ReceiptRepository> { FirebaseReceiptRepository(get()) }
+    single<SavingsGoalRepository> { FirebaseSavingsGoalRepository(get()) }
     single<UserPreferencesRepository> { DataStoreUserPreferencesRepository(androidContext()) }
 
     viewModel { AuthViewModel(get()) }

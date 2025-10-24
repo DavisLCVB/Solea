@@ -209,6 +209,25 @@ enum class UserError(
 }
 
 /**
+ * Savings Goal related errors
+ */
+enum class SavingsGoalError(
+    override val code: String,
+    @StringRes override val messageRes: Int
+) : AppError {
+    NOT_FOUND("GOAL_001", R.string.error_goal_not_found),
+    CREATION_FAILED("GOAL_002", R.string.error_goal_creation_failed),
+    UPDATE_FAILED("GOAL_003", R.string.error_goal_update_failed),
+    DELETE_FAILED("GOAL_004", R.string.error_goal_delete_failed),
+    FETCH_FAILED("GOAL_005", R.string.error_goal_fetch_failed),
+    INVALID_AMOUNT("GOAL_006", R.string.error_goal_invalid_amount),
+    INVALID_NAME("GOAL_007", R.string.error_goal_invalid_name),
+    PERMISSION_DENIED("GOAL_008", R.string.error_goal_permission_denied),
+    NETWORK_ERROR("GOAL_009", R.string.error_goal_network_error),
+    UNKNOWN_ERROR("GOAL_999", R.string.error_goal_unknown);
+}
+
+/**
  * Extension function to get string resource from any AppError
  */
 @StringRes

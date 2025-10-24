@@ -172,3 +172,23 @@ fun mapFirestoreException(
         networkError = UserError.NETWORK_ERROR
     )
 }
+
+/**
+ * Maps FirebaseFirestoreException to SavingsGoalError.
+ *
+ * @param e The exception to map
+ * @param defaultError The default error to use for unmapped exceptions
+ * @return The appropriate SavingsGoalError
+ */
+fun mapFirestoreException(
+    e: FirebaseFirestoreException,
+    defaultError: SavingsGoalError
+): SavingsGoalError {
+    return mapFirestoreException(
+        e,
+        defaultError,
+        notFound = SavingsGoalError.NOT_FOUND,
+        permissionDenied = SavingsGoalError.PERMISSION_DENIED,
+        networkError = SavingsGoalError.NETWORK_ERROR
+    )
+}
