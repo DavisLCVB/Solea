@@ -2,13 +2,18 @@ package com.grupo03.solea.ui.navigation
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.grupo03.solea.presentation.viewmodels.screens.BudgetViewModel
+import com.grupo03.solea.presentation.viewmodels.screens.SavingsViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.ScanReceiptViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.MovementsViewModel
@@ -16,6 +21,8 @@ import com.grupo03.solea.ui.screens.forms.NewCategoryFormScreen
 import com.grupo03.solea.ui.screens.forms.NewMovementFormScreen
 import com.grupo03.solea.ui.screens.history.HistoryScreen
 import com.grupo03.solea.ui.screens.home.HomeScreen
+import com.grupo03.solea.ui.screens.savings.AddEditGoalScreen
+import com.grupo03.solea.ui.screens.savings.GoalManagementScreen
 import com.grupo03.solea.ui.screens.scanner.EditScannedReceiptScreen
 import com.grupo03.solea.ui.screens.scanner.LoadingScanScreen
 import com.grupo03.solea.ui.screens.scanner.ScanReceiptScreen
@@ -81,16 +88,22 @@ fun NavGraphBuilder.mainNavigationGraph(
                 modifier = Modifier.padding(contentPadding)
             )
         }
-        composable(AppRoutes.SAVINGS) {
+        composable(AppRoutes.SAVINGS) { backStackEntry ->
+            val mainGraphEntry = remember(backStackEntry) { navController.getBackStackEntry(AppRoutes.PREFIX) }
+            val savingsViewModel: SavingsViewModel = koinViewModel(viewModelStoreOwner = mainGraphEntry)
+
             com.grupo03.solea.ui.screens.savings.SavingsScreen(
                 authViewModel = authViewModel,
                 budgetViewModel = budgetViewModel,
+                savingsViewModel = savingsViewModel,
                 movementsViewModel = koinViewModel(),
                 onNavigateToBudgetLimits = {
                     navController.navigate(AppRoutes.BUDGET_LIMITS)
                 },
+                onNavigateToGoalManagement = {
+                    navController.navigate(AppRoutes.GOAL_MANAGEMENT)
+                },
                 onEditBudget = { categoryName ->
-                    // Find the category object by name and select it in the ViewModel
                     val budgetLimitsState = budgetViewModel.budgetLimitsScreenState.value
                     val category = budgetLimitsState.categoriesWithBudgets
                         .find { it.first.name == categoryName }?.first
@@ -99,6 +112,10 @@ fun NavGraphBuilder.mainNavigationGraph(
                         budgetViewModel.onSelectCategory(category)
                         navController.navigate(AppRoutes.EDIT_BUDGET)
                     }
+                },
+                onNavigateToEditGoal = { goal ->
+                    savingsViewModel.prepareFormForEdit(goal)
+                    navController.navigate(AppRoutes.ADD_EDIT_GOAL)
                 },
                 modifier = Modifier.padding(contentPadding)
             )
@@ -119,10 +136,10 @@ fun NavGraphBuilder.mainNavigationGraph(
             )
         }
         composable(AppRoutes.BUDGET_LIMITS) {
-            val authState = authViewModel.authState.collectAsState()
-            val userId = authState.value.user?.uid ?: ""
+            val authState by authViewModel.authState.collectAsState()
+            val userId = authState.user?.uid ?: ""
 
-            androidx.compose.runtime.LaunchedEffect(userId) {
+            LaunchedEffect(userId) {
                 if (userId.isNotEmpty()) {
                     budgetViewModel.fetchBudgetsAndCategories(userId)
                 }
@@ -135,46 +152,71 @@ fun NavGraphBuilder.mainNavigationGraph(
                     budgetViewModel.onSelectCategory(category)
                     navController.navigate(AppRoutes.EDIT_BUDGET)
                 },
-                onBack = {
-                    navController.popBackStack()
-                },
+                onBack = { navController.popBackStack() },
                 modifier = Modifier.padding(contentPadding)
             )
         }
         composable(AppRoutes.EDIT_BUDGET) {
-            val editBudgetFormState = budgetViewModel.editBudgetFormState.collectAsState()
-            val authState = authViewModel.authState.collectAsState()
-            val userId = authState.value.user?.uid ?: ""
+            val editBudgetFormState by budgetViewModel.editBudgetFormState.collectAsState()
+            val authState by authViewModel.authState.collectAsState()
+            val userId = authState.user?.uid ?: ""
 
-            androidx.compose.runtime.LaunchedEffect(Unit) {
+            LaunchedEffect(Unit) {
                 budgetViewModel.fetchStatuses()
             }
 
             EditBudgetForm(
-                budgetFormState = editBudgetFormState.value,
+                budgetFormState = editBudgetFormState,
                 onAmountChange = budgetViewModel::onAmountChange,
                 onSave = {
-                    budgetViewModel.saveBudget(userId) {
-                        navController.popBackStack()
-                    }
+                    budgetViewModel.saveBudget(userId) { navController.popBackStack() }
                 },
                 onCancel = {
                     budgetViewModel.clearForm()
                     navController.popBackStack()
                 },
-                onDelete = if (editBudgetFormState.value.existingBudget != null) {
+                onDelete = if (editBudgetFormState.existingBudget != null) {
                     {
-                        budgetViewModel.deleteBudget(
-                            userId,
-                            editBudgetFormState.value.existingBudget!!.id
-                        ) {
-                            navController.popBackStack()
-                        }
+                        budgetViewModel.deleteBudget(userId, editBudgetFormState.existingBudget!!.id) { navController.popBackStack() }
                     }
                 } else null,
                 modifier = Modifier.padding(contentPadding)
             )
         }
+
+        // --- Savings Goals Routes (Corrected & Simplified to match EDIT_BUDGET pattern) ---
+        composable(AppRoutes.GOAL_MANAGEMENT) { backStackEntry ->
+            val mainGraphEntry = remember(backStackEntry) { navController.getBackStackEntry(AppRoutes.PREFIX) }
+            val savingsViewModel: SavingsViewModel = koinViewModel(viewModelStoreOwner = mainGraphEntry)
+
+            GoalManagementScreen(
+                savingsViewModel = savingsViewModel,
+                onNavigateToNewGoal = {
+                    savingsViewModel.prepareFormForCreate()
+                    navController.navigate(AppRoutes.ADD_EDIT_GOAL)
+                },
+                onNavigateToEditGoal = { goal ->
+                    savingsViewModel.prepareFormForEdit(goal)
+                    navController.navigate(AppRoutes.ADD_EDIT_GOAL)
+                },
+                onBack = { navController.popBackStack() },
+                modifier = Modifier.padding(contentPadding)
+            )
+        }
+
+        composable(AppRoutes.ADD_EDIT_GOAL) { backStackEntry ->
+            val mainGraphEntry = remember(backStackEntry) { navController.getBackStackEntry(AppRoutes.PREFIX) }
+            val savingsViewModel: SavingsViewModel = koinViewModel(viewModelStoreOwner = mainGraphEntry)
+
+            AddEditGoalScreen(
+                savingsViewModel = savingsViewModel,
+                authViewModel = authViewModel,
+                onSaveSuccess = { navController.popBackStack() },
+                onBack = { navController.popBackStack() },
+                modifier = Modifier.padding(contentPadding)
+            )
+        }
+
         composable(AppRoutes.SCAN_RECEIPT) {
             ScanReceiptScreen(
                 scanReceiptViewModel = scanReceiptViewModel,
@@ -214,7 +256,6 @@ fun NavGraphBuilder.mainNavigationGraph(
                 },
                 onSuccess = {
                     scanReceiptViewModel.clearState()
-                    // Navigate back to home or movement list
                     navController.navigate(AppRoutes.HOME) {
                         popUpTo(AppRoutes.HOME) { inclusive = false }
                     }

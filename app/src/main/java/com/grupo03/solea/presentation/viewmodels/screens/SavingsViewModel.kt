@@ -7,6 +7,7 @@ import com.grupo03.solea.data.models.MovementType
 import com.grupo03.solea.data.models.SavingsGoal
 import com.grupo03.solea.data.repositories.interfaces.MovementRepository
 import com.grupo03.solea.data.repositories.interfaces.SavingsGoalRepository
+import com.grupo03.solea.presentation.states.screens.AddEditGoalFormState
 import com.grupo03.solea.presentation.states.screens.SavingsState
 import com.grupo03.solea.utils.AppError
 import com.grupo03.solea.utils.RepositoryResult
@@ -14,6 +15,7 @@ import com.grupo03.solea.utils.SavingsGoalError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
 
@@ -25,49 +27,121 @@ class SavingsViewModel(
     private val _uiState = MutableStateFlow(SavingsState())
     val uiState = _uiState.asStateFlow()
 
+    private val _formState = MutableStateFlow(AddEditGoalFormState())
+    val formState = _formState.asStateFlow()
+
     fun observeGoals(userUid: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            _uiState.update { it.copy(isLoading = true) }
             savingsGoalRepository.observeGoalsByUser(userUid).collectLatest { result ->
-                _uiState.value = when (result) {
-                    is RepositoryResult.Success -> {
-                        _uiState.value.copy(goals = result.data, isLoading = false, error = null)
-                    }
-                    is RepositoryResult.Error -> {
-                        _uiState.value.copy(error = result.error, isLoading = false)
+                _uiState.update {
+                    when (result) {
+                        is RepositoryResult.Success -> it.copy(goals = result.data, isLoading = false, error = null)
+                        is RepositoryResult.Error -> it.copy(error = result.error, isLoading = false)
                     }
                 }
             }
         }
     }
 
-    fun addGoal(userUid: String, name: String, targetAmount: Double, deadline: Long) {
+    // --- Form State Management ---
+
+    fun prepareFormForCreate() {
+        _formState.value = AddEditGoalFormState()
+    }
+
+    fun prepareFormForEdit(goal: SavingsGoal) {
+        _formState.value = AddEditGoalFormState(
+            existingGoal = goal,
+            name = goal.name,
+            targetAmount = goal.targetAmount.toString(),
+            deadline = goal.deadline
+        )
+    }
+
+    fun onNameChange(name: String) {
+        _formState.update { it.copy(name = name, isNameValid = name.isNotBlank()) }
+    }
+
+    fun onAmountChange(amount: String) {
+        val amountAsDouble = amount.toDoubleOrNull()
+        val isValid = amountAsDouble != null && amountAsDouble > 0
+        _formState.update { it.copy(targetAmount = amount, isAmountValid = isValid) }
+    }
+
+    fun onDeadlineChange(deadline: Instant) {
+        _formState.update { it.copy(deadline = deadline) }
+    }
+
+    // --- CRUD Operations using Form State ---
+
+    fun saveGoal(userUid: String, onSuccess: () -> Unit) {
+        val currentState = _formState.value
+        if (!currentState.isNameValid || !currentState.isAmountValid || currentState.name.isBlank() || currentState.targetAmount.isBlank()) return
+
         viewModelScope.launch {
-            val goal = SavingsGoal(
-                userId = userUid, // SavingsGoal uses userId, consistency is handled here.
-                name = name,
-                targetAmount = targetAmount,
-                deadline = Instant.ofEpochMilli(deadline),
+            _formState.update { it.copy(isLoading = true) }
+
+            val goalToSave = currentState.existingGoal?.copy(
+                name = currentState.name,
+                targetAmount = currentState.targetAmount.toDouble(),
+                deadline = currentState.deadline
+            ) ?: SavingsGoal(
+                userId = userUid,
+                name = currentState.name,
+                targetAmount = currentState.targetAmount.toDouble(),
+                deadline = currentState.deadline,
                 createdAt = java.time.LocalDateTime.now()
             )
-            savingsGoalRepository.createGoal(goal)
+
+            val result = if (currentState.existingGoal != null) {
+                savingsGoalRepository.updateGoal(goalToSave)
+            } else {
+                savingsGoalRepository.createGoal(goalToSave)
+            }
+
+            when (result) {
+                is RepositoryResult.Success -> {
+                    _formState.update { it.copy(isLoading = false) }
+                    onSuccess()
+                }
+                is RepositoryResult.Error -> {
+                    _formState.update { it.copy(isLoading = false, error = result.error) }
+                }
+            }
         }
     }
 
+    fun deleteGoal(onSuccess: () -> Unit) {
+        val goalId = _formState.value.existingGoal?.id ?: return
+        viewModelScope.launch {
+            _formState.update { it.copy(isLoading = true) }
+            val result = savingsGoalRepository.deleteGoal(goalId)
+            when (result) {
+                is RepositoryResult.Success -> {
+                    _formState.update { it.copy(isLoading = false) }
+                    onSuccess()
+                }
+                is RepositoryResult.Error -> {
+                    _formState.update { it.copy(isLoading = false, error = result.error) }
+                }
+            }
+        }
+    }
+
+    // --- Existing functions ---
+
     fun addMoneyToGoal(userUid: String, goalId: String, amount: Double, currentBalance: Double) {
         viewModelScope.launch {
-            // Validation 1: Cannot save more money than the total balance
             if (amount > currentBalance) {
-                _uiState.value = _uiState.value.copy(error = SavingsGoalError.INVALID_AMOUNT)
+                _uiState.update { it.copy(error = SavingsGoalError.INVALID_AMOUNT) }
                 return@launch
             }
 
             val goal = _uiState.value.goals.find { it.id == goalId }
             if (goal != null) {
-                // Validation 2: Cannot add money if goal is completed or inactive
                 if (goal.isCompleted || !goal.isActive) return@launch
 
-                // Create a saving movement
                 val savingMovement = Movement(
                     userUid = userUid,
                     type = MovementType.SAVING,
@@ -77,8 +151,6 @@ class SavingsViewModel(
                     category = "Ahorros"
                 )
                 movementRepository.createMovement(savingMovement)
-
-                // Update the goal's current amount atomically
                 savingsGoalRepository.updateCurrentAmount(goalId, amount)
             }
         }
@@ -105,6 +177,6 @@ class SavingsViewModel(
     }
 
     fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
+        _uiState.update { it.copy(error = null) }
     }
 }
