@@ -21,6 +21,7 @@ import java.time.ZoneOffset
  * @property deadline Target date to achieve this goal
  * @property createdAt Timestamp when this goal was created
  * @property isCompleted Whether the goal has been achieved
+ * @property isActive Whether the goal is currently active and should be displayed
  */
 data class SavingsGoal(
     val id: String = "",
@@ -31,7 +32,8 @@ data class SavingsGoal(
     val currency: String = "USD",
     val deadline: Instant = Instant.now(),
     val createdAt: LocalDateTime = LocalDateTime.now(),
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
+    val isActive: Boolean = true
 ) : ToMap {
     /**
      * Calculates the progress percentage (0-100)
@@ -40,6 +42,14 @@ data class SavingsGoal(
         get() = if (targetAmount > 0) {
             ((currentAmount / targetAmount) * 100).toInt().coerceIn(0, 100)
         } else 0
+
+    /**
+     * Calculates the progress as a float value between 0.0 and 1.0.
+     * Useful for progress indicators.
+     */
+    fun progress(): Float = if (targetAmount > 0.0) {
+        (currentAmount / targetAmount).toFloat().coerceIn(0f, 1f)
+    } else 0f
 
     override fun toMap(): Map<String, Any> {
         return mapOf(
@@ -51,7 +61,8 @@ data class SavingsGoal(
             "currency" to currency,
             "deadline" to deadline.toString(),
             "createdAtTimestamp" to createdAt.toEpochSecond(ZoneOffset.UTC),
-            "isCompleted" to isCompleted
+            "isCompleted" to isCompleted,
+            "isActive" to isActive
         )
     }
 
@@ -73,6 +84,7 @@ data class SavingsGoal(
             val createdAtTimestamp = (map["createdAtTimestamp"] as? Number)?.toLong() ?: return null
             val createdAt = LocalDateTime.ofEpochSecond(createdAtTimestamp, 0, ZoneOffset.UTC)
             val isCompleted = map["isCompleted"] as? Boolean ?: false
+            val isActive = map["isActive"] as? Boolean ?: true
 
             return SavingsGoal(
                 id = id,
@@ -83,7 +95,8 @@ data class SavingsGoal(
                 currency = currency,
                 deadline = deadline,
                 createdAt = createdAt,
-                isCompleted = isCompleted
+                isCompleted = isCompleted,
+                isActive = isActive
             )
         }
     }
