@@ -26,22 +26,6 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.util.UUID
 
-/**
- * ViewModel for the new movement creation form.
- *
- * Handles the complex workflow of creating financial movements (incomes or expenses) with
- * various source types. For expenses, supports two source types:
- * - ITEM: Single item purchase (item with quantity and unit price)
- * - RECEIPT: Multi-item receipt from establishment (receipt with multiple items)
- *
- * The movement creation process involves creating multiple related entities:
- * Movement → Income (for incomes) or Expense → Source → Item/Receipt → Items (for receipts)
- *
- * @property movementRepository Repository for movement, income, expense, and source operations
- * @property categoryRepository Repository for category operations
- * @property itemRepository Repository for item operations
- * @property receiptRepository Repository for receipt operations
- */
 class NewMovementFormViewModel(
     private val movementRepository: MovementRepository,
     private val categoryRepository: CategoryRepository,
@@ -49,17 +33,11 @@ class NewMovementFormViewModel(
     private val receiptRepository: ReceiptRepository
 ) : ViewModel() {
 
-    /** Form state including all fields, validation, and operation status */
     private val _formState = MutableStateFlow(
         NewMovementFormState(currency = CurrencyUtils.getCurrencyByCountry())
     )
     val formState: StateFlow<NewMovementFormState> = _formState.asStateFlow()
 
-    /**
-     * Fetches available categories (user + default).
-     *
-     * @param userId The ID of the user
-     */
     fun fetchCategories(userId: String) {
         viewModelScope.launch {
             val userCategoriesResult = categoryRepository.getCategoriesByUser(userId)
@@ -73,7 +51,6 @@ class NewMovementFormViewModel(
         }
     }
 
-    /** Handles movement name field changes with validation. */
     fun onNameChange(newName: String) {
         val isValid = newName.isNotBlank()
         _formState.value = _formState.value.copy(
@@ -83,12 +60,10 @@ class NewMovementFormViewModel(
         )
     }
 
-    /** Handles movement description field changes. */
     fun onDescriptionChange(newDescription: String) {
         _formState.value = _formState.value.copy(description = newDescription)
     }
 
-    /** Handles movement amount field changes with validation. */
     fun onAmountChange(newAmount: String) {
         val amount = newAmount.toDoubleOrNull()
         val isValid = amount != null && amount > 0
@@ -99,7 +74,6 @@ class NewMovementFormViewModel(
         )
     }
 
-    /** Handles category selection. */
     fun onCategorySelected(category: Category) {
         _formState.value = _formState.value.copy(
             selectedCategory = category,
@@ -108,37 +82,30 @@ class NewMovementFormViewModel(
         )
     }
 
-    /** Handles movement type changes (INCOME/EXPENSE). */
     fun onMovementTypeChange(newType: MovementType) {
         _formState.value = _formState.value.copy(movementType = newType)
     }
 
-    /** Handles source type changes for expenses (ITEM/RECEIPT). */
     fun onSourceTypeChange(newSourceType: SourceType) {
         _formState.value = _formState.value.copy(sourceType = newSourceType)
     }
 
-    /** Handles item name field changes (for ITEM source type). */
     fun onItemNameChange(newItemName: String) {
         _formState.value = _formState.value.copy(itemName = newItemName)
     }
 
-    /** Handles item quantity field changes (for ITEM source type). */
     fun onItemQuantityChange(newQuantity: String) {
         _formState.value = _formState.value.copy(itemQuantity = newQuantity)
     }
 
-    /** Handles item unit price field changes (for ITEM source type). */
     fun onItemUnitPriceChange(newUnitPrice: String) {
         _formState.value = _formState.value.copy(itemUnitPrice = newUnitPrice)
     }
 
-    /** Handles receipt description field changes (for RECEIPT source type). */
     fun onReceiptDescriptionChange(newDescription: String) {
         _formState.value = _formState.value.copy(receiptDescription = newDescription)
     }
 
-    /** Adds a new empty item to the receipt items list. */
     fun addReceiptItem() {
         val newItem = ReceiptItemData()
         _formState.value = _formState.value.copy(
@@ -146,40 +113,21 @@ class NewMovementFormViewModel(
         )
     }
 
-    /** Removes an item from the receipt items list by index. */
     fun removeReceiptItem(index: Int) {
         val updatedItems = _formState.value.receiptItems.toMutableList()
         updatedItems.removeAt(index)
         _formState.value = _formState.value.copy(receiptItems = updatedItems)
     }
 
-    /** Updates a specific receipt item by index. */
     fun updateReceiptItem(index: Int, item: ReceiptItemData) {
         val updatedItems = _formState.value.receiptItems.toMutableList()
         updatedItems[index] = item
         _formState.value = _formState.value.copy(receiptItems = updatedItems)
     }
 
-    /**
-     * Creates a new financial movement with all related entities.
-     *
-     * This is the main creation method that orchestrates the entire workflow:
-     * 1. Validates all form fields
-     * 2. Creates the Movement entity
-     * 3. For INCOME: Creates Income entity
-     * 4. For EXPENSE with ITEM: Creates Item → Source → Expense
-     * 5. For EXPENSE with RECEIPT: Creates Receipt → Items → Source → Expense
-     *
-     * All operations are performed in sequence; if any fails, the process stops
-     * and an error is set in the form state.
-     *
-     * @param userId The ID of the user creating the movement
-     * @param onSuccess Callback invoked when all entities are created successfully
-     */
     fun createMovement(userId: String, onSuccess: () -> Unit) {
         val currentState = _formState.value
 
-        // Validate name
         if (currentState.name.isBlank()) {
             _formState.value = currentState.copy(
                 isNameValid = false,
@@ -188,7 +136,6 @@ class NewMovementFormViewModel(
             return
         }
 
-        // Validate amount
         val amount = currentState.amount.toDoubleOrNull()
         if (amount == null || amount <= 0) {
             _formState.value = currentState.copy(
@@ -198,7 +145,6 @@ class NewMovementFormViewModel(
             return
         }
 
-        // Validate category - only required for expenses
         if (currentState.movementType == MovementType.EXPENSE && currentState.selectedCategory == null) {
             _formState.value = currentState.copy(
                 isCategorySelected = false,
@@ -207,7 +153,6 @@ class NewMovementFormViewModel(
             return
         }
 
-        // Validate source fields for expenses
         if (currentState.movementType == MovementType.EXPENSE) {
             when (currentState.sourceType) {
                 SourceType.ITEM -> {
@@ -231,7 +176,6 @@ class NewMovementFormViewModel(
                         )
                         return
                     }
-                    // Validate all receipt items
                     for (receiptItem in currentState.receiptItems) {
                         val qty = receiptItem.quantity.toDoubleOrNull()
                         val price = receiptItem.unitPrice.toDoubleOrNull()
@@ -274,7 +218,6 @@ class NewMovementFormViewModel(
                 return@launch
             }
 
-            // Create Income or Expense with Source
             when (currentState.movementType) {
                 MovementType.INCOME -> {
                     val income = Income(
@@ -295,7 +238,6 @@ class NewMovementFormViewModel(
                 MovementType.EXPENSE -> {
                     when (currentState.sourceType) {
                         SourceType.ITEM -> {
-                            // Create Item first
                             val itemId = UUID.randomUUID().toString()
                             val item = Item(
                                 id = itemId,
@@ -317,7 +259,6 @@ class NewMovementFormViewModel(
                                 return@launch
                             }
 
-                            // Create Source
                             val sourceId = UUID.randomUUID().toString()
                             val source = Source(
                                 id = sourceId,
@@ -336,7 +277,6 @@ class NewMovementFormViewModel(
                                 return@launch
                             }
 
-                            // Create Expense
                             val expense = Expense(
                                 id = UUID.randomUUID().toString(),
                                 movementId = movementId,
@@ -354,7 +294,6 @@ class NewMovementFormViewModel(
                         }
 
                         SourceType.RECEIPT -> {
-                            // Create Receipt first
                             val receiptId = UUID.randomUUID().toString()
                             val receiptTotal = currentState.receiptItems.sumOf {
                                 val qty = it.quantity.toDouble()
@@ -380,7 +319,6 @@ class NewMovementFormViewModel(
                                 return@launch
                             }
 
-                            // Create all receipt items
                             for (receiptItemData in currentState.receiptItems) {
                                 val itemId = UUID.randomUUID().toString()
                                 val item = Item(
@@ -390,7 +328,6 @@ class NewMovementFormViewModel(
                                     quantity = receiptItemData.quantity.toDouble(),
                                     currency = currentState.currency,
                                     unitPrice = receiptItemData.unitPrice.toDouble(),
-                                    // Receipt items use the movement's category, not individual categories
                                     category = currentState.selectedCategory?.name ?: "",
                                     createdAt = LocalDateTime.now()
                                 )
@@ -405,7 +342,6 @@ class NewMovementFormViewModel(
                                 }
                             }
 
-                            // Create Source
                             val sourceId = UUID.randomUUID().toString()
                             val source = Source(
                                 id = sourceId,
@@ -424,7 +360,6 @@ class NewMovementFormViewModel(
                                 return@launch
                             }
 
-                            // Create Expense
                             val expense = Expense(
                                 id = UUID.randomUUID().toString(),
                                 movementId = movementId,
@@ -442,6 +377,10 @@ class NewMovementFormViewModel(
                         }
                     }
                 }
+                MovementType.SAVING -> {
+                    // This case is handled by SavingsViewModel, not the general form.
+                    // No specific action is needed here, the when is exhaustive.
+                }
             }
 
             _formState.value = NewMovementFormState(
@@ -451,24 +390,10 @@ class NewMovementFormViewModel(
         }
     }
 
-    /**
-     * Clears the form state, resetting all fields to default values.
-     */
     fun clearForm() {
         _formState.value = NewMovementFormState()
     }
 
-    /**
-     * Loads data from a scanned receipt into the form.
-     *
-     * Pre-fills the form with data extracted from receipt scanning (AI OCR).
-     * Sets the movement type to EXPENSE and source type to RECEIPT automatically.
-     *
-     * @param establishmentName Name of the establishment from the receipt
-     * @param total Total amount from the receipt
-     * @param currency Currency code from the receipt
-     * @param items List of scanned items with descriptions, quantities, and prices
-     */
     fun loadFromScannedReceipt(
         establishmentName: String,
         total: String,
