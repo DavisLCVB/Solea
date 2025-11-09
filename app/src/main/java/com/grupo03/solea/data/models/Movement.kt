@@ -10,7 +10,10 @@ enum class MovementType {
     EXPENSE,
 
     /** A financial inflow (ingreso) */
-    INCOME
+    INCOME,
+
+    /** A movement of money into a savings goal */
+    SAVING
 }
 
 /**
