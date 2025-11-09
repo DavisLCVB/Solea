@@ -107,23 +107,35 @@ class FirebaseSavingsGoalRepository(
         }
     }
 
-    override suspend fun updateCurrentAmount(goalId: String, amount: Double): RepositoryResult<SavingsGoal> {
+    override suspend fun updateCurrentAmount(goalId: String, amountToAdd: Double): RepositoryResult<SavingsGoal> {
         return try {
-            val goalResult = getGoalById(goalId)
-            if (goalResult is RepositoryResult.Error) {
-                return goalResult
-            }
+            val goalRef = firestore.collection(COLLECTION_NAME).document(goalId)
+            var finalGoal: SavingsGoal? = null
 
-            val goal = (goalResult as RepositoryResult.Success).data ?: return RepositoryResult.Error(SavingsGoalError.NOT_FOUND)
-            val updatedGoal = goal.copy(
-                currentAmount = amount,
-                isCompleted = amount >= goal.targetAmount
-            )
+            firestore.runTransaction { transaction ->
+                val snapshot = transaction.get(goalRef)
+                val goal = SavingsGoal.fromMap(snapshot.data ?: emptyMap())
+                    ?: throw FirebaseFirestoreException("Goal not found", FirebaseFirestoreException.Code.NOT_FOUND)
 
-            updateGoal(updatedGoal)
+                val newAmount = goal.currentAmount + amountToAdd
+                val updatedGoal = goal.copy(
+                    currentAmount = newAmount,
+                    isCompleted = newAmount >= goal.targetAmount
+                )
+                transaction.set(goalRef, updatedGoal.toMap())
+                finalGoal = updatedGoal
+            }.await()
+
+            finalGoal?.let {
+                RepositoryResult.Success(it)
+            } ?: RepositoryResult.Error(SavingsGoalError.UPDATE_FAILED)
+
+        } catch (e: FirebaseFirestoreException) {
+            Log.e(TAG, "updateCurrentAmount: FirebaseFirestoreException", e)
+            RepositoryResult.Error(mapFirestoreException(e, SavingsGoalError.UPDATE_FAILED))
         } catch (e: Exception) {
             Log.e(TAG, "updateCurrentAmount: Exception", e)
-            RepositoryResult.Error(SavingsGoalError.UPDATE_FAILED)
+            RepositoryResult.Error(SavingsGoalError.UNKNOWN_ERROR)
         }
     }
 
