@@ -174,7 +174,8 @@ fun HomeScreenContent(
     // Calculate balance from movements
     val totalIncome = movementsState.incomeDetailsList.sumOf { it.movement.total }
     val totalExpense = movementsState.expenseDetailsList.sumOf { it.movement.total }
-    val balance = totalIncome - totalExpense
+    val totalSavings = movementsState.saveDetailsList.sumOf { it.movement.total }
+    val balance = totalIncome - totalExpense - totalSavings
 
     // Get currency from first movement or default to device currency
     val currency = (movementsState.incomeDetailsList.firstOrNull()?.movement?.currency
@@ -282,6 +283,7 @@ fun HomeScreenContent(
             val movementId = when (movement) {
                 is HistoryMovementItem.IncomeItem -> movement.incomeDetails.movement.id
                 is HistoryMovementItem.ExpenseItem -> movement.expenseDetails.movement.id
+                is HistoryMovementItem.SaveItem -> movement.saveDetails.movement.id
             }
 
             MovementDetailsModal(

@@ -56,6 +56,7 @@ enum class MovementError(
     FETCH_FAILED("MOV_005", R.string.error_movement_fetch_failed),
     INVALID_AMOUNT("MOV_006", R.string.error_movement_invalid_amount),
     INVALID_TYPE("MOV_007", R.string.error_movement_invalid_type),
+    INSUFFICIENT_BALANCE("MOV_008", R.string.error_movement_insufficient_balance),
     PERMISSION_DENIED("MOV_012", R.string.error_movement_permission_denied),
     NETWORK_ERROR("MOV_013", R.string.error_movement_network_error),
     UNKNOWN_ERROR("MOV_999", R.string.error_movement_unknown);

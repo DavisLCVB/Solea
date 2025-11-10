@@ -46,6 +46,7 @@ import com.grupo03.solea.data.models.MovementType
 import com.grupo03.solea.presentation.states.screens.HistoryMovementItem
 import com.grupo03.solea.ui.theme.soleaGreen
 import com.grupo03.solea.ui.theme.soleaRed
+import com.grupo03.solea.ui.theme.soleaYellow
 import com.grupo03.solea.utils.CurrencyUtils
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -61,10 +62,16 @@ fun MovementDetailsModal(
     val movementDetails = when (movement) {
         is HistoryMovementItem.IncomeItem -> movement.incomeDetails.movement
         is HistoryMovementItem.ExpenseItem -> movement.expenseDetails.movement
+        is HistoryMovementItem.SaveItem -> movement.saveDetails.movement
     }
 
     val isIncome = movementDetails.type == MovementType.INCOME
-    val color = if (isIncome) soleaGreen else soleaRed
+    val isSaving = movementDetails.type == MovementType.SAVING
+    val color = when {
+        isIncome -> soleaGreen
+        isSaving -> soleaYellow
+        else -> soleaRed
+    }
     val currencySymbol = CurrencyUtils.getCurrencySymbol(movementDetails.currency)
 
     val dateFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.getDefault())
@@ -83,9 +90,11 @@ fun MovementDetailsModal(
         ) {
             // Header with type
             Text(
-                text = stringResource(
-                    if (isIncome) R.string.movement_type_income else R.string.movement_type_expense
-                ),
+                text = when {
+                    isIncome -> stringResource(R.string.movement_type_income)
+                    isSaving -> "Ahorro"
+                    else -> stringResource(R.string.movement_type_expense)
+                },
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -129,7 +138,7 @@ fun MovementDetailsModal(
                         )
                     }
 
-                    // Category (only for expenses)
+                    // Category (for expenses and savings)
                     if (!isIncome && !movementDetails.category.isNullOrEmpty()) {
                         DetailRow(
                             icon = {
@@ -141,6 +150,21 @@ fun MovementDetailsModal(
                             },
                             label = stringResource(R.string.detail_category_label),
                             value = movementDetails.category!!
+                        )
+                    }
+
+                    // Goal info (for savings)
+                    if (isSaving && movement is HistoryMovementItem.SaveItem) {
+                        DetailRow(
+                            icon = {
+                                Icon(
+                                    Icons.Default.MonetizationOn,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            label = "Meta de Ahorro",
+                            value = "ID: ${movement.saveDetails.save.goalId}"
                         )
                     }
 

@@ -2,6 +2,7 @@ package com.grupo03.solea.presentation.states.screens
 
 import com.grupo03.solea.data.models.ExpenseDetails
 import com.grupo03.solea.data.models.IncomeDetails
+import com.grupo03.solea.data.models.SaveDetails
 import com.grupo03.solea.utils.AppError
 import java.time.LocalDate
 
@@ -63,6 +64,19 @@ sealed class HistoryMovementItem {
         override val datetime: java.time.LocalDateTime,
         val expenseDetails: ExpenseDetails
     ) : HistoryMovementItem()
+
+    /**
+     * Saving movement item.
+     *
+     * @property id Saving ID
+     * @property datetime When the saving occurred
+     * @property saveDetails Complete saving details including goal info
+     */
+    data class SaveItem(
+        override val id: String,
+        override val datetime: java.time.LocalDateTime,
+        val saveDetails: SaveDetails
+    ) : HistoryMovementItem()
 }
 
 /**
@@ -98,6 +112,7 @@ data class MovementGroup(
 data class HistoryState(
     val incomeDetails: List<IncomeDetails> = emptyList(),
     val expenseDetails: List<ExpenseDetails> = emptyList(),
+    val saveDetails: List<SaveDetails> = emptyList(),
     val groupedMovements: List<MovementGroup> = emptyList(),
     val selectedFilter: DateFilter = DateFilter.TODAY,
     val customStartDate: LocalDate? = null,
@@ -130,5 +145,18 @@ fun ExpenseDetails.toHistoryMovementItem(): HistoryMovementItem.ExpenseItem {
         id = expense.id,
         datetime = movement.datetime,
         expenseDetails = this
+    )
+}
+
+/**
+ * Converts SaveDetails to HistoryMovementItem for unified display.
+ *
+ * @return SaveItem containing this saving's details
+ */
+fun SaveDetails.toHistoryMovementItem(): HistoryMovementItem.SaveItem {
+    return HistoryMovementItem.SaveItem(
+        id = save.id,
+        datetime = movement.datetime,
+        saveDetails = this
     )
 }

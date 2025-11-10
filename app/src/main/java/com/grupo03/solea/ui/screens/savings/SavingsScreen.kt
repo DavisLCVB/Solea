@@ -59,6 +59,7 @@ import com.grupo03.solea.utils.CurrencyUtils
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.grupo03.solea.R
+import com.grupo03.solea.ui.components.AddMoneyToGoalDialog
 
 @Composable
 fun SavingsScreen(
@@ -77,10 +78,13 @@ fun SavingsScreen(
     val authState = authViewModel.authState.collectAsState()
     val savingsState = savingsViewModel.uiState.collectAsState()
     val user = authState.value.user
+    var selectedGoal by remember { mutableStateOf<SavingsGoal?>(null) }
+    var showAddMoneyDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(user) {
         if (user != null) {
-            movementsViewModel.fetchMovements(user.uid)
+            movementsViewModel.observeMovements(user.uid)
+            movementsViewModel.observeCategories(user.uid)
             budgetViewModel.fetchBudgetsAndCategories(user.uid)
             savingsViewModel.observeGoals(user.uid)
         }
@@ -99,6 +103,7 @@ fun SavingsScreen(
             modifier = Modifier.padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 SectionTitle(text = "Metas de Ahorro", icon = Icons.Default.Savings)
@@ -109,15 +114,18 @@ fun SavingsScreen(
             items(activeGoals, key = { it.id }) { goal ->
                 GoalCard(
                     goal = goal,
-                    onAddMoneyClick = { /* TODO */ },
-                    onEditClick = { onNavigateToEditGoal(goal) }, // <-- Connected
+                    onAddMoneyClick = {
+                        selectedGoal = goal
+                        showAddMoneyDialog = true
+                    },
+                    onEditClick = { onNavigateToEditGoal(goal) },
                     onDeactivateClick = { savingsViewModel.deactivateGoal(goal.id) },
                     onCompleteClick = { savingsViewModel.markAsCompleted(goal.id) }
                 )
             }
 
             item {
-                AddCard(onClick = onNavigateToGoalManagement) // <-- Conectado
+                AddCard(onClick = onNavigateToGoalManagement)
             }
 
             item {
@@ -150,6 +158,32 @@ fun SavingsScreen(
                 AddCard(onClick = onNavigateToBudgetLimits)
             }
         }
+
+        if (showAddMoneyDialog && selectedGoal != null) {
+            val currentBalance = movementsState.value.balance
+            AddMoneyToGoalDialog(
+                goal = selectedGoal!!,
+                availableBalance = currentBalance,
+                onDismiss = { showAddMoneyDialog = false },
+                onConfirm = { amount ->
+                    val userUid = authState.value.user?.uid ?: return@AddMoneyToGoalDialog
+
+                    savingsViewModel.addMoneyToGoal(
+                        userUid = userUid,
+                        goalId = selectedGoal!!.id,
+                        amount = amount,
+                        currentBalance = currentBalance
+                    )
+
+                    savingsViewModel.updateUiAfterAddingMoney(selectedGoal!!.id, amount)
+
+                    showAddMoneyDialog = false
+
+                }
+
+            )
+        }
+
     }
 }
 
@@ -246,9 +280,9 @@ fun GoalCard(
                         onClick = { onCompleteClick(); showMenu = false },
                         enabled = !goal.isCompleted
                     )
-                    DropdownMenuItem(
+                    /*DropdownMenuItem(
                         text = { Text(stringResource(R.string.goal_deactivate)) },
-                        onClick = { onDeactivateClick(); showMenu = false })
+                        onClick = { onDeactivateClick(); showMenu = false })*/
                 }
             }
         }

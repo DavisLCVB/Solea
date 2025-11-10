@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -32,9 +34,11 @@ import com.grupo03.solea.data.models.Income
 import com.grupo03.solea.data.models.IncomeDetails
 import com.grupo03.solea.data.models.Movement
 import com.grupo03.solea.data.models.MovementType
+import com.grupo03.solea.data.models.SaveDetails
 import com.grupo03.solea.ui.theme.SoleaTheme
 import com.grupo03.solea.ui.theme.soleaGreen
 import com.grupo03.solea.ui.theme.soleaRed
+import com.grupo03.solea.ui.theme.soleaYellow
 import java.time.LocalDateTime
 
 @Composable
@@ -43,18 +47,26 @@ fun MovementCard(
     category: Category = Category(),
     incomeDetails: IncomeDetails? = null,
     expenseDetails: ExpenseDetails? = null,
+    saveDetails: SaveDetails? = null,
 ) {
-    if (incomeDetails == null && expenseDetails == null) return
-    if (incomeDetails != null) {
-        IncomeCard(
+    if (incomeDetails == null && expenseDetails == null && saveDetails == null) return
+
+    when {
+        incomeDetails != null -> IncomeCard(
             modifier = modifier,
             incomeDetails = incomeDetails,
             category = category,
         )
-    } else if (expenseDetails != null) {
-        ExpenseCard(
+
+        expenseDetails != null -> ExpenseCard(
             modifier = modifier,
             expenseDetails = expenseDetails,
+            category = category,
+        )
+
+        saveDetails != null -> SaveCard(
+            modifier = modifier,
+            saveDetails = saveDetails,
             category = category,
         )
     }
@@ -211,6 +223,88 @@ fun ExpenseCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = soleaRed
+            )
+        }
+    }
+}
+
+@Composable
+fun SaveCard(
+    modifier: Modifier = Modifier,
+    saveDetails: SaveDetails = SaveDetails(),
+    category: Category = Category(),
+) {
+    val movement = saveDetails.movement
+    val dateFormated = "${movement.datetime.toLocalDate()} ${
+        movement.datetime.toLocalTime().toString().substring(0, 5)
+    }"
+    val name = movement.name.ifEmpty { movement.description.ifEmpty { "Ahorro sin nombre" } }
+    val amountText =
+        "${movement.currency} ${String.format(Locale.getDefault(), "%.2f", movement.total)}"
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .border(
+                        width = 2.dp,
+                        color = soleaYellow,
+                        shape = RoundedCornerShape(50)
+                    )
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_saving_pig),
+                    contentDescription = "Piggy bank",
+                    tint = soleaYellow,
+                    modifier = Modifier.padding(10.dp)
+                        .size(24.dp)
+
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 12.dp)
+            ) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+
+                if (!movement.category.isNullOrEmpty()) {
+                    Text(
+                        text = movement.category,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Text(
+                    text = dateFormated,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Text(
+                text = "-$amountText",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = soleaYellow
             )
         }
     }

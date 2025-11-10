@@ -8,6 +8,7 @@ import com.grupo03.solea.presentation.states.screens.HistoryMovementItem
 import com.grupo03.solea.presentation.states.screens.HistoryState
 import com.grupo03.solea.presentation.states.screens.MovementGroup
 import com.grupo03.solea.presentation.states.screens.toHistoryMovementItem
+import com.grupo03.solea.data.models.SaveDetails
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -49,9 +50,10 @@ class HistoryViewModel(
             // Calculate date range based on selected filter
             val (startDate, endDate) = calculateDateRange(_historyState.value.selectedFilter)
 
-            // Fetch incomes and expenses
+            // Fetch incomes, expenses, and savings
             val incomesResult = movementRepository.getIncomesByUserId(userId)
             val expensesResult = movementRepository.getExpensesByUserId(userId)
+            val savingsResult = movementRepository.getSavingsByUserId(userId)
 
             if (!incomesResult.isSuccess) {
                 _historyState.value = _historyState.value.copy(
@@ -67,14 +69,23 @@ class HistoryViewModel(
                 )
                 return@launch
             }
+            if (!savingsResult.isSuccess) {
+                _historyState.value = _historyState.value.copy(
+                    isLoading = false,
+                    error = savingsResult.errorOrNull()
+                )
+                return@launch
+            }
 
             val incomes = incomesResult.getOrNull() ?: emptyList()
             val expenses = expensesResult.getOrNull() ?: emptyList()
+            val savings = savingsResult.getOrNull() ?: emptyList()
 
             // Convert to HistoryMovementItem and filter by date range
             val allMovements = (
                     incomes.map { it.toHistoryMovementItem() } +
-                            expenses.map { it.toHistoryMovementItem() }
+                            expenses.map { it.toHistoryMovementItem() } +
+                            savings.map { it.toHistoryMovementItem() }
                     )
                 .filter { it.datetime >= startDate && it.datetime <= endDate }
                 .sortedByDescending { it.datetime }
@@ -85,6 +96,7 @@ class HistoryViewModel(
             _historyState.value = _historyState.value.copy(
                 incomeDetails = incomes,
                 expenseDetails = expenses,
+                saveDetails = savings,
                 groupedMovements = groupedMovements,
                 isLoading = false,
                 error = null
@@ -106,7 +118,8 @@ class HistoryViewModel(
 
         val allMovements = (
             _historyState.value.incomeDetails.map { it.toHistoryMovementItem() } +
-            _historyState.value.expenseDetails.map { it.toHistoryMovementItem() }
+            _historyState.value.expenseDetails.map { it.toHistoryMovementItem() } +
+            _historyState.value.saveDetails.map { it.toHistoryMovementItem() }
         )
             .filter { it.datetime >= startDate && it.datetime <= endDate }
             .sortedByDescending { it.datetime }
@@ -268,13 +281,15 @@ class HistoryViewModel(
      */
     fun updateMovements(
         incomeDetails: List<com.grupo03.solea.data.models.IncomeDetails>,
-        expenseDetails: List<com.grupo03.solea.data.models.ExpenseDetails>
+        expenseDetails: List<com.grupo03.solea.data.models.ExpenseDetails>,
+        saveDetails: List<SaveDetails> = emptyList()
     ) {
         val (startDate, endDate) = calculateDateRange(_historyState.value.selectedFilter)
 
         val allMovements = (
             incomeDetails.map { it.toHistoryMovementItem() } +
-            expenseDetails.map { it.toHistoryMovementItem() }
+            expenseDetails.map { it.toHistoryMovementItem() } +
+            saveDetails.map { it.toHistoryMovementItem() }
         )
             .filter { it.datetime >= startDate && it.datetime <= endDate }
             .sortedByDescending { it.datetime }
@@ -284,6 +299,7 @@ class HistoryViewModel(
         _historyState.value = _historyState.value.copy(
             incomeDetails = incomeDetails,
             expenseDetails = expenseDetails,
+            saveDetails = saveDetails,
             groupedMovements = groupedMovements,
             isLoading = false,
             error = null

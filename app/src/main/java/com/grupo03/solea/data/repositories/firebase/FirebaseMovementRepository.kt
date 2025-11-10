@@ -10,6 +10,8 @@ import com.grupo03.solea.data.models.Item
 import com.grupo03.solea.data.models.Movement
 import com.grupo03.solea.data.models.MovementType
 import com.grupo03.solea.data.models.Receipt
+import com.grupo03.solea.data.models.Save
+import com.grupo03.solea.data.models.SaveDetails
 import com.grupo03.solea.data.models.Source
 import com.grupo03.solea.data.models.SourceDetails
 import com.grupo03.solea.data.models.SourceType
@@ -499,21 +501,174 @@ class FirebaseMovementRepository(
         }
     }
 
+// ==================== Saving-specific operations ====================
+
+    private val savingsCollection = firestore.collection("savings")
+
+    override suspend fun createSaving(
+        movement: Movement,
+        save: Save
+    ): RepositoryResult<SaveDetails> {
+        return try {
+            // Crear movimiento
+            val movementData = movement.toMap()
+            movementsCollection.document(movement.id).set(movementData).await()
+
+            // Crear registro de ahorro
+            val saveId = save.id.ifEmpty { UUID.randomUUID().toString() }
+            val saving = save.copy(id = saveId, movementId = movement.id)
+            val saveData = saving.toMap()
+            savingsCollection.document(saveId).set(saveData).await()
+
+            RepositoryResult.Success(
+                SaveDetails(
+                    save = saving,
+                    movement = movement
+                )
+            )
+        } catch (e: FirebaseFirestoreException) {
+            RepositoryResult.Error(mapFirestoreException(e, MovementError.CREATION_FAILED))
+        } catch (_: Exception) {
+            RepositoryResult.Error(MovementError.UNKNOWN_ERROR)
+        }
+    }
+
+    override suspend fun getSavingById(id: String): RepositoryResult<SaveDetails?> {
+        return try {
+            val saveDoc = savingsCollection.document(id).get().await()
+            val save = saveDoc.toSave() ?: return RepositoryResult.Success(null)
+
+            // obtener movimiento relacionado usando movementId
+            val movementDoc = movementsCollection.document(save.movementId).get().await()
+            val movement = movementDoc.toMovement() ?: return RepositoryResult.Success(null)
+
+            RepositoryResult.Success(
+                SaveDetails(
+                    save = save,
+                    movement = movement
+                )
+            )
+        } catch (e: FirebaseFirestoreException) {
+            RepositoryResult.Error(mapFirestoreException(e, MovementError.FETCH_FAILED))
+        } catch (_: Exception) {
+            RepositoryResult.Error(MovementError.UNKNOWN_ERROR)
+        }
+    }
+
+    override suspend fun getSavingsByUserId(userUid: String): RepositoryResult<List<SaveDetails>> {
+        return try {
+            // Buscar todos los movimientos tipo SAVING
+            val movementDocs = movementsCollection
+                .whereEqualTo("userUid", userUid)
+                .whereEqualTo("type", MovementType.SAVING.name)
+                .get()
+                .await()
+
+            val saveDetails = mutableListOf<SaveDetails>()
+
+            for (movementDoc in movementDocs) {
+                val movement = movementDoc.toMovement() ?: continue
+
+                // Buscar saving usando movementId
+                val savingDocs = savingsCollection
+                    .whereEqualTo("movementId", movement.id)
+                    .get()
+                    .await()
+
+                val saving = savingDocs.firstOrNull()?.toSave() ?: continue
+
+                saveDetails.add(
+                    SaveDetails(
+                        save = saving,
+                        movement = movement
+                    )
+                )
+            }
+
+            RepositoryResult.Success(saveDetails)
+        } catch (e: FirebaseFirestoreException) {
+            RepositoryResult.Error(mapFirestoreException(e, MovementError.FETCH_FAILED))
+        } catch (_: Exception) {
+            RepositoryResult.Error(MovementError.UNKNOWN_ERROR)
+        }
+    }
+
+    override suspend fun getSavingsByGoalId(goalId: String): RepositoryResult<List<SaveDetails>> {
+        return try {
+            // Buscar todos los savings asociados al goalId
+            val savingDocs = savingsCollection
+                .whereEqualTo("goalId", goalId)
+                .get()
+                .await()
+
+            val saveDetails = mutableListOf<SaveDetails>()
+
+            for (savingDoc in savingDocs) {
+                val saving = savingDoc.toSave() ?: continue
+
+                // Obtener el movimiento asociado usando movementId
+                val movementDoc = movementsCollection.document(saving.movementId).get().await()
+                val movement = movementDoc.toMovement() ?: continue
+
+                saveDetails.add(
+                    SaveDetails(
+                        save = saving,
+                        movement = movement
+                    )
+                )
+            }
+
+            RepositoryResult.Success(saveDetails)
+        } catch (e: FirebaseFirestoreException) {
+            RepositoryResult.Error(mapFirestoreException(e, MovementError.FETCH_FAILED))
+        } catch (_: Exception) {
+            RepositoryResult.Error(MovementError.UNKNOWN_ERROR)
+        }
+    }
+
+    override suspend fun deleteSavingsByGoalId(goalId: String): RepositoryResult<Unit> {
+        return try {
+            // Obtener todos los savings asociados al goalId
+            val savingsResult = getSavingsByGoalId(goalId)
+            if (savingsResult.isError) {
+                return savingsResult as RepositoryResult.Error
+            }
+
+            val savings = (savingsResult as RepositoryResult.Success).data
+
+            // Eliminar cada movement y saving
+            for (saveDetail in savings) {
+                // Eliminar el movement (esto hará que el balance se recalcule automáticamente)
+                movementsCollection.document(saveDetail.movement.id).delete().await()
+                
+                // Eliminar el saving
+                savingsCollection.document(saveDetail.save.id).delete().await()
+            }
+
+            RepositoryResult.Success(Unit)
+        } catch (e: FirebaseFirestoreException) {
+            RepositoryResult.Error(mapFirestoreException(e, MovementError.DELETE_FAILED))
+        } catch (_: Exception) {
+            RepositoryResult.Error(MovementError.UNKNOWN_ERROR)
+        }
+    }
+
     override suspend fun getBalanceByUser(userUid: String): RepositoryResult<Double> {
         return try {
             val totalIncomesResult = getTotalIncomesByUser(userUid)
-            if (totalIncomesResult is RepositoryResult.Error) {
-                return totalIncomesResult
-            }
+            if (totalIncomesResult is RepositoryResult.Error) return totalIncomesResult
             val totalIncomes = (totalIncomesResult as RepositoryResult.Success).data
 
             val totalExpensesResult = getTotalExpensesByUser(userUid)
-            if (totalExpensesResult is RepositoryResult.Error) {
-                return totalExpensesResult
-            }
+            if (totalExpensesResult is RepositoryResult.Error) return totalExpensesResult
             val totalExpenses = (totalExpensesResult as RepositoryResult.Success).data
 
-            val balance = totalIncomes - totalExpenses
+            val savingsResult = getSavingsByUserId(userUid)
+            // Usar movement.total en lugar de save.amount para mantener consistencia
+            val totalSavings = if (savingsResult is RepositoryResult.Success)
+                savingsResult.data.sumOf { it.movement.total } else 0.0
+
+            val balance = totalIncomes - totalExpenses - totalSavings
             RepositoryResult.Success(balance)
         } catch (e: FirebaseFirestoreException) {
             RepositoryResult.Error(mapFirestoreException(e, MovementError.FETCH_FAILED))
@@ -521,6 +676,7 @@ class FirebaseMovementRepository(
             RepositoryResult.Error(MovementError.UNKNOWN_ERROR)
         }
     }
+
 
     override suspend fun getExpensesByCategory(userUid: String): RepositoryResult<Map<String, Double>> {
         return try {
@@ -668,7 +824,27 @@ class FirebaseMovementRepository(
             "movementId" to movementId
         )
     }
+    private fun Save.toMap(): Map<String, Any?> {
+        return mapOf(
+            "id" to id,
+            "movementId" to movementId,
+            "goalId" to goalId,
+            "amount" to amount
+        )
+    }
 
+    private fun com.google.firebase.firestore.DocumentSnapshot.toSave(): Save? {
+        return try {
+            Save(
+                id = getString("id") ?: return null,
+                movementId = getString("movementId") ?: "",
+                goalId = getString("goalId") ?: "",
+                amount = getDouble("amount") ?: 0.0
+            )
+        } catch (_: Exception) {
+            null
+        }
+    }
     private fun com.google.firebase.firestore.DocumentSnapshot.toMovement(): Movement? {
         return try {
             Movement(
@@ -983,6 +1159,59 @@ class FirebaseMovementRepository(
                                     }
                             }
                         }
+                    }
+                }
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    override fun observeSavingsByUserId(userUid: String): Flow<RepositoryResult<List<SaveDetails>>> = callbackFlow {
+        val listener = movementsCollection
+            .whereEqualTo("userUid", userUid)
+            .whereEqualTo("type", MovementType.SAVING.name)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(
+                        RepositoryResult.Error(
+                            mapFirestoreException(error as FirebaseFirestoreException, MovementError.FETCH_FAILED)
+                        )
+                    )
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null) {
+                    val saveDetails = mutableListOf<SaveDetails>()
+                    var processedCount = 0
+
+                    if (snapshot.documents.isEmpty()) {
+                        trySend(RepositoryResult.Success(emptyList()))
+                        return@addSnapshotListener
+                    }
+
+                    for (movementDoc in snapshot.documents) {
+                        val movement = movementDoc.toMovement() ?: continue
+
+                        // Buscar saving usando movementId
+                        savingsCollection
+                            .whereEqualTo("movementId", movement.id)
+                            .get()
+                            .addOnSuccessListener { saveDocs ->
+                                val saving = saveDocs.firstOrNull()?.toSave()
+                                if (saving != null) {
+                                    saveDetails.add(SaveDetails(save = saving, movement = movement))
+                                }
+                                processedCount++
+                                if (processedCount == snapshot.documents.size) {
+                                    trySend(RepositoryResult.Success(saveDetails))
+                                }
+                            }
+                            .addOnFailureListener {
+                                processedCount++
+                                if (processedCount == snapshot.documents.size) {
+                                    trySend(RepositoryResult.Success(saveDetails))
+                                }
+                            }
                     }
                 }
             }

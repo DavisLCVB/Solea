@@ -219,7 +219,7 @@ val surfaceContainerHighestDarkHighContrast = Color(0xFF504441)
 
 val soleaRed = Color(0xFFF65F5F)
 val soleaGreen = Color(0xFF6EDC73)
-
+val soleaYellow = Color(color = 0xFFFFEB3B)
 
 
 

@@ -8,6 +8,8 @@ import com.grupo03.solea.data.models.Item
 import com.grupo03.solea.data.models.Movement
 import com.grupo03.solea.data.models.MovementType
 import com.grupo03.solea.data.models.Receipt
+import com.grupo03.solea.data.models.Save
+import com.grupo03.solea.data.models.SaveDetails
 import com.grupo03.solea.data.models.Source
 import com.grupo03.solea.utils.RepositoryResult
 import kotlinx.coroutines.flow.Flow
@@ -177,6 +179,53 @@ interface MovementRepository {
      */
     suspend fun getIncomesByUserId(userUid: String): RepositoryResult<List<IncomeDetails>>
 
+    // ==================== Saving-specific Operations ====================
+
+    /**
+     * Creates a complete saving with movement.
+     *
+     * @param movement The base movement record (type must be SAVING)
+     * @param save The save record containing goal and amount info
+     * @return Result containing complete saving details or an error
+     */
+    suspend fun createSaving(
+        movement: Movement,
+        save: Save
+    ): RepositoryResult<SaveDetails>
+
+    /**
+     * Retrieves complete saving details by saving ID.
+     *
+     * @param id Unique identifier of the saving
+     * @return Result containing complete saving details if found (nullable) or an error
+     */
+    suspend fun getSavingById(id: String): RepositoryResult<SaveDetails?>
+
+    /**
+     * Retrieves all savings for a specific user with complete details.
+     *
+     * @param userUid User's unique identifier
+     * @return Result containing list of saving details or an error
+     */
+    suspend fun getSavingsByUserId(userUid: String): RepositoryResult<List<SaveDetails>>
+
+    /**
+     * Retrieves all savings for a specific goal with complete details.
+     *
+     * @param goalId Goal's unique identifier
+     * @return Result containing list of saving details or an error
+     */
+    suspend fun getSavingsByGoalId(goalId: String): RepositoryResult<List<SaveDetails>>
+
+    /**
+     * Deletes all savings associated with a goal, including their movements.
+     * This will restore the money to the user's balance.
+     *
+     * @param goalId Goal's unique identifier
+     * @return Result indicating success or error
+     */
+    suspend fun deleteSavingsByGoalId(goalId: String): RepositoryResult<Unit>
+
     // ==================== Helper Operations for Expenses ====================
 
     /**
@@ -278,4 +327,15 @@ interface MovementRepository {
      * @return Flow of results containing lists of expense details
      */
     fun observeExpensesByUserId(userUid: String): Flow<RepositoryResult<List<ExpenseDetails>>>
+
+    /**
+     * Observes savings for a user in real-time.
+     *
+     * Returns a Flow that emits updates whenever the user's savings change.
+     *
+     * @param userUid User's unique identifier
+     * @return Flow of results containing lists of saving details
+     */
+    fun observeSavingsByUserId(userUid: String): Flow<RepositoryResult<List<SaveDetails>>>
+
 }

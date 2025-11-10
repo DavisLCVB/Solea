@@ -19,6 +19,7 @@ import com.grupo03.solea.presentation.states.screens.NewMovementFormState
 import com.grupo03.solea.presentation.states.screens.ReceiptItemData
 import com.grupo03.solea.utils.CurrencyUtils
 import com.grupo03.solea.utils.MovementError
+import com.grupo03.solea.utils.RepositoryResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -125,6 +126,9 @@ class NewMovementFormViewModel(
         _formState.value = _formState.value.copy(receiptItems = updatedItems)
     }
 
+    fun onGoalSelected(goalId: String) {
+        _formState.value = _formState.value.copy(selectedGoalId = goalId)
+    }
     fun createMovement(userId: String, onSuccess: () -> Unit) {
         val currentState = _formState.value
 
@@ -377,10 +381,54 @@ class NewMovementFormViewModel(
                         }
                     }
                 }
+
                 MovementType.SAVING -> {
-                    // This case is handled by SavingsViewModel, not the general form.
-                    // No specific action is needed here, the when is exhaustive.
+                    val goalId = currentState.selectedGoalId
+                    if (goalId.isNullOrBlank()) {
+                        _formState.value = currentState.copy(
+                            isLoading = false,
+                            error = MovementError.INVALID_TYPE
+                        )
+                        return@launch
+                    }
+
+                    // Validar que el monto de saving no exceda el balance disponible
+                    val balanceResult = movementRepository.getBalanceByUser(userId)
+                    if (balanceResult.isError) {
+                        _formState.value = currentState.copy(
+                            isLoading = false,
+                            error = balanceResult.errorOrNull()
+                        )
+                        return@launch
+                    }
+
+                    val availableBalance = (balanceResult as RepositoryResult.Success).data
+                    if (amount > availableBalance) {
+                        _formState.value = currentState.copy(
+                            isLoading = false,
+                            isAmountValid = false,
+                            error = MovementError.INSUFFICIENT_BALANCE
+                        )
+                        return@launch
+                    }
+
+                    val saveId = UUID.randomUUID().toString()
+                    val save = com.grupo03.solea.data.models.Save(
+                        id = saveId,
+                        goalId = goalId,
+                        amount = amount
+                    )
+
+                    val saveResult = movementRepository.createSaving(movement, save)
+                    if (saveResult.isError) {
+                        _formState.value = currentState.copy(
+                            isLoading = false,
+                            error = saveResult.errorOrNull()
+                        )
+                        return@launch
+                    }
                 }
+
             }
 
             _formState.value = NewMovementFormState(

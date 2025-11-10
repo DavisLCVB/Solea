@@ -74,8 +74,15 @@ class MovementsViewModel(
             movementRepository.observeIncomesByUserId(userId).collect { result ->
                 when (result) {
                     is RepositoryResult.Success -> {
-                        _movementsState.value = _movementsState.value.copy(
+                        val currentState = _movementsState.value
+                        val totalIncome = result.data.sumOf { it.movement.total }
+                        val totalExpense = currentState.expenseDetailsList.sumOf { it.movement.total }
+                        val totalSavings = currentState.saveDetailsList.sumOf { it.movement.total }
+                        val balance = totalIncome - totalExpense - totalSavings
+                        
+                        _movementsState.value = currentState.copy(
                             incomeDetailsList = result.data,
+                            balance = balance,
                             error = null
                         )
                     }
@@ -93,8 +100,41 @@ class MovementsViewModel(
             movementRepository.observeExpensesByUserId(userId).collect { result ->
                 when (result) {
                     is RepositoryResult.Success -> {
-                        _movementsState.value = _movementsState.value.copy(
+                        val currentState = _movementsState.value
+                        val totalIncome = currentState.incomeDetailsList.sumOf { it.movement.total }
+                        val totalExpense = result.data.sumOf { it.movement.total }
+                        val totalSavings = currentState.saveDetailsList.sumOf { it.movement.total }
+                        val balance = totalIncome - totalExpense - totalSavings
+                        
+                        _movementsState.value = currentState.copy(
                             expenseDetailsList = result.data,
+                            balance = balance,
+                            error = null
+                        )
+                    }
+                    is RepositoryResult.Error -> {
+                        _movementsState.value = _movementsState.value.copy(
+                            error = result.error
+                        )
+                    }
+                }
+            }
+        }
+
+        // Observe savings
+        viewModelScope.launch {
+            movementRepository.observeSavingsByUserId(userId).collect { result ->
+                when (result) {
+                    is RepositoryResult.Success -> {
+                        val currentState = _movementsState.value
+                        val totalIncome = currentState.incomeDetailsList.sumOf { it.movement.total }
+                        val totalExpense = currentState.expenseDetailsList.sumOf { it.movement.total }
+                        val totalSavings = result.data.sumOf { it.movement.total }
+                        val balance = totalIncome - totalExpense - totalSavings
+                        
+                        _movementsState.value = currentState.copy(
+                            saveDetailsList = result.data,
+                            balance = balance,
                             error = null
                         )
                     }
@@ -146,6 +186,7 @@ class MovementsViewModel(
             // Fetch incomes and expenses
             val incomesResult = movementRepository.getIncomesByUserId(userId)
             val expensesResult = movementRepository.getExpensesByUserId(userId)
+            val savingsResult = movementRepository.getSavingsByUserId(userId)
 
             if (!incomesResult.isSuccess) {
                 _movementsState.value = _movementsState.value.copy(
@@ -159,14 +200,31 @@ class MovementsViewModel(
                 )
                 return@launch
             }
+            if (!savingsResult.isSuccess) {
+                _movementsState.value = _movementsState.value.copy(
+                    error = savingsResult.errorOrNull()
+                )
+                return@launch
+            }
 
             val incomes = incomesResult.getOrNull() ?: emptyList()
             val expenses = expensesResult.getOrNull() ?: emptyList()
+            val savings = savingsResult.getOrNull() ?: emptyList()
+
+            // Calcular totals
+            val totalIncome = incomes.sumOf { it.movement.total }
+            val totalExpense = expenses.sumOf { it.movement.total }
+            val totalSavings = savings.sumOf { it.movement.total }
+
+            // Calculate balance
+            val balance = totalIncome - totalExpense - totalSavings
 
             // Update state with complete expense details
             _movementsState.value = _movementsState.value.copy(
                 incomeDetailsList = incomes,
                 expenseDetailsList = expenses,
+                saveDetailsList = savings,
+                balance = balance,
                 error = null
             )
         }

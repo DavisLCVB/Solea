@@ -76,11 +76,13 @@ fun HistoryScreen(
     // Update historyViewModel when movementsState changes
     LaunchedEffect(
         movementsState.value.incomeDetailsList,
-        movementsState.value.expenseDetailsList
+        movementsState.value.expenseDetailsList,
+        movementsState.value.saveDetailsList
     ) {
         historyViewModel.updateMovements(
             movementsState.value.incomeDetailsList,
-            movementsState.value.expenseDetailsList
+            movementsState.value.expenseDetailsList,
+            movementsState.value.saveDetailsList
         )
     }
 
@@ -88,7 +90,8 @@ fun HistoryScreen(
     LaunchedEffect(historyState.value.selectedFilter) {
         historyViewModel.updateMovements(
             movementsState.value.incomeDetailsList,
-            movementsState.value.expenseDetailsList
+            movementsState.value.expenseDetailsList,
+            movementsState.value.saveDetailsList
         )
     }
 
@@ -194,6 +197,7 @@ fun HistoryScreen(
                                                     MovementCard(
                                                         incomeDetails = movement.incomeDetails,
                                                         expenseDetails = null,
+                                                        saveDetails = null,
                                                         category = Category()
                                                     )
                                                 }
@@ -215,6 +219,29 @@ fun HistoryScreen(
                                                     MovementCard(
                                                         incomeDetails = null,
                                                         expenseDetails = movement.expenseDetails,
+                                                        saveDetails = null,
+                                                        category = Category()
+                                                    )
+                                                }
+                                            }
+
+                                            is HistoryMovementItem.SaveItem -> {
+                                                Card(
+                                                    onClick = {
+                                                        historyViewModel.onMovementSelected(
+                                                            movement
+                                                        )
+                                                    },
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    shape = RoundedCornerShape(12.dp),
+                                                    colors = CardDefaults.cardColors(
+                                                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                                    )
+                                                ) {
+                                                    MovementCard(
+                                                        incomeDetails = null,
+                                                        expenseDetails = null,
+                                                        saveDetails = movement.saveDetails,
                                                         category = Category()
                                                     )
                                                 }
@@ -233,6 +260,7 @@ fun HistoryScreen(
                 val movementId = when (movement) {
                     is HistoryMovementItem.IncomeItem -> movement.incomeDetails.movement.id
                     is HistoryMovementItem.ExpenseItem -> movement.expenseDetails.movement.id
+                    is HistoryMovementItem.SaveItem -> movement.saveDetails.movement.id
                 }
 
                 MovementDetailsModal(

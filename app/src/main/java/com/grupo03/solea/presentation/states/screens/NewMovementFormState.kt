@@ -56,7 +56,9 @@ data class NewMovementFormState(
     // Receipt fields
     val receiptDescription: String = "",
     val receiptItems: List<ReceiptItemData> = emptyList(),
-    val isSourceValid: Boolean = true
+    val isSourceValid: Boolean = true,
+    // Source files for savings
+    val selectedGoalId: String? = null
 )
 
 /**

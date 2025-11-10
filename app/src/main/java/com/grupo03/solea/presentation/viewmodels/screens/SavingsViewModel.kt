@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDateTime
+import java.util.UUID
 
 class SavingsViewModel(
     private val savingsGoalRepository: SavingsGoalRepository,
@@ -116,6 +118,21 @@ class SavingsViewModel(
         val goalId = _formState.value.existingGoal?.id ?: return
         viewModelScope.launch {
             _formState.update { it.copy(isLoading = true) }
+            
+            // Primero eliminar todos los savings asociados al goal
+            // Esto hará que el dinero "retorne" al balance (los movements se eliminan)
+            val deleteSavingsResult = movementRepository.deleteSavingsByGoalId(goalId)
+            if (deleteSavingsResult.isError) {
+                _formState.update { 
+                    it.copy(
+                        isLoading = false, 
+                        error = deleteSavingsResult.errorOrNull()
+                    ) 
+                }
+                return@launch
+            }
+            
+            // Luego eliminar el goal
             val result = savingsGoalRepository.deleteGoal(goalId)
             when (result) {
                 is RepositoryResult.Success -> {
@@ -128,9 +145,7 @@ class SavingsViewModel(
             }
         }
     }
-
     // --- Existing functions ---
-
     fun addMoneyToGoal(userUid: String, goalId: String, amount: Double, currentBalance: Double) {
         viewModelScope.launch {
             if (amount > currentBalance) {
@@ -138,24 +153,39 @@ class SavingsViewModel(
                 return@launch
             }
 
-            val goal = _uiState.value.goals.find { it.id == goalId }
-            if (goal != null) {
-                if (goal.isCompleted || !goal.isActive) return@launch
+            val goal = _uiState.value.goals.find { it.id == goalId } ?: return@launch
+            if (goal.isCompleted || !goal.isActive) return@launch
 
-                val savingMovement = Movement(
-                    userUid = userUid,
-                    type = MovementType.SAVING,
-                    name = "Ahorro para '${goal.name}'",
-                    description = "Ahorro para meta",
-                    total = amount,
-                    category = "Ahorros"
-                )
-                movementRepository.createMovement(savingMovement)
-                savingsGoalRepository.updateCurrentAmount(goalId, amount)
+            val movementId = UUID.randomUUID().toString()
+            val movement = Movement(
+                id = movementId,
+                userUid = userUid,
+                type = MovementType.SAVING,
+                name = "Ahorro para '${goal.name}'",
+                description = "Ahorro para meta",
+                datetime = LocalDateTime.now(),
+                currency = goal.currency,
+                total = amount,
+                category = "Ahorros",
+                createdAt = LocalDateTime.now()
+            )
+
+            val save = com.grupo03.solea.data.models.Save(
+                goalId = goalId,
+                amount = amount
+            )
+
+            val result = movementRepository.createSaving(movement, save)
+
+            if (result.isError) {
+                _uiState.update { it.copy(error = result.errorOrNull()) }
+                return@launch
             }
+
+            // Actualiza el monto acumulado del goal
+            savingsGoalRepository.updateCurrentAmount(goalId, amount)
         }
     }
-
     fun markAsCompleted(goalId: String) {
         viewModelScope.launch {
             val goal = _uiState.value.goals.find { it.id == goalId }
@@ -175,6 +205,19 @@ class SavingsViewModel(
             }
         }
     }
+
+    fun updateUiAfterAddingMoney(goalId: String, amount: Double) {
+        _uiState.update { state ->
+            state.copy(
+                goals = state.goals.map { goal ->
+                    if (goal.id == goalId)
+                        goal.copy(currentAmount = goal.currentAmount + amount)
+                    else goal
+                }
+            )
+        }
+    }
+
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
