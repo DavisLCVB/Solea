@@ -1,0 +1,299 @@
+================================================================================
+VOICE NOTE SAVING ISSUE - COMPREHENSIVE ANALYSIS
+================================================================================
+
+PROJECT: Solea (Android Financial App)
+ISSUE: Movements are not being saved correctly from voice notes
+STATUS: Multiple high and medium severity issues identified
+
+================================================================================
+SECTION 1: CONFIRMED WORKING FLOW
+================================================================================
+
+1. RECORDING PHASE
+   - AudioAnalysisScreen records audio successfully
+   - AudioRecorderManager manages audio file creation
+   - Timer displays recording duration
+
+2. ANALYSIS PHASE
+   - RetrofitAudioAnalyzerService sends audio to Gemini API
+   - API response includes: transcription, amount, description, category, etc.
+   - AnalyzedVoiceNoteResponse is properly deserialized
+
+3. REVIEW PHASE
+   - EditVoiceNoteScreen displays AI analysis results
+   - User can edit amount, description, and movement type
+   - Category auto-selection works (with caveats)
+   - Save button validation is in place
+
+================================================================================
+SECTION 2: CRITICAL ISSUES FOUND
+================================================================================
+
+ISSUE #1: MISSING SOURCE TYPE SPECIFICATION
+============================================
+Severity: HIGH
+File: EditVoiceNoteScreen.kt
+Problem: Voice notes don't explicitly set the source type before saving
+
+Current behavior:
+  - NewMovementFormViewModel defaults to SourceType.ITEM (line 51 in NewMovementFormState)
+  - EditVoiceNoteScreen saves without explicitly setting sourceType
+  - The form state is never updated with onSourceTypeChange()
+
+Code path:
+  EditVoiceNoteScreen.kt:315 -> newMovementFormViewModel.createMovement(userId)
+    └─ NewMovementFormViewModel uses default sourceType = SourceType.ITEM
+       └─ Creates item with full amount as unitPrice, quantity = 1.0
+
+Impact:
+  - Movement is created, but structure might be inconsistent
+  - Quantity is hardcoded to 1.0 (see NewMovementFormViewModel.kt:250)
+  - User might expect different structure for voice-recorded movements
+
+Confirmation: Line 51 of NewMovementFormState.kt shows:
+  val sourceType: SourceType = SourceType.ITEM
+
+
+ISSUE #2: AI-EXTRACTED DATE IS COMPLETELY IGNORED
+==================================================
+Severity: HIGH
+File: NewMovementFormViewModel.kt, line 208
+
+Current code:
+  datetime = LocalDateTime.now(),  // ALWAYS uses NOW, not AI-extracted date
+
+Problem: 
+  - EditableVoiceNote contains: date: LocalDateTime? = null
+  - This date is parsed from AI response in AudioAnalysisViewModel.kt:196
+  - But it's never passed to the form or used during save
+  - Movement is always created with "right now" as the datetime
+
+Impact:
+  - User says "I bought coffee yesterday" but timestamp is today
+  - All voice notes get today's date regardless of what user said
+  - Historical financial tracking is inaccurate
+  - No way for user to override the date from voice note
+
+Data flow shows the gap:
+  EditableVoiceNote.date (parsed in ViewModel)
+    ↓
+  Stored in AudioAnalysisViewModel state
+    ↓
+  BUT not used in EditVoiceNoteScreen
+    ↓
+  NOT passed to NewMovementFormViewModel
+    ↓
+  Movement uses LocalDateTime.now()
+
+
+ISSUE #3: NO ATOMICITY/TRANSACTION PROTECTION
+==============================================
+Severity: HIGH
+File: NewMovementFormViewModel.kt, lines 200-437
+
+Problem: Movement creation happens in multiple sequential steps without rollback
+
+Sequence:
+  1. Create Movement record (line 215)
+  2. If success, proceed...
+  3. Create Income OR Expense (lines 226-382)
+  4. Create Source (line 275)
+  5. Create Item(s) (line 257)
+
+Failure scenario:
+  - Step 1 succeeds: Movement in Firebase
+  - Step 3 fails: Expense record NOT created
+  - Result: Orphaned movement with no income/expense link
+  - Data integrity issue in Firebase
+
+Current code does NOT:
+  - Use Firebase batch writes
+  - Use transactions
+  - Have rollback mechanism
+  - Cleanup on partial failure
+
+Example failure point (line 215):
+  val movementResult = movementRepository.createMovement(movement)
+  // At this point, movement EXISTS in Firebase
+  
+  if (movementResult.isError) {
+      // Can't go back, movement is already saved!
+      return@launch
+  }
+
+
+ISSUE #4: RACE CONDITION IN CATEGORY AUTO-CREATION
+=================================================
+Severity: MEDIUM
+File: EditVoiceNoteScreen.kt, lines 88-107
+
+Problem: Hard-coded delays instead of proper synchronization
+
+Code:
+  newCategoryFormViewModel.createCategory(userId) {
+      showNewCategoryDialog = false
+      coroutineScope.launch {
+          kotlinx.coroutines.delay(300)  // Hope Firebase is done by now
+          newMovementFormViewModel.fetchCategories(userId)
+          
+          kotlinx.coroutines.delay(200)  // Hope categories loaded by now
+          val newCategory = formState.value.categories.find { ... }
+          selectedCategory = newCategory  // Could be null!
+      }
+  }
+
+Issues:
+  1. Delays are unreliable (network speed varies)
+  2. If Firebase is slow, category won't be found
+  3. selectedCategory could silently remain null
+  4. No error handling if category creation fails
+  5. Save button enable state doesn't account for this
+
+Scenario that breaks:
+  - Create new category
+  - Network latency > 300ms
+  - Category not found
+  - selectedCategory stays null
+  - Save button becomes disabled
+  - User confused
+
+
+ISSUE #5: CATEGORY REQUIRED FOR INCOME, BUT NOT USED
+===================================================
+Severity: MEDIUM
+File: EditVoiceNoteScreen.kt, line 324
+
+Problem: UX mismatch - category mandatory but ignored for income
+
+Save button validation (line 322-324):
+  enabled = amount.toDoubleOrNull() != null &&
+           description.isNotBlank() &&
+           selectedCategory != null  // ALWAYS required
+
+But during save (NewMovementFormViewModel.kt:211):
+  category = if (currentState.movementType == MovementType.EXPENSE) 
+             currentState.selectedCategory?.name 
+             else null  // Income doesn't use category!
+
+Impact:
+  - User records "Received salary 5000"
+  - Must select a category to save (confusing)
+  - Category is then discarded during creation
+  - Extra unnecessary user interaction
+
+
+ISSUE #6: FORM STATE INITIALIZATION WITH KOIN
+============================================
+Severity: MEDIUM
+File: MainNavigationGraph.kt, line 288
+
+Problem: Fresh ViewModel created each time, no state persistence
+
+Code:
+  composable(AppRoutes.EDIT_VOICE_NOTE) {
+      EditVoiceNoteScreen(
+          audioAnalysisViewModel = audioAnalysisViewModel,
+          newMovementFormViewModel = koinViewModel(),  // NEW INSTANCE!
+          ...
+      )
+  }
+
+Issue:
+  - koinViewModel() creates NEW instance
+  - Not a problem by itself, but...
+  - If user navigates away and back, form resets
+  - Any partial edits are lost
+
+Not critical, but poor UX
+
+
+ISSUE #7: SOURCING FIELDS NOT POPULATED FOR VOICE NOTES
+=====================================================
+Severity: LOW-MEDIUM
+File: EditVoiceNoteScreen.kt, NewMovementFormViewModel.kt
+
+Problem: For ITEM source type, itemQuantity and itemUnitPrice are empty strings
+
+When expense is created for voice note:
+  NewMovementFormViewModel.kt, line 250:
+    val item = Item(
+        ...
+        quantity = currentState.itemQuantity.toDouble(),  // "" -> 0.0
+        unitPrice = currentState.itemUnitPrice.toDouble(),  // "" -> 0.0
+    )
+
+But EditVoiceNoteScreen doesn't set these fields!
+
+Result: If system tries to validate ITEM fields, could fail
+
+Not fully broken because:
+  - createMovement still proceeds (validation is in this function)
+  - But data structure is incomplete
+
+================================================================================
+SECTION 3: WHY MOVEMENTS MIGHT NOT BE SAVED
+================================================================================
+
+Based on the issues above, movements could fail to save due to:
+
+1. Firebase errors in multi-step creation (Issue #3)
+   - Step 1 succeeds, step 2 fails silently
+   - Movement appears saved in UI callback, but missing linked records
+
+2. Category auto-creation failure (Issue #4)
+   - selectedCategory is null
+   - Save button is disabled
+   - User can't proceed
+
+3. Network timeout during save (Firebase operations)
+   - Partial records created
+   - User gets error callback
+   - But some records already exist
+
+4. Validation failure in createMovement()
+   - ItemQuantity/ItemUnitPrice are empty strings
+   - toDouble() might fail
+   - Movement not created at all
+
+================================================================================
+SECTION 4: RECOMMENDATION PRIORITY
+================================================================================
+
+MUST FIX (Critical):
+  1. Add transaction/batch write to ensure atomic creation
+  2. Fix category auto-creation to not use hard-coded delays
+  3. Pass and use AI-extracted date through the flow
+  4. Explicitly set sourceType for voice notes
+
+SHOULD FIX (Important):
+  5. Make category optional for income voice notes
+  6. Populate itemQuantity (default to 1.0) for ITEM-based voice notes
+  7. Add error handling for partial save failures
+
+NICE TO HAVE:
+  8. Persist form state across navigation
+  9. Add comprehensive logging for debugging
+
+================================================================================
+SECTION 5: FILE LOCATIONS
+================================================================================
+
+Core Files:
+  - AudioAnalysisViewModel: /app/src/main/java/com/grupo03/solea/presentation/viewmodels/screens/AudioAnalysisViewModel.kt
+  - EditVoiceNoteScreen: /app/src/main/java/com/grupo03/solea/ui/screens/voicenote/EditVoiceNoteScreen.kt
+  - NewMovementFormViewModel: /app/src/main/java/com/grupo03/solea/presentation/viewmodels/screens/NewMovementFormViewModel.kt
+  - FirebaseMovementRepository: /app/src/main/java/com/grupo03/solea/data/repositories/firebase/FirebaseMovementRepository.kt
+  - MainNavigationGraph: /app/src/main/java/com/grupo03/solea/ui/navigation/MainNavigationGraph.kt
+
+Models:
+  - EditableVoiceNote: /app/src/main/java/com/grupo03/solea/data/models/AnalyzedVoiceNote.kt
+  - NewMovementFormState: /app/src/main/java/com/grupo03/solea/presentation/states/screens/NewMovementFormState.kt
+  - VoiceNoteState: /app/src/main/java/com/grupo03/solea/presentation/states/screens/VoiceNoteState.kt
+
+Services:
+  - RetrofitAudioAnalyzerService: /app/src/main/java/com/grupo03/solea/data/services/api/RetrofitAudioAnalyzerService.kt
+
+================================================================================
+END OF ANALYSIS
+================================================================================

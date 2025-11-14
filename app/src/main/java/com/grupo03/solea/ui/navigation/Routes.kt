@@ -23,6 +23,10 @@ object AppRoutes {
     const val SCAN_RECEIPT = "scan_receipt"
     const val LOADING_SCAN = "loading_scan"
     const val EDIT_SCANNED_RECEIPT = "edit_scanned_receipt"
+
+    // Voice Note
+    const val AUDIO_ANALYSIS = "audio_analysis"
+    const val EDIT_VOICE_NOTE = "edit_voice_note"
 }
 
 object AuthRoutes {

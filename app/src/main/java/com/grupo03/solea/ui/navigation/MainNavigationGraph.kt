@@ -12,6 +12,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import com.grupo03.solea.presentation.viewmodels.screens.AudioAnalysisViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.BudgetViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.SavingsViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.ScanReceiptViewModel
@@ -26,6 +27,8 @@ import com.grupo03.solea.ui.screens.savings.GoalManagementScreen
 import com.grupo03.solea.ui.screens.scanner.EditScannedReceiptScreen
 import com.grupo03.solea.ui.screens.scanner.LoadingScanScreen
 import com.grupo03.solea.ui.screens.scanner.ScanReceiptScreen
+import com.grupo03.solea.ui.screens.voicenote.AudioAnalysisScreen
+import com.grupo03.solea.ui.screens.voicenote.EditVoiceNoteScreen
 import com.grupo03.solea.ui.screens.settings.BudgetLimitsScreen
 import com.grupo03.solea.ui.screens.settings.EditBudgetForm
 import com.grupo03.solea.ui.screens.settings.SettingsScreen
@@ -37,6 +40,7 @@ fun NavGraphBuilder.mainNavigationGraph(
     budgetViewModel: BudgetViewModel,
     movementsViewModel: MovementsViewModel,
     scanReceiptViewModel: ScanReceiptViewModel,
+    audioAnalysisViewModel: AudioAnalysisViewModel,
     contentPadding: PaddingValues,
 ) {
     navigation(
@@ -56,6 +60,9 @@ fun NavGraphBuilder.mainNavigationGraph(
                 },
                 onNavigateToScanReceipt = {
                     navController.navigate(AppRoutes.SCAN_RECEIPT)
+                },
+                onNavigateToAudioAnalysis = {
+                    navController.navigate(AppRoutes.AUDIO_ANALYSIS)
                 }
             )
         }
@@ -256,6 +263,37 @@ fun NavGraphBuilder.mainNavigationGraph(
                 },
                 onSuccess = {
                     scanReceiptViewModel.clearState()
+                    navController.navigate(AppRoutes.HOME) {
+                        popUpTo(AppRoutes.HOME) { inclusive = false }
+                    }
+                }
+            )
+        }
+        composable(AppRoutes.AUDIO_ANALYSIS) {
+            AudioAnalysisScreen(
+                audioAnalysisViewModel = audioAnalysisViewModel,
+                authViewModel = authViewModel,
+                onNavigateBack = {
+                    audioAnalysisViewModel.clearState()
+                    navController.popBackStack()
+                },
+                onNavigateToEdit = {
+                    navController.navigate(AppRoutes.EDIT_VOICE_NOTE)
+                }
+            )
+        }
+        composable(AppRoutes.EDIT_VOICE_NOTE) {
+            EditVoiceNoteScreen(
+                audioAnalysisViewModel = audioAnalysisViewModel,
+                newMovementFormViewModel = koinViewModel(),
+                newCategoryFormViewModel = koinViewModel(),
+                authViewModel = authViewModel,
+                onNavigateBack = {
+                    audioAnalysisViewModel.clearState()
+                    navController.popBackStack()
+                },
+                onSuccess = {
+                    audioAnalysisViewModel.clearState()
                     navController.navigate(AppRoutes.HOME) {
                         popUpTo(AppRoutes.HOME) { inclusive = false }
                     }

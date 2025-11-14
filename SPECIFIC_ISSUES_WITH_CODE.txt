@@ -1,0 +1,269 @@
+================================================================================
+SPECIFIC CODE LOCATIONS - VOICE NOTE SAVE ISSUES
+================================================================================
+
+ISSUE #1: AI DATE NOT PASSED TO MOVEMENT
+=========================================
+
+EditableVoiceNote HAS the date (AudioAnalysisViewModel.kt:196):
+  Line 196: date = parseDateTime(analyzedVoiceNote.date),
+  
+This date is stored in:
+  AudioAnalysisViewModel.kt:40  (val state: StateFlow<VoiceNoteState>)
+  VoiceNoteState.kt:23           (analyzedVoiceNote: EditableVoiceNote? = null)
+
+BUT it's never read in EditVoiceNoteScreen!
+
+The voice note IS available:
+  EditVoiceNoteScreen.kt:36    val audioState = audioAnalysisViewModel.state.collectAsState()
+  EditVoiceNoteScreen.kt:40    val analyzedVoiceNote = audioState.value.analyzedVoiceNote ?: return
+
+BUT the date field is ignored:
+  EditVoiceNoteScreen.kt:42-49: Only reads transcription, amount, description, movementType, suggestedCategory
+  EditVoiceNoteScreen.kt:42    var amount by remember { mutableStateOf(analyzedVoiceNote.amount) }
+  EditVoiceNoteScreen.kt:43    var description by remember { mutableStateOf(analyzedVoiceNote.description) }
+  EditVoiceNoteScreen.kt:44    var movementType by remember { mutableStateOf(analyzedVoiceNote.movementType) }
+  EditVoiceNoteScreen.kt:45    var selectedCategory by remember { mutableStateOf<Category?>(null) }
+  
+  MISSING: var date by remember { mutableStateOf(analyzedVoiceNote.date) }
+
+Then when saving (NewMovementFormViewModel.kt:208):
+  val movement = Movement(
+      ...
+      datetime = LocalDateTime.now(),  // WRONG! Should be analyzedVoiceNote.date or form.date
+      ...
+  )
+
+FIX: Pass date through the form
+  1. Add date field to NewMovementFormState
+  2. Set it in EditVoiceNoteScreen: newMovementFormViewModel.onDateChange(analyzedVoiceNote.date)
+  3. Use it in createMovement instead of LocalDateTime.now()
+
+
+ISSUE #2: SOURCE TYPE NOT EXPLICITLY SET
+==========================================
+
+DefaultNewMovementFormState (NewMovementFormState.kt:51):
+  val sourceType: SourceType = SourceType.ITEM,  // This is the default
+
+EditVoiceNoteScreen never sets it (EditVoiceNoteScreen.kt):
+  - Line 303: newMovementFormViewModel.onNameChange(description)
+  - Line 304: newMovementFormViewModel.onDescriptionChange(analyzedVoiceNote.transcription)
+  - Line 305: newMovementFormViewModel.onAmountChange(amount)
+  - Line 306: newMovementFormViewModel.onCategorySelected(category)
+  - Lines 308-312: newMovementFormViewModel.onMovementTypeChange(...)
+  - MISSING: newMovementFormViewModel.onSourceTypeChange(SourceType.ITEM)
+
+So it relies on the default value, which could be:
+  - Fragile if NewMovementFormState defaults change
+  - Implicit rather than explicit
+  - Not clear that voice notes are ITEM-based
+
+FIX: Add explicit source type setting:
+  newMovementFormViewModel.onSourceTypeChange(SourceType.ITEM)
+  
+
+ISSUE #3: ITEM QUANTITY NOT SET
+================================
+
+For ITEM-based expenses (NewMovementFormViewModel.kt:250):
+  val item = Item(
+      id = itemId,
+      receiptId = null,
+      description = currentState.itemName,
+      quantity = currentState.itemQuantity.toDouble(),  // "" -> 0.0
+      currency = currentState.currency,
+      unitPrice = currentState.itemUnitPrice.toDouble(),  // "" -> 0.0
+      category = currentState.selectedCategory?.name ?: "",
+      createdAt = LocalDateTime.now()
+  )
+
+BUT EditVoiceNoteScreen never sets these:
+  - itemName, itemQuantity, itemUnitPrice are never populated
+  - They default to empty strings in NewMovementFormState (lines 53-55)
+  - "".toDouble() returns 0.0 (not an error, but wrong data)
+
+Result: Item created with quantity=0.0, unitPrice=0.0
+  This is likely WRONG - should be quantity=1.0, unitPrice=amount
+
+FIX: In EditVoiceNoteScreen, after onNameChange, add:
+  newMovementFormViewModel.onItemNameChange(description)
+  newMovementFormViewModel.onItemQuantityChange("1.0")
+  newMovementFormViewModel.onItemUnitPriceChange(amount)
+
+
+ISSUE #4: CATEGORY AUTO-CREATION RACE CONDITION
+================================================
+
+EditVoiceNoteScreen.kt lines 88-107:
+
+  newCategoryFormViewModel.createCategory(userId) {
+      // Close dialog immediately
+      showNewCategoryDialog = false
+      
+      // Refresh categories and select the new one
+      coroutineScope.launch {
+          kotlinx.coroutines.delay(300)  // HARD-CODED DELAY!
+          newMovementFormViewModel.fetchCategories(userId)
+          
+          kotlinx.coroutines.delay(200)  // ANOTHER HARD-CODED DELAY!
+          val newCategory = formState.value.categories.find {
+              it.name.equals(newCategoryName, ignoreCase = true)
+          }
+          selectedCategory = newCategory  // Could be NULL!
+      }
+  }
+
+The problem:
+  - 300ms might not be enough for Firebase + network latency
+  - 200ms might not be enough for Firestore query to return
+  - If category not found, selectedCategory becomes null
+  - No error handling or logging
+  - Save button becomes disabled because selectedCategory == null
+  - User is stuck and confused
+
+The validation (EditVoiceNoteScreen.kt:322-324):
+  enabled = amount.toDoubleOrNull() != null &&
+           description.isNotBlank() &&
+           selectedCategory != null  // BLOCKED!
+
+FIX: Use proper async handling:
+  - Collect the result of createCategory
+  - Wait for the actual completion
+  - Verify category exists before re-enabling button
+
+
+ISSUE #5: TRANSACTION ATOMICITY
+================================
+
+Movement creation without atomic protection (NewMovementFormViewModel.kt):
+
+Line 215: Create movement
+  val movementResult = movementRepository.createMovement(movement)
+  // Movement NOW EXISTS in Firebase!
+
+Lines 217-223: Check error
+  if (movementResult.isError) {
+      _formState.value = currentState.copy(
+          isLoading = false,
+          error = movementResult.errorOrNull()
+      )
+      return@launch
+  }
+  // If error, we STOP here, but movement already in Firebase!
+
+Lines 226-382: Create Income/Expense/Source/Items
+  When this fails:
+    - Movement exists but is orphaned
+    - No related Income/Expense record
+    - Data integrity broken
+    - Queries that join movement with income/expense will exclude this movement
+
+Example failure (Line 290):
+  val expenseResult = movementRepository.createExpense(expense)
+  if (expenseResult.isError) {
+      // Movement already exists in Firebase!
+      return@launch
+  }
+
+FIX: Use Firestore batch writes or transactions:
+  writeBatch {
+      set(movementsCollection.document(movement.id), movement.toMap())
+      set(expensesCollection.document(expense.id), expense.toMap())
+      set(sourcesCollection.document(source.id), source.toMap())
+      // etc.
+  }
+  This ensures all-or-nothing atomicity
+
+
+ISSUE #6: CATEGORY VALIDATION MISMATCH
+=======================================
+
+Save button requires category (EditVoiceNoteScreen.kt:322-324):
+  enabled = amount.toDoubleOrNull() != null &&
+           description.isNotBlank() &&
+           selectedCategory != null  // ALWAYS REQUIRED
+
+But income movements ignore category (NewMovementFormViewModel.kt:211):
+  category = if (currentState.movementType == MovementType.EXPENSE) 
+             currentState.selectedCategory?.name 
+             else null  // INCOME DOESN'T USE IT
+
+Scenario:
+  User: "I received 5000 salary"
+  App detects: movementType = "income"
+  UI forces: Select a category
+  User selects: (any category, it doesn't matter)
+  Result: Movement saved WITHOUT the category (as intended per logic)
+
+This is confusing UX.
+
+FIX: Make category optional:
+  enabled = amount.toDoubleOrNull() != null &&
+           description.isNotBlank() &&
+           (movementType == "expense" ? selectedCategory != null : true)
+           
+Or better: Make category selection conditional on movement type
+
+
+ISSUE #7: FORM STATE PERSISTENCE
+==================================
+
+MainNavigationGraph.kt line 288:
+  composable(AppRoutes.EDIT_VOICE_NOTE) {
+      EditVoiceNoteScreen(
+          audioAnalysisViewModel = audioAnalysisViewModel,
+          newMovementFormViewModel = koinViewModel(),  // NEW EACH TIME!
+          ...
+      )
+  }
+
+The koinViewModel() call creates a NEW ViewModel instance every time.
+
+Compare with AudioAnalysisScreen (Line 273):
+  composable(AppRoutes.AUDIO_ANALYSIS) {
+      AudioAnalysisScreen(
+          audioAnalysisViewModel = audioAnalysisViewModel,  // REUSED
+          ...
+      )
+  }
+
+Why it matters:
+  - User navigates to EDIT_VOICE_NOTE, enters edits
+  - User goes back (navigation pop)
+  - User navigates to EDIT_VOICE_NOTE again
+  - NEW ViewModel instance created
+  - All edits lost (form reset to defaults)
+
+Not critical but poor UX for recovery workflows.
+
+FIX: Store newMovementFormViewModel in NavBackStackEntry or provide it globally
+
+
+================================================================================
+SUMMARY TABLE
+================================================================================
+
+Issue                           Line Numbers              Severity
+--------                       ---------------           --------
+Date not passed                Audio: 196, Edit: N/A     HIGH
+                               NewMovement: 208
+
+Source type not set            Edit: 300-320             HIGH
+                               NewMovement: 51 (default)
+
+Item quantity not set           Edit: N/A (skipped)       MEDIUM
+                               NewMovement: 250
+
+Category race condition         Edit: 88-107              MEDIUM
+                               Validation: 322-324
+
+Transaction atomicity          NewMovement: 215-382      HIGH
+                               Repository: 42-52, 384-410
+
+Category required for income    Edit: 322-324             MEDIUM
+                               NewMovement: 211
+
+Form state persistence         Navigation: 288           LOW
+
+================================================================================

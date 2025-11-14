@@ -1,0 +1,295 @@
+================================================================================
+VOICE NOTE PROCESSING FLOW - VISUAL DIAGRAM
+================================================================================
+
+COMPLETE FLOW WITH ISSUE LOCATIONS:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 1: RECORDING (AudioAnalysisScreen)                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  User taps record button                                                     │
+│           ↓                                                                  │
+│  audioAnalysisViewModel.startRecording()                                     │
+│    ├─ audioRecorder.startRecording()                                         │
+│    ├─ Sets isRecording = true                                               │
+│    └─ startRecordingTimer()                                                 │
+│           ↓                                                                  │
+│  AudioRecorderManager saves WAV/MP3 to disk                                  │
+│           ↓                                                                  │
+│  User taps stop button                                                       │
+│           ↓                                                                  │
+│  audioAnalysisViewModel.stopRecordingAndAnalyze(userId)                      │
+│    ├─ Stops timer                                                            │
+│    ├─ Gets audio file from recorder                                          │
+│    └─ Calls analyzeAudio(audioFile, userId)                                  │
+│                                                                              │
+│  STATUS: Working correctly                                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 2: ANALYSIS (AudioAnalysisViewModel + RetrofitAudioAnalyzerService)     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  analyzeAudio(audioFile, userId)                                             │
+│       ↓                                                                      │
+│  Fetches default categories                                                  │
+│  Fetches user categories                                                     │
+│  Gets device currency (CurrencyUtils.getCurrencyByCountry())                 │
+│       ↓                                                                      │
+│  RetrofitAudioAnalyzerService.analyzeAudio(                                  │
+│      audioFile, categories, deviceCurrency)                                  │
+│       ↓                                                                      │
+│  [EXTERNAL API CALL TO GEMINI]                                               │
+│  Sends multipart request with:                                               │
+│    ├─ Audio file (MP3, WAV, OGG, WEBM, M4A)                                  │
+│    └─ Prompt with categories and currency info                               │
+│       ↓                                                                      │
+│  Receives AnalyzedVoiceNoteResponse JSON                                      │
+│    Contains: transcription, amount, description, movementType,               │
+│              date (ISO 8601), currency, suggestedCategory, confidence        │
+│       ↓                                                                      │
+│  Parses JSON → AnalyzedVoiceNoteData                                         │
+│       ↓                                                                      │
+│  Converts to EditableVoiceNote in AudioAnalysisViewModel:                     │
+│    Line 191-200:                                                             │
+│      ├─ transcription = analyzedData.transcription                           │
+│      ├─ amount = analyzedData.amount.toString()                              │
+│      ├─ description = analyzedData.description                               │
+│      ├─ movementType = analyzedData.movementType                             │
+│      ├─ date = parseDateTime(analyzedData.date) ← PARSED HERE!               │
+│      ├─ currency = analyzedData.currency                                     │
+│      ├─ suggestedCategory = analyzedData.suggestedCategory                   │
+│      └─ confidence = analyzedData.confidence                                 │
+│       ↓                                                                      │
+│  Updates state: analyzedVoiceNote = editableVoiceNote                        │
+│       ↓                                                                      │
+│  LaunchedEffect triggers navigation to EditVoiceNoteScreen                    │
+│                                                                              │
+│  STATUS: Working correctly                                                   │
+│  NOTE: Date IS extracted but will be IGNORED later                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 3: REVIEW & EDITING (EditVoiceNoteScreen)                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  Edit voice note screen renders:                                             │
+│    Line 36: val audioState = audioAnalysisViewModel.state.collectAsState()   │
+│    Line 40: val analyzedVoiceNote = audioState.value.analyzedVoiceNote       │
+│       ↓                                                                      │
+│  User sees:                                                                  │
+│    ├─ AI Confidence: 95% (from analyzedVoiceNote.confidence)                 │
+│    ├─ Transcription: [collapsible, read-only]                                │
+│    ├─ Movement Type: expense/income selector (FilterChip)                    │
+│    ├─ Amount: text field (user can edit)                                     │
+│    ├─ Description: text area (user can edit)                                 │
+│    └─ Category: dropdown selector (required)                                 │
+│       ↓                                                                      │
+│  User edits values:                                                          │
+│    Line 42: var amount by remember { mutableStateOf(analyzedVoiceNote.amount) }
+│    Line 43: var description by remember { mutableStateOf(...description) }   │
+│    Line 44: var movementType by remember { mutableStateOf(...movementType) } │
+│    Line 45: var selectedCategory by remember { mutableStateOf<Category?>(null)}
+│       ↓                                                                      │
+│  Category auto-selection (Lines 54-68):                                      │
+│    LaunchedEffect(analyzedVoiceNote.suggestedCategory, categories)           │
+│      ├─ If suggested category exists: auto-select it                         │
+│      └─ Else: show AlertDialog to create new category                        │
+│       ↓                                                                      │
+│  ⚠️  ISSUE #4 LOCATION:                                                      │
+│  Lines 88-107: Category auto-creation with RACE CONDITION                    │
+│    newCategoryFormViewModel.createCategory(userId) {                         │
+│        coroutineScope.launch {                                               │
+│            delay(300)  ← HARD-CODED, UNRELIABLE!                             │
+│            fetchCategories()                                                 │
+│            delay(200)  ← HARD-CODED, UNRELIABLE!                             │
+│            selectedCategory = find category or NULL                          │
+│        }                                                                      │
+│    }                                                                          │
+│       ↓                                                                      │
+│  ⚠️  ISSUE #6 LOCATION:                                                      │
+│  Lines 322-324: Save button validation                                       │
+│    enabled = amount.isValid &&                                               │
+│             description.notBlank &&                                          │
+│             selectedCategory != null  ← ALWAYS REQUIRED!                     │
+│                                                                              │
+│  Status: Many issues here but form looks OK                                  │
+│  Problems: Ignoring date, auto-selection fragile, category validation wrong  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 4: SAVE BUTTON CLICKED (EditVoiceNoteScreen)                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  Button onClick (Lines 300-319):                                             │
+│    selectedCategory?.let { category ->                                       │
+│       ├─ onNameChange(description)          Line 303                         │
+│       ├─ onDescriptionChange(transcription) Line 304                         │
+│       ├─ onAmountChange(amount)             Line 305                         │
+│       ├─ onCategorySelected(category)       Line 306                         │
+│       ├─ onMovementTypeChange(...)          Lines 308-312                    │
+│       └─ ⚠️  MISSING: onSourceTypeChange(SourceType.ITEM)                     │
+│                                                                              │
+│  ⚠️  ISSUE #1 LOCATION:                                                      │
+│  The AI-extracted date (analyzedVoiceNote.date) is NEVER read or passed!     │
+│  It exists in analyzedVoiceNote but is never forwarded to form.              │
+│       ↓                                                                      │
+│  All form fields now set in NewMovementFormViewModel state:                   │
+│    - name = description (user edited value)                                  │
+│    - description = transcription (AI transcribed audio)                       │
+│    - amount = amount (user edited value)                                     │
+│    - selectedCategory = category                                             │
+│    - movementType = expense/income                                           │
+│    - sourceType = SourceType.ITEM (DEFAULT, not explicitly set)              │
+│    - itemName = "" (NOT SET - empty string)                                  │
+│    - itemQuantity = "" (NOT SET - empty string)                              │
+│    - itemUnitPrice = "" (NOT SET - empty string)                             │
+│       ↓                                                                      │
+│  Call: newMovementFormViewModel.createMovement(userId) { onSuccess() }       │
+│                                                                              │
+│  STATUS: Multiple issues, about to enter save process                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 5: MOVEMENT CREATION (NewMovementFormViewModel.createMovement)          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  Lines 132-439: Full movement creation logic                                 │
+│       ↓                                                                      │
+│  Validation checks (Lines 135-196):                                          │
+│    ├─ name.isBlank() → ERROR                                                │
+│    ├─ amount <= 0 → ERROR                                                   │
+│    └─ For EXPENSE: selectedCategory == null → ERROR                          │
+│       ↓                                                                      │
+│  Line 201: Generate movement ID                                              │
+│  Lines 202-213: Create Movement object:                                      │
+│    val movement = Movement(                                                  │
+│        id = movementId,                                                      │
+│        userUid = userId,                                                     │
+│        type = currentState.movementType,  ✓ Correct                          │
+│        name = currentState.name,          ✓ Correct (description from UI)     │
+│        description = currentState.description, ✓ Correct (transcription)      │
+│        datetime = LocalDateTime.now(),    ✗ WRONG! (Should use voice date)   │
+│        currency = currentState.currency,  ✓ Correct                          │
+│        total = amount,                    ✓ Correct                          │
+│        category = if (EXPENSE) category else null, ✓ Correct                 │
+│        createdAt = LocalDateTime.now()    ✓ Correct                          │
+│    )                                                                          │
+│       ↓                                                                      │
+│  ⚠️  ISSUE #2 LOCATION: Line 208                                              │
+│  datetime = LocalDateTime.now()                                              │
+│  This ignores the AI-extracted date completely!                              │
+│       ↓                                                                      │
+│  Line 215: Create movement in Firebase                                       │
+│    val movementResult = movementRepository.createMovement(movement)          │
+│    // Movement NOW EXISTS IN FIREBASE!                                       │
+│       ↓                                                                      │
+│  ⚠️  ISSUE #5 LOCATION: Lines 215-223                                         │
+│  If this fails, we're already stuck with orphaned movement                   │
+│  No transaction or rollback mechanism                                        │
+│       ↓                                                                      │
+│  Line 225-382: Handle movement type (INCOME vs EXPENSE)                       │
+│                                                                              │
+│    INCOME PATH (Lines 226-240):                                              │
+│    ├─ Create Income record                                                   │
+│    └─ Call movementRepository.createIncome(income)                            │
+│       ↓                                                                      │
+│    EXPENSE PATH (Lines 242-382):                                             │
+│    ├─ Check sourceType (default = ITEM)                                      │
+│    ├─ Line 250: Create Item object:                                          │
+│    │   val item = Item(                                                      │
+│    │       description = currentState.itemName,  // Empty string!            │
+│    │       quantity = currentState.itemQuantity.toDouble(),  // "" → 0.0     │
+│    │       unitPrice = currentState.itemUnitPrice.toDouble(),  // "" → 0.0   │
+│    │       category = currentState.selectedCategory?.name ?: ""              │
+│    │   )                                                                      │
+│    │                                                                          │
+│    │  ⚠️  ISSUE #3: itemQuantity and itemUnitPrice are empty strings!         │
+│    │  This will convert to 0.0, which is WRONG for a voice note expense     │
+│    │                                                                          │
+│    ├─ Line 257: Create item in itemRepository                                │
+│    ├─ Line 266-273: Create Source record                                     │
+│    ├─ Line 275: Create source in movementRepository                          │
+│    ├─ Line 284-288: Create Expense record                                    │
+│    └─ Line 290: Create expense in movementRepository                         │
+│                                                                              │
+│  If ANY STEP FAILS (Lines 257-290):                                          │
+│    → Movement already exists in Firebase!                                    │
+│    → No rollback or cleanup                                                  │
+│    → Data integrity compromised                                              │
+│       ↓                                                                      │
+│  Line 434-437: On success:                                                   │
+│    ├─ Reset form state                                                       │
+│    └─ Call onSuccess() callback                                              │
+│                                                                              │
+│  STATUS: This is where most issues manifest                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 6: SUCCESS CALLBACK (MainNavigationGraph)                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  If createMovement callback succeeds:                                        │
+│       ↓                                                                      │
+│  Line 316: audioAnalysisViewModel.clearState()                               │
+│  Line 317: onSuccess()                                                       │
+│       ↓                                                                      │
+│  Navigation callback (Lines 295-301):                                        │
+│    ├─ audioAnalysisViewModel.clearState()                                    │
+│    ├─ navController.navigate(AppRoutes.HOME)                                 │
+│    └─ popUpTo(HOME) { inclusive = false }                                    │
+│       ↓                                                                      │
+│  User returns to HomeScreen                                                  │
+│       ↓                                                                      │
+│  Movement is now in Firebase (if all steps succeeded)                         │
+│                                                                              │
+│  STATUS: Appears successful but may have issues                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+ISSUE LOCATION QUICK REFERENCE
+================================================================================
+
+ISSUE #1: Date ignored
+  File: NewMovementFormViewModel.kt
+  Line: 208
+  Fix: Pass analyzedVoiceNote.date through form state
+
+ISSUE #2: Source type not set
+  File: EditVoiceNoteScreen.kt
+  Lines: 300-320
+  Fix: Add onSourceTypeChange(SourceType.ITEM) call
+
+ISSUE #3: Item quantity/price empty
+  File: EditVoiceNoteScreen.kt + NewMovementFormViewModel.kt
+  Lines: 300-320 (EditVoiceNoteScreen), 250 (NewMovementFormViewModel)
+  Fix: Set onItemQuantityChange("1.0") and onItemUnitPriceChange(amount)
+
+ISSUE #4: Category race condition
+  File: EditVoiceNoteScreen.kt
+  Lines: 88-107
+  Fix: Use proper async handling instead of hard-coded delays
+
+ISSUE #5: No transaction atomicity
+  File: NewMovementFormViewModel.kt
+  Lines: 215-382
+  Fix: Use Firestore batch writes or transactions
+
+ISSUE #6: Category required for income
+  File: EditVoiceNoteScreen.kt
+  Lines: 322-324
+  Fix: Make category optional based on movement type
+
+ISSUE #7: Form state not persistent
+  File: MainNavigationGraph.kt
+  Line: 288
+  Fix: Store viewmodel instance instead of creating new one
+
+================================================================================

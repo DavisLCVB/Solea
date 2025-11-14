@@ -5,6 +5,7 @@ import com.grupo03.solea.data.models.MovementType
 import com.grupo03.solea.data.models.SourceType
 import com.grupo03.solea.utils.AppError
 import com.grupo03.solea.utils.CurrencyUtils
+import java.time.LocalDateTime
 
 /**
  * UI state for the new movement form.
@@ -32,6 +33,7 @@ import com.grupo03.solea.utils.CurrencyUtils
  * @property receiptDescription Receipt establishment name - for RECEIPT source type
  * @property receiptItems List of items in the receipt - for RECEIPT source type
  * @property isSourceValid Whether the source data is complete and valid
+ * @property datetime Optional date and time for the movement (null uses current time)
  */
 data class NewMovementFormState(
     val name: String = "",
@@ -47,6 +49,7 @@ data class NewMovementFormState(
     val isLoading: Boolean = false,
     val error: AppError? = null,
     val successMessage: String? = null,
+    val datetime: LocalDateTime? = null,
     // Source fields for expenses
     val sourceType: SourceType = SourceType.ITEM,
     // Single item fields

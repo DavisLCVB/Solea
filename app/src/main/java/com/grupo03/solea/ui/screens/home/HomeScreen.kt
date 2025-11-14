@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -99,7 +100,8 @@ fun HomeScreen(
     movementsViewModel: MovementsViewModel,
     onNavigateToNewMovement: () -> Unit,
     onNavigateToNewCategory: () -> Unit,
-    onNavigateToScanReceipt: () -> Unit
+    onNavigateToScanReceipt: () -> Unit,
+    onNavigateToAudioAnalysis: () -> Unit = {}
 ) {
     val homeState = homeViewModel.homeState.collectAsState()
     val movementsState = movementsViewModel.movementsState.collectAsState()
@@ -144,6 +146,14 @@ fun HomeScreen(
                         onClick = {
                             homeViewModel.onCollapseFab()
                             onNavigateToScanReceipt()
+                        }
+                    ),
+                    FabMenuItem(
+                        icon = Icons.Default.Mic,
+                        label = stringResource(R.string.button_voice_note),
+                        onClick = {
+                            homeViewModel.onCollapseFab()
+                            onNavigateToAudioAnalysis()
                         }
                     ),
                     FabMenuItem(

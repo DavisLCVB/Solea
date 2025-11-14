@@ -102,6 +102,14 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
+    // Room for local database
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    kapt(libs.androidx.room.compiler)
+
+    // WorkManager for background sync
+    implementation(libs.androidx.work.runtime.ktx)
+
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
 }

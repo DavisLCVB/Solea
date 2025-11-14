@@ -129,6 +129,10 @@ class NewMovementFormViewModel(
     fun onGoalSelected(goalId: String) {
         _formState.value = _formState.value.copy(selectedGoalId = goalId)
     }
+
+    fun onDateTimeChange(dateTime: LocalDateTime?) {
+        _formState.value = _formState.value.copy(datetime = dateTime)
+    }
     fun createMovement(userId: String, onSuccess: () -> Unit) {
         val currentState = _formState.value
 
@@ -199,13 +203,14 @@ class NewMovementFormViewModel(
 
         viewModelScope.launch {
             val movementId = UUID.randomUUID().toString()
+            val movementDateTime = currentState.datetime ?: LocalDateTime.now()
             val movement = Movement(
                 id = movementId,
                 userUid = userId,
                 type = currentState.movementType,
                 name = currentState.name,
                 description = currentState.description,
-                datetime = LocalDateTime.now(),
+                datetime = movementDateTime,
                 currency = currentState.currency,
                 total = amount,
                 category = if (currentState.movementType == MovementType.EXPENSE) currentState.selectedCategory?.name else null,

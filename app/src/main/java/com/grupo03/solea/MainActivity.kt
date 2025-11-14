@@ -21,6 +21,7 @@ import androidx.core.view.WindowCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
+import com.grupo03.solea.presentation.viewmodels.screens.AudioAnalysisViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.BudgetViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.ScanReceiptViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
@@ -99,6 +100,7 @@ fun MainAppContent(
     movementsViewModel: MovementsViewModel
 ) {
     val scanReceiptViewModel: ScanReceiptViewModel = koinViewModel()
+    val audioAnalysisViewModel: AudioAnalysisViewModel = koinViewModel()
 
     Scaffold(
         bottomBar = {
@@ -118,6 +120,7 @@ fun MainAppContent(
                 budgetViewModel = budgetViewModel,
                 movementsViewModel = movementsViewModel,
                 scanReceiptViewModel = scanReceiptViewModel,
+                audioAnalysisViewModel = audioAnalysisViewModel,
                 contentPadding = PaddingValues(0.dp)
             )
 

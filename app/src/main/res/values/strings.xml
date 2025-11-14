@@ -368,6 +368,7 @@
     <string name="enter_valid_amount_error">Enter a valid amount greater than 0</string>
     <string name="enter_a_new_amount">Enter a valid amount greater than 0</string>
     <string name="select_category_label">Select a category</string>
+    <string name="select_category">Select a category</string>
     <string name="select_a_category">Select a category</string>
     <string name="must_select_category_error">You must select a category</string>
     <string name="must_select_a_category">You must select a category</string>
@@ -504,6 +505,25 @@
     <string name="new_category_suggested_message">The AI suggested the category \"%1$s\". Would you like to create it?</string>
     <string name="create_movement">Create Movement</string>
     <string name="create_movement_button">Create Movement</string>
+
+    <!-- Voice Note / Audio Analysis -->
+    <string name="button_voice_note">Voice Note</string>
+    <string name="voice_note_title">Voice Note</string>
+    <string name="audio_permission_required">Microphone permission is required to record voice notes</string>
+    <string name="voice_note_instructions">Press the button and describe your expense or income</string>
+    <string name="voice_note_example">Example: \"I spent 50 soles on lunch at a restaurant\"</string>
+    <string name="recording_in_progress">Recording in progress</string>
+    <string name="start_recording">Start recording</string>
+    <string name="stop_recording">Stop recording</string>
+    <string name="analyzing_audio">Analyzing audio…</string>
+    <string name="analyzing_audio_description">Please wait while we transcribe and analyze your voice note</string>
+    <string name="error_analyzing_audio">Error analyzing audio. Please try again.</string>
+    <string name="review_voice_note_title">Review Voice Note</string>
+    <string name="transcription">Transcription</string>
+    <string name="show">Show</string>
+    <string name="hide">Hide</string>
+    <string name="ai_confidence">AI Confidence</string>
+    <string name="save_movement">Save Movement</string>
 
     <!-- Movement Details Modal -->
     <string name="movement_type_income">Income</string>
