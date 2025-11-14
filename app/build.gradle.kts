@@ -2,8 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
     id("com.google.gms.google-services")
-    id("org.jetbrains.kotlin.kapt")
 }
 
 android {
@@ -105,7 +105,7 @@ dependencies {
     // Room for local database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    kapt(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.compiler)
 
     // WorkManager for background sync
     implementation(libs.androidx.work.runtime.ktx)

@@ -1,8 +1,12 @@
 package com.grupo03.solea.di
 
+import androidx.room.Room
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
+import com.grupo03.solea.data.local.MovementDao
+import com.grupo03.solea.data.local.SoleaDatabase
+import com.grupo03.solea.data.repositories.CachedMovementRepository
 import com.grupo03.solea.data.repositories.firebase.FirebaseBudgetRepository
 import com.grupo03.solea.data.repositories.firebase.FirebaseCategoryRepository
 import com.grupo03.solea.data.repositories.firebase.FirebaseItemRepository
@@ -36,7 +40,7 @@ import com.grupo03.solea.presentation.viewmodels.screens.StatisticsViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.MovementsViewModel
 import org.koin.android.ext.koin.androidContext
-import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 /**
@@ -44,8 +48,9 @@ import org.koin.dsl.module
  *
  * This module defines all application dependencies and their scopes:
  * - **Firebase instances**: Singleton instances of Firebase Auth and Firestore
+ * - **Room database**: Local database for caching
  * - **Services**: Authentication and receipt scanning services
- * - **Repositories**: Data access layer implementations
+ * - **Repositories**: Data access layer implementations with local caching
  * - **ViewModels**: Presentation layer view models
  *
  * All dependencies are resolved automatically by Koin based on constructor parameters.
@@ -53,14 +58,32 @@ import org.koin.dsl.module
  * @see org.koin.core.module.Module
  */
 val appModule = module {
+    // Firebase
     single { Firebase.auth }
     single { Firebase.firestore }
     single<AuthService> { FirebaseAuthService(get()) }
 
+    // Room Database
+    single {
+        Room.databaseBuilder(
+            androidContext(),
+            SoleaDatabase::class.java,
+            SoleaDatabase.DATABASE_NAME
+        ).build()
+    }
+    single<MovementDao> { get<SoleaDatabase>().movementDao() }
+
+    // Services
     single<ReceiptScannerService> { RetrofitReceiptScannerService() }
     single<AudioAnalyzerService> { RetrofitAudioAnalyzerService() }
 
-    single<MovementRepository> { FirebaseMovementRepository(get()) }
+    // Repositories
+    single<MovementRepository> {
+        CachedMovementRepository(
+            remoteRepository = FirebaseMovementRepository(get()),
+            movementDao = get()
+        )
+    }
     single<BudgetRepository> { FirebaseBudgetRepository(get()) }
     single<CategoryRepository> { FirebaseCategoryRepository(get()) }
     single<ItemRepository> { FirebaseItemRepository(get()) }
@@ -68,6 +91,7 @@ val appModule = module {
     single<SavingsGoalRepository> { FirebaseSavingsGoalRepository(get()) }
     single<UserPreferencesRepository> { DataStoreUserPreferencesRepository(androidContext()) }
 
+    // ViewModels
     viewModel { AuthViewModel(get()) }
     viewModel { HomeViewModel() }
     viewModel { MovementsViewModel(get(), get()) }

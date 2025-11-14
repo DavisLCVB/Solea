@@ -44,11 +44,9 @@ class MainActivity : ComponentActivity() {
             val settingsState = settingsViewModel.uiState.collectAsState()
 
             SoleaTheme(darkTheme = settingsState.value.isDarkTheme) {
-                val surfaceColor = MaterialTheme.colorScheme.surface
                 val isDarkTheme = settingsState.value.isDarkTheme
 
                 SideEffect {
-                    window.statusBarColor = surfaceColor.toArgb()
                     WindowCompat.getInsetsController(window, window.decorView).apply {
                         isAppearanceLightStatusBars = !isDarkTheme
                     }
