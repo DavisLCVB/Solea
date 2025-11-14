@@ -538,4 +538,18 @@
     <string name="detail_delete_confirm_message">Are you sure you want to delete this movement? This action cannot be undone.</string>
     <string name="detail_delete_confirm_yes">Delete</string>
     <string name="detail_delete_confirm_no">Cancel</string>
+
+    <!-- Statistics -->
+    <string name="statistics_title">Statistics</string>
+    <string name="stats_week">Week</string>
+    <string name="stats_month">Month</string>
+    <string name="stats_three_months">3 m</string>
+    <string name="stats_year">Year</string>
+    <string name="balance">Balance</string>
+    <string name="avg_daily_expense">Avg. Daily Expense</string>
+    <string name="top_category">Top Category</string>
+    <string name="none">None</string>
+    <string name="balance_over_time">Balance Over Time</string>
+    <string name="expenses_by_category">Expenses by Category</string>
+    <string name="monthly_comparison">Monthly Comparison</string>
 </resources>

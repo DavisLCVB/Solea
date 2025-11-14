@@ -32,6 +32,7 @@ import com.grupo03.solea.presentation.viewmodels.screens.NewMovementFormViewMode
 import com.grupo03.solea.presentation.viewmodels.screens.SavingsViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.ScanReceiptViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.SettingsViewModel
+import com.grupo03.solea.presentation.viewmodels.screens.StatisticsViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.MovementsViewModel
 import org.koin.android.ext.koin.androidContext
@@ -78,4 +79,5 @@ val appModule = module {
     viewModel { ScanReceiptViewModel(get(), get()) }
     viewModel { AudioAnalysisViewModel(get(), get()) }
     viewModel { SavingsViewModel(get(), get()) }
+    viewModel { StatisticsViewModel(get()) }
 }

@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,21 +36,26 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.grupo03.solea.R
 import com.grupo03.solea.data.models.Category
 import com.grupo03.solea.data.models.ExpenseDetails
 import com.grupo03.solea.data.models.IncomeDetails
 import com.grupo03.solea.data.models.Movement
+import com.grupo03.solea.data.models.SaveDetails
 import com.grupo03.solea.presentation.states.screens.HistoryMovementItem
 import com.grupo03.solea.presentation.states.screens.toHistoryMovementItem
 import com.grupo03.solea.presentation.states.shared.MovementsState
 import com.grupo03.solea.presentation.viewmodels.screens.HomeViewModel
+import com.grupo03.solea.presentation.viewmodels.screens.StatisticsViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.MovementsViewModel
 import com.grupo03.solea.ui.components.ExpandableFab
@@ -90,6 +97,12 @@ sealed class MovementItem {
     ) : MovementItem() {
         override val movement: Movement = expenseDetails.movement
     }
+
+    data class SaveItem(
+        val saveDetails: SaveDetails
+    ) : MovementItem() {
+        override val movement: Movement = saveDetails.movement
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,10 +111,12 @@ fun HomeScreen(
     homeViewModel: HomeViewModel,
     authViewModel: AuthViewModel,
     movementsViewModel: MovementsViewModel,
+    statisticsViewModel: com.grupo03.solea.presentation.viewmodels.screens.StatisticsViewModel,
     onNavigateToNewMovement: () -> Unit,
     onNavigateToNewCategory: () -> Unit,
     onNavigateToScanReceipt: () -> Unit,
-    onNavigateToAudioAnalysis: () -> Unit = {}
+    onNavigateToAudioAnalysis: () -> Unit = {},
+    onNavigateToStatistics: () -> Unit = {}
 ) {
     val homeState = homeViewModel.homeState.collectAsState()
     val movementsState = movementsViewModel.movementsState.collectAsState()
@@ -125,7 +140,9 @@ fun HomeScreen(
                 homeViewModel = homeViewModel,
                 homeState = homeState.value,
                 movementsViewModel = movementsViewModel,
-                userId = userId
+                userId = userId,
+                statisticsViewModel = statisticsViewModel,
+                onNavigateToStatistics = onNavigateToStatistics
             )
 
             ExpandableFab(
@@ -179,7 +196,9 @@ fun HomeScreenContent(
     homeViewModel: HomeViewModel? = null,
     homeState: com.grupo03.solea.presentation.states.screens.HomeScreenState? = null,
     movementsViewModel: MovementsViewModel? = null,
-    userId: String = ""
+    userId: String = "",
+    statisticsViewModel: StatisticsViewModel? = null,
+    onNavigateToStatistics: () -> Unit = {}
 ) {
     // Calculate balance from movements
     val totalIncome = movementsState.incomeDetailsList.sumOf { it.movement.total }
@@ -196,11 +215,26 @@ fun HomeScreenContent(
     val allMovements = buildList {
         addAll(movementsState.incomeDetailsList.map { MovementItem.IncomeItem(it) })
         addAll(movementsState.expenseDetailsList.map { MovementItem.ExpenseItem(it) })
+        addAll(movementsState.saveDetailsList.map { MovementItem.SaveItem(it) })
     }.sortedByDescending { it.movement.datetime }
 
-    Box {
+    // Load statistics from current movements
+    val movements = buildList {
+        addAll(movementsState.incomeDetailsList.map { it.movement })
+        addAll(movementsState.expenseDetailsList.map { it.movement })
+        addAll(movementsState.saveDetailsList.map { it.movement })
+    }
+
+    LaunchedEffect(movements.size, userId) {
+        if (movements.isNotEmpty()) {
+            statisticsViewModel?.loadStatisticsFromMovements(movements, userId)
+        }
+    }
+
+    Box(modifier = modifier) {
         Column(
-            modifier = modifier
+            modifier = Modifier
+                .fillMaxSize()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -216,7 +250,8 @@ fun HomeScreenContent(
             ChartCard(
                 income = totalIncome,
                 expenses = totalExpense,
-                currency = currency
+                currency = currency,
+                onClick = onNavigateToStatistics
             )
 
             // Section title
@@ -224,68 +259,134 @@ fun HomeScreenContent(
                 text = stringResource(R.string.home_last_movements),
                 icon = Icons.Default.History
             )
-            Spacer(modifier = Modifier.height(12.dp))
 
             // Alerts/Notifications
             //AlertsSection(financialData = financialData)
 
-            // Recent Movements - Show all movements (scrollable within parent column)
-            Column(
+            // Recent Movements with fade effect
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                allMovements.forEach { movementItem ->
-                    when (movementItem) {
-                        is MovementItem.IncomeItem -> {
-                            Card(
-                                onClick = {
-                                    homeViewModel?.onMovementSelected(
-                                        movementItem.incomeDetails.toHistoryMovementItem()
-                                    )
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                // Top fade gradient
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 20.dp)
+                        .zIndex(10f)
+                        .align(Alignment.TopCenter)
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.background,
+                                    MaterialTheme.colorScheme.background,
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0.7f),
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0f),
                                 )
-                            ) {
-                                MovementCard(
-                                    incomeDetails = movementItem.incomeDetails,
-                                    expenseDetails = null,
-                                    category = Category() // TODO: Get actual category from movementsState
-                                )
-                            }
-                        }
+                            ),
+                            shape = RectangleShape
+                        )
+                )
 
-                        is MovementItem.ExpenseItem -> {
-                            Card(
-                                onClick = {
-                                    homeViewModel?.onMovementSelected(
-                                        movementItem.expenseDetails.toHistoryMovementItem()
+                // Scrollable movements list
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 40.dp, bottom = 40.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    allMovements.forEach { movementItem ->
+                        when (movementItem) {
+                            is MovementItem.IncomeItem -> {
+                                Card(
+                                    onClick = {
+                                        homeViewModel?.onMovementSelected(
+                                            movementItem.incomeDetails.toHistoryMovementItem()
+                                        )
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainer
                                     )
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                                )
-                            ) {
-                                MovementCard(
-                                    incomeDetails = null,
-                                    expenseDetails = movementItem.expenseDetails,
-                                    category = Category() // TODO: Get actual category from movementsState
-                                )
+                                ) {
+                                    MovementCard(
+                                        incomeDetails = movementItem.incomeDetails,
+                                        expenseDetails = null,
+                                        category = Category() // TODO: Get actual category from movementsState
+                                    )
+                                }
+                            }
+
+                            is MovementItem.ExpenseItem -> {
+                                Card(
+                                    onClick = {
+                                        homeViewModel?.onMovementSelected(
+                                            movementItem.expenseDetails.toHistoryMovementItem()
+                                        )
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                    )
+                                ) {
+                                    MovementCard(
+                                        incomeDetails = null,
+                                        expenseDetails = movementItem.expenseDetails,
+                                        category = Category() // TODO: Get actual category from movementsState
+                                    )
+                                }
+                            }
+
+                            is MovementItem.SaveItem -> {
+                                Card(
+                                    onClick = {
+                                        homeViewModel?.onMovementSelected(
+                                            movementItem.saveDetails.toHistoryMovementItem()
+                                        )
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                    )
+                                ) {
+                                    MovementCard(
+                                        incomeDetails = null,
+                                        expenseDetails = null,
+                                        saveDetails = movementItem.saveDetails,
+                                        category = Category() // TODO: Get actual category from movementsState
+                                    )
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            // Add some bottom spacing
-            Spacer(modifier = Modifier.height(16.dp))
+                // Bottom fade gradient
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 20.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0f),
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0.7f),
+                                    MaterialTheme.colorScheme.background,
+                                    MaterialTheme.colorScheme.background,
+                                )
+                            ),
+                            shape = RectangleShape
+                        )
+                )
+            }
         }
 
         // Show movement details modal
@@ -391,7 +492,8 @@ fun BalanceCard(
 fun ChartCard(
     income: Double = 0.0,
     expenses: Double = 0.0,
-    currency: String = CurrencyUtils.getCurrencyByCountry()
+    currency: String = CurrencyUtils.getCurrencyByCountry(),
+    onClick: () -> Unit = {}
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
@@ -405,6 +507,7 @@ fun ChartCard(
     }
 
     Card(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .height(280.dp),

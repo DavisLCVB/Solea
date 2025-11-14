@@ -47,11 +47,15 @@ fun NavGraphBuilder.mainNavigationGraph(
         startDestination = AppRoutes.HOME,
         route = AppRoutes.PREFIX
     ) {
-        composable(AppRoutes.HOME) {
+        composable(AppRoutes.HOME) { backStackEntry ->
+            val mainGraphEntry = remember(backStackEntry) { navController.getBackStackEntry(AppRoutes.PREFIX) }
+            val statisticsViewModel: com.grupo03.solea.presentation.viewmodels.screens.StatisticsViewModel = koinViewModel(viewModelStoreOwner = mainGraphEntry)
+
             HomeScreen(
                 homeViewModel = koinViewModel(),
                 movementsViewModel = koinViewModel(),
                 authViewModel = authViewModel,
+                statisticsViewModel = statisticsViewModel,
                 onNavigateToNewMovement = {
                     navController.navigate(AppRoutes.NEW_MOVEMENT)
                 },
@@ -63,6 +67,9 @@ fun NavGraphBuilder.mainNavigationGraph(
                 },
                 onNavigateToAudioAnalysis = {
                     navController.navigate(AppRoutes.AUDIO_ANALYSIS)
+                },
+                onNavigateToStatistics = {
+                    navController.navigate(AppRoutes.STATISTICS)
                 }
             )
         }
@@ -138,6 +145,19 @@ fun NavGraphBuilder.mainNavigationGraph(
                 settingsViewModel = koinViewModel(),
                 onNavigateToBudgetLimits = {
                     navController.navigate(AppRoutes.BUDGET_LIMITS)
+                },
+                modifier = Modifier.padding(contentPadding)
+            )
+        }
+        composable(AppRoutes.STATISTICS) { backStackEntry ->
+            val mainGraphEntry = remember(backStackEntry) { navController.getBackStackEntry(AppRoutes.PREFIX) }
+            val statisticsViewModel: com.grupo03.solea.presentation.viewmodels.screens.StatisticsViewModel = koinViewModel(viewModelStoreOwner = mainGraphEntry)
+
+            com.grupo03.solea.ui.screens.statistics.StatisticsScreen(
+                statisticsViewModel = statisticsViewModel,
+                authViewModel = authViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
                 },
                 modifier = Modifier.padding(contentPadding)
             )

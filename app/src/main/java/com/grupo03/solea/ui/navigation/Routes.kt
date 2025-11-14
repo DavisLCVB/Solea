@@ -7,6 +7,7 @@ object AppRoutes {
     const val SAVINGS = "savings"
     const val SHOPPING_LIST = "shopping_list"
     const val SETTINGS = "settings"
+    const val STATISTICS = "statistics"
 
     const val NEW_MOVEMENT = "new_movement"
     const val NEW_CATEGORY = "new_category"
