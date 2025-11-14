@@ -39,12 +39,10 @@ fun AudioAnalysisScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Initialize recorder
     LaunchedEffect(Unit) {
         audioAnalysisViewModel.initializeRecorder(context)
     }
 
-    // Request audio permission
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -55,14 +53,12 @@ fun AudioAnalysisScreen(
         permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
     }
 
-    // Navigate to edit screen when analysis is complete
     LaunchedEffect(state.value.analyzedVoiceNote) {
         if (state.value.analyzedVoiceNote != null && !state.value.isAnalyzing) {
             onNavigateToEdit()
         }
     }
 
-    // Show error messages
     LaunchedEffect(state.value.error) {
         state.value.error?.let { error ->
             snackbarHostState.showSnackbar(context.getString(R.string.error_analyzing_audio))
@@ -177,7 +173,6 @@ fun RecordingContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Instructions
         if (!isRecording) {
             Text(
                 stringResource(R.string.voice_note_instructions),
@@ -203,7 +198,6 @@ fun RecordingContent(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        // Recording duration
         if (isRecording) {
             Text(
                 formatDuration(duration),
@@ -213,7 +207,6 @@ fun RecordingContent(
             Spacer(modifier = Modifier.height(32.dp))
         }
 
-        // Record button with animation
         RecordButton(
             isRecording = isRecording,
             onStartRecording = onStartRecording,
@@ -222,7 +215,6 @@ fun RecordingContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Cancel button
         if (isRecording) {
             TextButton(onClick = onCancelRecording) {
                 Text(stringResource(R.string.cancel))
@@ -252,7 +244,6 @@ fun RecordButton(
         contentAlignment = Alignment.Center,
         modifier = Modifier.size(120.dp)
     ) {
-        // Pulsing background when recording
         if (isRecording) {
             Box(
                 modifier = Modifier
@@ -265,7 +256,6 @@ fun RecordButton(
             )
         }
 
-        // Main button
         FloatingActionButton(
             onClick = {
                 if (isRecording) {
@@ -294,9 +284,6 @@ fun RecordButton(
     }
 }
 
-/**
- * Formats duration in seconds to MM:SS format
- */
 private fun formatDuration(seconds: Long): String {
     val minutes = seconds / 60
     val remainingSeconds = seconds % 60

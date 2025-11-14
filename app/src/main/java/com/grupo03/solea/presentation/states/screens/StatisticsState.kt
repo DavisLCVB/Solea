@@ -1,18 +1,7 @@
 package com.grupo03.solea.presentation.states.screens
 
-import com.grupo03.solea.data.models.Movement
 import com.grupo03.solea.utils.AppError
 import java.time.LocalDateTime
-
-/**
- * Time period filter for statistics.
- */
-enum class TimePeriod {
-    WEEK,
-    MONTH,
-    THREE_MONTHS,
-    YEAR
-}
 
 /**
  * Data point for time-series charts.
@@ -48,12 +37,6 @@ data class MonthlyData(
  * Contains processed data ready for visualization.
  */
 data class StatisticsState(
-    // Original data
-    val allMovements: List<Movement> = emptyList(),
-
-    // Filters
-    val selectedPeriod: TimePeriod = TimePeriod.MONTH,
-
     // Time-series data
     val balanceOverTime: List<TimeSeriesDataPoint> = emptyList(),
     val incomeOverTime: List<TimeSeriesDataPoint> = emptyList(),

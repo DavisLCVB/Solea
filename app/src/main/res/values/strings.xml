@@ -552,4 +552,6 @@
     <string name="balance_over_time">Balance Over Time</string>
     <string name="expenses_by_category">Expenses by Category</string>
     <string name="monthly_comparison">Monthly Comparison</string>
+    <string name="savings_label">Savings</string>
+    <string name="expense_distribution">Expense Distribution</string>
 </resources>

@@ -36,7 +36,6 @@ class AudioAnalysisViewModel(
     private val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
-    /** Voice note analysis state including recording status, duration, and extracted data */
     private val _state = MutableStateFlow(VoiceNoteState())
     val state: StateFlow<VoiceNoteState> = _state.asStateFlow()
 
@@ -165,7 +164,6 @@ class AudioAnalysisViewModel(
             _state.value = _state.value.copy(isAnalyzing = true, error = null)
 
             try {
-                // Fetch categories (default + user categories)
                 val categories = mutableListOf<Category>()
 
                 val defaultCategoriesResult = categoryRepository.getDefaultCategories()
@@ -178,16 +176,13 @@ class AudioAnalysisViewModel(
                     categories.addAll(userCategoriesResult.getOrNull() ?: emptyList())
                 }
 
-                // Get device currency
                 val deviceCurrency = CurrencyUtils.getCurrencyByCountry()
 
-                // Call analyzer service with categories and device currency
                 val result = audioAnalyzerService.analyzeAudio(audioFile, categories, deviceCurrency)
 
                 if (result.isSuccess) {
                     val analyzedData = result.getOrNull()!!.voiceNote
 
-                    // Convert to editable format
                     val editableVoiceNote = EditableVoiceNote(
                         transcription = analyzedData.transcription,
                         amount = analyzedData.amount.toString(),
@@ -210,7 +205,6 @@ class AudioAnalysisViewModel(
                     )
                 }
 
-                // Clean up temp file
                 audioFile.delete()
             } catch (e: Exception) {
                 _state.value = _state.value.copy(

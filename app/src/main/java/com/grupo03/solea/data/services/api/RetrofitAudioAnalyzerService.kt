@@ -42,7 +42,6 @@ class RetrofitAudioAnalyzerService : AudioAnalyzerService {
     private val api: AudioAnalyzerApi
     private val gson = Gson()
 
-    // Base prompt template for audio analysis
     private fun buildPrompt(categories: List<Category>, defaultCurrency: String): String {
         val categoriesSection = if (categories.isNotEmpty() && categories.size <= 15) {
             val categoriesList = categories.take(15).joinToString(", ") { "\"${it.name}\"" }
@@ -107,10 +106,8 @@ ${categoriesSection}Return ONLY the JSON.
         return try {
             Log.d("AudioAnalyzer", "Analyzing audio: ${audioFile.name} (${audioFile.length()} bytes)")
 
-            // Build prompt with categories and default currency
             val promptText = buildPrompt(categories, defaultCurrency)
 
-            // Determine MIME type based on file extension
             val mimeType = when {
                 audioFile.name.endsWith(".mp3", ignoreCase = true) -> "audio/mpeg"
                 audioFile.name.endsWith(".wav", ignoreCase = true) -> "audio/wav"
@@ -123,13 +120,11 @@ ${categoriesSection}Return ONLY the JSON.
             val mediaType = mimeType.toMediaTypeOrNull()
                 ?: return Result.failure(Exception("Invalid file type: $mimeType"))
 
-            // Validate file size (max 10MB according to API docs)
-            val maxFileSize = 10 * 1024 * 1024 // 10MB
+            val maxFileSize = 10 * 1024 * 1024
             if (audioFile.length() > maxFileSize) {
                 return Result.failure(Exception("File size exceeds maximum allowed size (10MB)"))
             }
 
-            // Create multipart request
             val requestFile = audioFile.asRequestBody(mediaType)
             val filePart = MultipartBody.Part.createFormData("audio", audioFile.name, requestFile)
 
@@ -153,7 +148,6 @@ ${categoriesSection}Return ONLY the JSON.
                 }
 
                 try {
-                    // Clean up JSON response (remove markdown formatting if present)
                     val cleanedJson = jsonString.trim()
                         .removePrefix("```json")
                         .removePrefix("```")

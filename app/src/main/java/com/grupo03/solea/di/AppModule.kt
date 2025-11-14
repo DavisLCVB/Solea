@@ -53,9 +53,6 @@ import org.koin.dsl.module
  * - **Repositories**: Data access layer implementations with local caching
  * - **ViewModels**: Presentation layer view models
  *
- * All dependencies are resolved automatically by Koin based on constructor parameters.
- *
- * @see org.koin.core.module.Module
  */
 val appModule = module {
     // Firebase

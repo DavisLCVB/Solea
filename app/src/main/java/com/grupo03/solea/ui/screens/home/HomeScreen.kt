@@ -80,9 +80,6 @@ import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.common.shape.Shape
 import java.util.Locale
 
-/**
- * Sealed class to represent any type of movement (Income or Expense)
- */
 sealed class MovementItem {
     abstract val movement: Movement
 
@@ -200,25 +197,21 @@ fun HomeScreenContent(
     statisticsViewModel: StatisticsViewModel? = null,
     onNavigateToStatistics: () -> Unit = {}
 ) {
-    // Calculate balance from movements
     val totalIncome = movementsState.incomeDetailsList.sumOf { it.movement.total }
     val totalExpense = movementsState.expenseDetailsList.sumOf { it.movement.total }
     val totalSavings = movementsState.saveDetailsList.sumOf { it.movement.total }
     val balance = totalIncome - totalExpense - totalSavings
 
-    // Get currency from first movement or default to device currency
     val currency = (movementsState.incomeDetailsList.firstOrNull()?.movement?.currency
         ?: movementsState.expenseDetailsList.firstOrNull()?.movement?.currency
         ?: CurrencyUtils.getCurrencyByCountry())
 
-    // Combine and sort all movements by creation date (most recent first)
     val allMovements = buildList {
         addAll(movementsState.incomeDetailsList.map { MovementItem.IncomeItem(it) })
         addAll(movementsState.expenseDetailsList.map { MovementItem.ExpenseItem(it) })
         addAll(movementsState.saveDetailsList.map { MovementItem.SaveItem(it) })
     }.sortedByDescending { it.movement.datetime }
 
-    // Load statistics from current movements
     val movements = buildList {
         addAll(movementsState.incomeDetailsList.map { it.movement })
         addAll(movementsState.expenseDetailsList.map { it.movement })
@@ -260,16 +253,11 @@ fun HomeScreenContent(
                 icon = Icons.Default.History
             )
 
-            // Alerts/Notifications
-            //AlertsSection(financialData = financialData)
-
-            // Recent Movements with fade effect
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                // Top fade gradient
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -290,7 +278,6 @@ fun HomeScreenContent(
                         )
                 )
 
-                // Scrollable movements list
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -316,7 +303,7 @@ fun HomeScreenContent(
                                     MovementCard(
                                         incomeDetails = movementItem.incomeDetails,
                                         expenseDetails = null,
-                                        category = Category() // TODO: Get actual category from movementsState
+                                        category = Category()
                                     )
                                 }
                             }
@@ -337,7 +324,7 @@ fun HomeScreenContent(
                                     MovementCard(
                                         incomeDetails = null,
                                         expenseDetails = movementItem.expenseDetails,
-                                        category = Category() // TODO: Get actual category from movementsState
+                                        category = Category()
                                     )
                                 }
                             }
@@ -359,7 +346,7 @@ fun HomeScreenContent(
                                         incomeDetails = null,
                                         expenseDetails = null,
                                         saveDetails = movementItem.saveDetails,
-                                        category = Category() // TODO: Get actual category from movementsState
+                                        category = Category()
                                     )
                                 }
                             }
@@ -367,7 +354,6 @@ fun HomeScreenContent(
                     }
                 }
 
-                // Bottom fade gradient
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -389,7 +375,6 @@ fun HomeScreenContent(
             }
         }
 
-        // Show movement details modal
         homeState?.selectedMovement?.let { movement ->
             val movementId = when (movement) {
                 is HistoryMovementItem.IncomeItem -> movement.incomeDetails.movement.id
@@ -527,7 +512,6 @@ fun ChartCard(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Gráfico de líneas
             CartesianChartHost(
                 chart = rememberCartesianChart(
                     rememberLineCartesianLayer(
@@ -587,12 +571,10 @@ fun ChartCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Leyenda debajo del gráfico
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // Leyenda de Ingresos
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -623,7 +605,6 @@ fun ChartCard(
                     }
                 }
 
-                // Leyenda de Gastos
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -658,39 +639,6 @@ fun ChartCard(
     }
 }
 
-/*
-@Composable
-fun AlertsSection(financialData: FinancialData) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Snacks spending alert
-        val snacksPercentage = (financialData.snacksSpent / financialData.snacksLimit * 100).toInt()
-        AlertCard(
-            icon = Icons.Default.Warning,
-            iconColor = MaterialTheme.colorScheme.secondary,
-            title = "Superaste el 80% del límite en snacks",
-            amount = "S/${String.format("%.2f", financialData.snacksSpent)}",
-            percentage = "+$snacksPercentage%",
-            backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-        )
-
-        // Laptop savings progress
-        val laptopPercentage = (financialData.laptopSaved / financialData.laptopGoal * 100).toInt()
-        AlertCard(
-            icon = Icons.Default.CheckCircle,
-            iconColor = MaterialTheme.colorScheme.tertiary,
-            title = "Llevas ahorrado el 50% de tu meta de laptop",
-            amount = "S/${String.format("%.2f", financialData.laptopSaved)}",
-            percentage = "-$laptopPercentage%",
-            backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-        )
-    }
-}
-*/
-
 @Composable
 fun AlertCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -715,7 +663,6 @@ fun AlertCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Warning/Success Icon
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -730,7 +677,6 @@ fun AlertCard(
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            // Text content
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -742,7 +688,6 @@ fun AlertCard(
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            // Amount and percentage
             Column(
                 horizontalAlignment = Alignment.End
             ) {

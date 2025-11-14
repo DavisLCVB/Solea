@@ -38,7 +38,6 @@ class FirebaseMovementRepository(
     private val itemsCollection = firestore.collection("items")
     private val receiptsCollection = firestore.collection("receipts")
 
-    // Basic CRUD
     override suspend fun createMovement(movement: Movement): RepositoryResult<Movement> {
         return try {
             val movementData = movement.toMap()
@@ -86,7 +85,6 @@ class FirebaseMovementRepository(
         }
     }
 
-    // Queries by user
     override suspend fun getMovementsByUserId(userUid: String): RepositoryResult<List<Movement>> {
         return try {
             val documents = movementsCollection
@@ -168,7 +166,6 @@ class FirebaseMovementRepository(
         }
     }
 
-    // Expense-specific operations
     override suspend fun createExpense(
         movement: Movement,
         source: Source,
@@ -177,11 +174,9 @@ class FirebaseMovementRepository(
         receiptItems: List<Item>?
     ): RepositoryResult<ExpenseDetails> {
         return try {
-            // Create source
             val sourceData = source.toMap()
             sourcesCollection.document(source.id).set(sourceData).await()
 
-            // Create item or receipt based on source type
             when (source.sourceType) {
                 SourceType.ITEM -> {
                     if (item == null) {
@@ -197,7 +192,6 @@ class FirebaseMovementRepository(
                     val receiptData = receipt.toMap()
                     receiptsCollection.document(receipt.id).set(receiptData).await()
 
-                    // Create receipt items if provided
                     receiptItems?.forEach { receiptItem ->
                         val itemData = receiptItem.toMap()
                         itemsCollection.document(receiptItem.id).set(itemData).await()
@@ -205,11 +199,9 @@ class FirebaseMovementRepository(
                 }
             }
 
-            // Create movement
             val movementData = movement.toMap()
             movementsCollection.document(movement.id).set(movementData).await()
 
-            // Create expense
             val expenseId = UUID.randomUUID().toString()
             val expense = Expense(
                 id = expenseId,
@@ -219,7 +211,6 @@ class FirebaseMovementRepository(
             val expenseData = expense.toMap()
             expensesCollection.document(expenseId).set(expenseData).await()
 
-            // Build SourceDetails
             val sourceDetails = when (source.sourceType) {
                 SourceType.ITEM -> {
                     SourceDetails.ItemSource(
@@ -261,7 +252,6 @@ class FirebaseMovementRepository(
             val sourceDoc = sourcesCollection.document(expense.sourceId).get().await()
             val source = sourceDoc.toSource() ?: return RepositoryResult.Success(null)
 
-            // Build SourceDetails based on source type
             val sourceDetails = when (source.sourceType) {
                 SourceType.ITEM -> {
                     val itemId = source.sourceItemId ?: return RepositoryResult.Success(null)
@@ -277,7 +267,6 @@ class FirebaseMovementRepository(
                     val receiptDoc = receiptsCollection.document(receiptId).get().await()
                     val receipt = receiptDoc.toReceipt() ?: return RepositoryResult.Success(null)
 
-                    // Get all items for this receipt
                     val itemsDocs = itemsCollection
                         .whereEqualTo("receiptId", receiptId)
                         .get()
@@ -308,7 +297,6 @@ class FirebaseMovementRepository(
 
     override suspend fun getExpensesByUserId(userUid: String): RepositoryResult<List<ExpenseDetails>> {
         return try {
-            // Get all movements for user of type EXPENSE
             val movementDocs = movementsCollection
                 .whereEqualTo("userUid", userUid)
                 .whereEqualTo("type", MovementType.EXPENSE.name)
@@ -320,7 +308,6 @@ class FirebaseMovementRepository(
             for (movementDoc in movementDocs) {
                 val movement = movementDoc.toMovement() ?: continue
 
-                // Get expense by movement ID
                 val expenseDocs = expensesCollection
                     .whereEqualTo("movementId", movement.id)
                     .get()
@@ -328,11 +315,9 @@ class FirebaseMovementRepository(
 
                 val expense = expenseDocs.firstOrNull()?.toExpense() ?: continue
 
-                // Get source
                 val sourceDoc = sourcesCollection.document(expense.sourceId).get().await()
                 val source = sourceDoc.toSource() ?: continue
 
-                // Build SourceDetails based on source type
                 val sourceDetails = when (source.sourceType) {
                     SourceType.ITEM -> {
                         val itemId = source.sourceItemId ?: continue
@@ -348,7 +333,6 @@ class FirebaseMovementRepository(
                         val receiptDoc = receiptsCollection.document(receiptId).get().await()
                         val receipt = receiptDoc.toReceipt() ?: continue
 
-                        // Get all items for this receipt
                         val itemsDocs = itemsCollection
                             .whereEqualTo("receiptId", receiptId)
                             .get()
@@ -380,14 +364,11 @@ class FirebaseMovementRepository(
         }
     }
 
-    // Income-specific operations
     override suspend fun createIncome(movement: Movement): RepositoryResult<IncomeDetails> {
         return try {
-            // Create movement
             val movementData = movement.toMap()
             movementsCollection.document(movement.id).set(movementData).await()
 
-            // Create income
             val incomeId = UUID.randomUUID().toString()
             val income = Income(
                 id = incomeId,
@@ -432,7 +413,6 @@ class FirebaseMovementRepository(
 
     override suspend fun getIncomesByUserId(userUid: String): RepositoryResult<List<IncomeDetails>> {
         return try {
-            // Get all movements for user of type INCOME
             val movementDocs = movementsCollection
                 .whereEqualTo("userUid", userUid)
                 .whereEqualTo("type", MovementType.INCOME.name)
@@ -444,7 +424,6 @@ class FirebaseMovementRepository(
             for (movementDoc in movementDocs) {
                 val movement = movementDoc.toMovement() ?: continue
 
-                // Get income by movement ID
                 val incomeDocs = incomesCollection
                     .whereEqualTo("movementId", movement.id)
                     .get()
@@ -468,7 +447,6 @@ class FirebaseMovementRepository(
         }
     }
 
-    // Analytics
     override suspend fun getTotalExpensesByUser(userUid: String): RepositoryResult<Double> {
         return try {
             val movementsResult = getMovementsByUserAndType(userUid, MovementType.EXPENSE)
@@ -501,8 +479,6 @@ class FirebaseMovementRepository(
         }
     }
 
-// ==================== Saving-specific operations ====================
-
     private val savingsCollection = firestore.collection("savings")
 
     override suspend fun createSaving(
@@ -510,11 +486,9 @@ class FirebaseMovementRepository(
         save: Save
     ): RepositoryResult<SaveDetails> {
         return try {
-            // Crear movimiento
             val movementData = movement.toMap()
             movementsCollection.document(movement.id).set(movementData).await()
 
-            // Crear registro de ahorro
             val saveId = save.id.ifEmpty { UUID.randomUUID().toString() }
             val saving = save.copy(id = saveId, movementId = movement.id)
             val saveData = saving.toMap()
@@ -538,7 +512,6 @@ class FirebaseMovementRepository(
             val saveDoc = savingsCollection.document(id).get().await()
             val save = saveDoc.toSave() ?: return RepositoryResult.Success(null)
 
-            // obtener movimiento relacionado usando movementId
             val movementDoc = movementsCollection.document(save.movementId).get().await()
             val movement = movementDoc.toMovement() ?: return RepositoryResult.Success(null)
 
@@ -557,7 +530,6 @@ class FirebaseMovementRepository(
 
     override suspend fun getSavingsByUserId(userUid: String): RepositoryResult<List<SaveDetails>> {
         return try {
-            // Buscar todos los movimientos tipo SAVING
             val movementDocs = movementsCollection
                 .whereEqualTo("userUid", userUid)
                 .whereEqualTo("type", MovementType.SAVING.name)
@@ -569,7 +541,6 @@ class FirebaseMovementRepository(
             for (movementDoc in movementDocs) {
                 val movement = movementDoc.toMovement() ?: continue
 
-                // Buscar saving usando movementId
                 val savingDocs = savingsCollection
                     .whereEqualTo("movementId", movement.id)
                     .get()
@@ -595,7 +566,6 @@ class FirebaseMovementRepository(
 
     override suspend fun getSavingsByGoalId(goalId: String): RepositoryResult<List<SaveDetails>> {
         return try {
-            // Buscar todos los savings asociados al goalId
             val savingDocs = savingsCollection
                 .whereEqualTo("goalId", goalId)
                 .get()
@@ -606,7 +576,6 @@ class FirebaseMovementRepository(
             for (savingDoc in savingDocs) {
                 val saving = savingDoc.toSave() ?: continue
 
-                // Obtener el movimiento asociado usando movementId
                 val movementDoc = movementsCollection.document(saving.movementId).get().await()
                 val movement = movementDoc.toMovement() ?: continue
 
@@ -628,7 +597,6 @@ class FirebaseMovementRepository(
 
     override suspend fun deleteSavingsByGoalId(goalId: String): RepositoryResult<Unit> {
         return try {
-            // Obtener todos los savings asociados al goalId
             val savingsResult = getSavingsByGoalId(goalId)
             if (savingsResult.isError) {
                 return savingsResult as RepositoryResult.Error
@@ -636,12 +604,8 @@ class FirebaseMovementRepository(
 
             val savings = (savingsResult as RepositoryResult.Success).data
 
-            // Eliminar cada movement y saving
             for (saveDetail in savings) {
-                // Eliminar el movement (esto hará que el balance se recalcule automáticamente)
                 movementsCollection.document(saveDetail.movement.id).delete().await()
-                
-                // Eliminar el saving
                 savingsCollection.document(saveDetail.save.id).delete().await()
             }
 
@@ -664,7 +628,6 @@ class FirebaseMovementRepository(
             val totalExpenses = (totalExpensesResult as RepositoryResult.Success).data
 
             val savingsResult = getSavingsByUserId(userUid)
-            // Usar movement.total en lugar de save.amount para mantener consistencia
             val totalSavings = if (savingsResult is RepositoryResult.Success)
                 savingsResult.data.sumOf { it.movement.total } else 0.0
 
@@ -747,7 +710,6 @@ class FirebaseMovementRepository(
         }
     }
 
-    // Helper operations
     override suspend fun createIncome(income: Income): RepositoryResult<Income> {
         return try {
             val incomeData = income.toMap()
@@ -784,7 +746,6 @@ class FirebaseMovementRepository(
         }
     }
 
-    // Helper extension functions
     private fun Movement.toMap(): Map<String, Any?> {
         return buildMap {
             put("id", id)
@@ -983,7 +944,6 @@ class FirebaseMovementRepository(
         )
     }
 
-    // Real-time observers
     override fun observeIncomesByUserId(userUid: String): Flow<RepositoryResult<List<IncomeDetails>>> = callbackFlow {
         val listener = movementsCollection
             .whereEqualTo("userUid", userUid)
@@ -1000,7 +960,6 @@ class FirebaseMovementRepository(
                     for (movementDoc in snapshot.documents) {
                         val movement = movementDoc.toMovement() ?: continue
 
-                        // Get income by movement ID (synchronously for simplicity in snapshot listener)
                         incomesCollection
                             .whereEqualTo("movementId", movement.id)
                             .get()
@@ -1014,14 +973,12 @@ class FirebaseMovementRepository(
                                     )
                                 )
 
-                                // Send update when all incomes are processed
                                 if (incomeDetails.size == snapshot.documents.size) {
                                     trySend(RepositoryResult.Success(incomeDetails))
                                 }
                             }
                     }
 
-                    // Handle empty case
                     if (snapshot.documents.isEmpty()) {
                         trySend(RepositoryResult.Success(emptyList()))
                     }
@@ -1072,7 +1029,6 @@ class FirebaseMovementRepository(
                                     return@addOnSuccessListener
                                 }
 
-                                // Get source
                                 sourcesCollection.document(expense.sourceId).get()
                                     .addOnSuccessListener { sourceDoc ->
                                         val source = sourceDoc.toSource()
@@ -1084,7 +1040,6 @@ class FirebaseMovementRepository(
                                             return@addOnSuccessListener
                                         }
 
-                                        // Build SourceDetails based on source type
                                         when (source.sourceType) {
                                             SourceType.ITEM -> {
                                                 val itemId = source.sourceItemId
@@ -1135,7 +1090,6 @@ class FirebaseMovementRepository(
                                                             return@addOnSuccessListener
                                                         }
 
-                                                        // Get all items for this receipt
                                                         itemsCollection
                                                             .whereEqualTo("receiptId", receiptId)
                                                             .get()
@@ -1192,7 +1146,6 @@ class FirebaseMovementRepository(
                     for (movementDoc in snapshot.documents) {
                         val movement = movementDoc.toMovement() ?: continue
 
-                        // Buscar saving usando movementId
                         savingsCollection
                             .whereEqualTo("movementId", movement.id)
                             .get()

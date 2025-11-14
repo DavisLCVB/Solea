@@ -31,17 +31,11 @@ import java.time.LocalDateTime
  * - Offline capability
  * - Reduced network calls
  *
- * Strategy:
- * - Read operations: Try local cache first, then remote if needed
- * - Write operations: Write to remote first, then update local cache
- * - Observe operations: Use Room Flow for reactive updates
  */
 class CachedMovementRepository(
     private val remoteRepository: MovementRepository,
     private val movementDao: MovementDao
 ) : MovementRepository {
-
-    // ==================== Basic CRUD ====================
 
     override suspend fun createMovement(movement: Movement): RepositoryResult<Movement> {
         val result = remoteRepository.createMovement(movement)
@@ -52,13 +46,11 @@ class CachedMovementRepository(
     }
 
     override suspend fun getMovementById(id: String): RepositoryResult<Movement?> {
-        // Try cache first
         val cachedMovement = movementDao.getMovementById(id)?.toModel()
         if (cachedMovement != null) {
             return RepositoryResult.Success(cachedMovement)
         }
 
-        // Fallback to remote
         val result = remoteRepository.getMovementById(id)
         if (result is RepositoryResult.Success && result.data != null) {
             movementDao.insertMovement(result.data.toEntity())
@@ -82,13 +74,9 @@ class CachedMovementRepository(
         return result
     }
 
-    // ==================== Queries by User ====================
-
     override suspend fun getMovementsByUserId(userUid: String): RepositoryResult<List<Movement>> {
-        // Try cache first
         val cachedMovements = movementDao.getMovementsByUser(userUid).map { it.toModel() }
         if (cachedMovements.isNotEmpty()) {
-            // Return cached data immediately, update in background
             CoroutineScope(Dispatchers.IO).launch {
                 val remoteResult = remoteRepository.getMovementsByUserId(userUid)
                 if (remoteResult is RepositoryResult.Success) {
@@ -98,7 +86,6 @@ class CachedMovementRepository(
             return RepositoryResult.Success(cachedMovements)
         }
 
-        // No cache, fetch from remote
         val result = remoteRepository.getMovementsByUserId(userUid)
         if (result is RepositoryResult.Success) {
             movementDao.insertMovements(result.data.map { it.toEntity() })
@@ -110,10 +97,8 @@ class CachedMovementRepository(
         userUid: String,
         type: MovementType
     ): RepositoryResult<List<Movement>> {
-        // Try cache first
         val cachedMovements = movementDao.getMovementsByUserAndType(userUid, type).map { it.toModel() }
         if (cachedMovements.isNotEmpty()) {
-            // Return cached data immediately, update in background
             CoroutineScope(Dispatchers.IO).launch {
                 val remoteResult = remoteRepository.getMovementsByUserAndType(userUid, type)
                 if (remoteResult is RepositoryResult.Success) {
@@ -123,7 +108,6 @@ class CachedMovementRepository(
             return RepositoryResult.Success(cachedMovements)
         }
 
-        // No cache, fetch from remote
         val result = remoteRepository.getMovementsByUserAndType(userUid, type)
         if (result is RepositoryResult.Success) {
             movementDao.insertMovements(result.data.map { it.toEntity() })
@@ -136,14 +120,10 @@ class CachedMovementRepository(
         startDate: LocalDateTime,
         endDate: LocalDateTime
     ): RepositoryResult<List<Movement>> {
-        // Try cache first
         val cachedMovements = movementDao.getMovementsByUserAndDateRange(userUid, startDate, endDate)
             .map { it.toModel() }
 
-        // If we have cached data, return it immediately
-        // Then update cache in background from remote
         if (cachedMovements.isNotEmpty()) {
-            // Update cache in background
             CoroutineScope(Dispatchers.IO).launch {
                 val remoteResult = remoteRepository.getMovementsByUserAndDateRange(userUid, startDate, endDate)
                 if (remoteResult is RepositoryResult.Success) {
@@ -153,7 +133,6 @@ class CachedMovementRepository(
             return RepositoryResult.Success(cachedMovements)
         }
 
-        // No cache, fetch from remote
         val remoteResult = remoteRepository.getMovementsByUserAndDateRange(userUid, startDate, endDate)
         if (remoteResult is RepositoryResult.Success) {
             movementDao.insertMovements(remoteResult.data.map { it.toEntity() })
@@ -165,15 +144,12 @@ class CachedMovementRepository(
         userUid: String,
         category: String
     ): RepositoryResult<List<Movement>> {
-        // Delegate to remote as cache doesn't support category queries efficiently
         val result = remoteRepository.getMovementsByUserAndCategory(userUid, category)
         if (result is RepositoryResult.Success) {
             movementDao.insertMovements(result.data.map { it.toEntity() })
         }
         return result
     }
-
-    // ==================== Expense-specific Operations ====================
 
     override suspend fun createExpense(
         movement: Movement,
@@ -197,8 +173,6 @@ class CachedMovementRepository(
         return remoteRepository.getExpensesByUserId(userUid)
     }
 
-    // ==================== Income-specific Operations ====================
-
     override suspend fun createIncome(movement: Movement): RepositoryResult<IncomeDetails> {
         val result = remoteRepository.createIncome(movement)
         if (result is RepositoryResult.Success) {
@@ -218,8 +192,6 @@ class CachedMovementRepository(
     override suspend fun getIncomesByUserId(userUid: String): RepositoryResult<List<IncomeDetails>> {
         return remoteRepository.getIncomesByUserId(userUid)
     }
-
-    // ==================== Saving-specific Operations ====================
 
     override suspend fun createSaving(movement: Movement, save: Save): RepositoryResult<SaveDetails> {
         val result = remoteRepository.createSaving(movement, save)
@@ -244,13 +216,9 @@ class CachedMovementRepository(
     override suspend fun deleteSavingsByGoalId(goalId: String): RepositoryResult<Unit> {
         val result = remoteRepository.deleteSavingsByGoalId(goalId)
         if (result is RepositoryResult.Success) {
-            // Note: We can't efficiently delete by goalId from cache without additional queries
-            // This is acceptable as the cache will be refreshed on next fetch
         }
         return result
     }
-
-    // ==================== Helper Operations ====================
 
     override suspend fun createExpense(expense: Expense): RepositoryResult<Expense> {
         return remoteRepository.createExpense(expense)
@@ -259,8 +227,6 @@ class CachedMovementRepository(
     override suspend fun createSource(source: Source): RepositoryResult<Source> {
         return remoteRepository.createSource(source)
     }
-
-    // ==================== Analytics ====================
 
     override suspend fun getTotalExpensesByUser(userUid: String): RepositoryResult<Double> {
         return remoteRepository.getTotalExpensesByUser(userUid)
@@ -294,11 +260,7 @@ class CachedMovementRepository(
         return remoteRepository.getMonthlyIncomesByUser(userUid, year, month)
     }
 
-    // ==================== Real-time Observers ====================
-
     override fun observeIncomesByUserId(userUid: String): Flow<RepositoryResult<List<IncomeDetails>>> {
-        // Use remote for detailed observations as cache only stores Movement entities
-        // But also update cache in background
         CoroutineScope(Dispatchers.IO).launch {
             remoteRepository.observeIncomesByUserId(userUid).collect { result ->
                 if (result is RepositoryResult.Success) {
@@ -310,8 +272,6 @@ class CachedMovementRepository(
     }
 
     override fun observeExpensesByUserId(userUid: String): Flow<RepositoryResult<List<ExpenseDetails>>> {
-        // Use remote for detailed observations
-        // But also update cache in background
         CoroutineScope(Dispatchers.IO).launch {
             remoteRepository.observeExpensesByUserId(userUid).collect { result ->
                 if (result is RepositoryResult.Success) {
@@ -323,8 +283,6 @@ class CachedMovementRepository(
     }
 
     override fun observeSavingsByUserId(userUid: String): Flow<RepositoryResult<List<SaveDetails>>> {
-        // Use remote for detailed observations
-        // But also update cache in background
         CoroutineScope(Dispatchers.IO).launch {
             remoteRepository.observeSavingsByUserId(userUid).collect { result ->
                 if (result is RepositoryResult.Success) {

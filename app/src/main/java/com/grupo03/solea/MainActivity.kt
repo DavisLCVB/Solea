@@ -69,7 +69,7 @@ fun AppNavigation() {
     val authViewModel: AuthViewModel = koinViewModel()
     val authState = authViewModel.authState.collectAsState()
     val movementsViewModel: MovementsViewModel = koinViewModel()
-    val budgetViewModel: com.grupo03.solea.presentation.viewmodels.screens.BudgetViewModel =
+    val budgetViewModel: BudgetViewModel =
         koinViewModel()
 
     if (authState.value.user == null) {

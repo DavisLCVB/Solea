@@ -35,31 +35,21 @@ class StatisticsViewModel(
      */
     fun loadStatisticsFromMovements(movements: List<Movement>, userId: String) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null, allMovements = movements)
+            _state.value = _state.value.copy(isLoading = true, error = null)
 
             try {
-                // Filter movements by selected period for some charts
-                val filteredMovements = filterMovementsByPeriod(movements, _state.value.selectedPeriod)
-
-                // Balance over time uses ALL movements (no filter)
                 val balanceOverTime = calculateBalanceOverTime(movements)
+                val categoryBreakdown = calculateCategoryBreakdown(movements)
+                val monthlyComparison = calculateMonthlyComparisonFromMovements(movements)
 
-                // Category breakdown uses filtered movements
-                val categoryBreakdown = calculateCategoryBreakdown(filteredMovements)
-
-                // Monthly comparison uses filtered movements
-                val monthlyComparison = calculateMonthlyComparisonFromMovements(filteredMovements)
-
-                // Calculate summary stats from filtered movements
-                val totalIncome = filteredMovements.filter { it.type == MovementType.INCOME }.sumOf { it.total }
-                val totalExpenses = filteredMovements.filter { it.type == MovementType.EXPENSE }.sumOf { it.total }
-                val totalSavings = filteredMovements.filter { it.type == MovementType.SAVING }.sumOf { it.total }
+                val totalIncome = movements.filter { it.type == MovementType.INCOME }.sumOf { it.total }
+                val totalExpenses = movements.filter { it.type == MovementType.EXPENSE }.sumOf { it.total }
+                val totalSavings = movements.filter { it.type == MovementType.SAVING }.sumOf { it.total }
                 val currentBalance = totalIncome - totalExpenses - totalSavings
 
-                // Calculate average daily expense based on filtered movements
-                val daysBetween = if (filteredMovements.isNotEmpty()) {
-                    val minDate = filteredMovements.minByOrNull { it.datetime }?.datetime ?: LocalDateTime.now()
-                    val maxDate = filteredMovements.maxByOrNull { it.datetime }?.datetime ?: LocalDateTime.now()
+                val daysBetween = if (movements.isNotEmpty()) {
+                    val minDate = movements.minByOrNull { it.datetime }?.datetime ?: LocalDateTime.now()
+                    val maxDate = movements.maxByOrNull { it.datetime }?.datetime ?: LocalDateTime.now()
                     ChronoUnit.DAYS.between(minDate, maxDate).toInt().coerceAtLeast(1)
                 } else 1
                 val averageDailyExpense = totalExpenses / daysBetween
@@ -75,7 +65,7 @@ class StatisticsViewModel(
                     totalSavings = totalSavings,
                     currentBalance = currentBalance,
                     averageDailyExpense = averageDailyExpense,
-                    transactionCount = filteredMovements.size,
+                    transactionCount = movements.size,
                     topCategory = topCategory?.category,
                     topCategoryAmount = topCategory?.amount ?: 0.0,
                     isLoading = false
@@ -97,13 +87,8 @@ class StatisticsViewModel(
             _state.value = _state.value.copy(isLoading = true, error = null)
 
             try {
-                // Get date range based on selected period
-                val (startDate, endDate) = getDateRange(_state.value.selectedPeriod)
 
-                // Fetch movements in range
-                val movementsResult = movementRepository.getMovementsByUserAndDateRange(
-                    userId, startDate, endDate
-                )
+                val movementsResult = movementRepository.getMovementsByUserId(userId)
 
                 if (movementsResult.isError) {
                     _state.value = _state.value.copy(
@@ -115,20 +100,22 @@ class StatisticsViewModel(
 
                 val movements = movementsResult.getOrNull() ?: emptyList()
 
-                // Process data
                 val balanceOverTime = calculateBalanceOverTime(movements)
                 val incomeOverTime = calculateIncomeOverTime(movements)
                 val expensesOverTime = calculateExpensesOverTime(movements)
                 val categoryBreakdown = calculateCategoryBreakdown(movements)
-                val monthlyComparison = calculateMonthlyComparison(userId)
+                val monthlyComparison = calculateMonthlyComparisonFromMovements(movements)
 
-                // Calculate summary stats
                 val totalIncome = movements.filter { it.type == MovementType.INCOME }.sumOf { it.total }
                 val totalExpenses = movements.filter { it.type == MovementType.EXPENSE }.sumOf { it.total }
                 val totalSavings = movements.filter { it.type == MovementType.SAVING }.sumOf { it.total }
                 val currentBalance = totalIncome - totalExpenses - totalSavings
 
-                val daysBetween = ChronoUnit.DAYS.between(startDate, endDate).toInt().coerceAtLeast(1)
+                val daysBetween = if (movements.isNotEmpty()) {
+                    val minDate = movements.minByOrNull { it.datetime }?.datetime ?: LocalDateTime.now()
+                    val maxDate = movements.maxByOrNull { it.datetime }?.datetime ?: LocalDateTime.now()
+                    ChronoUnit.DAYS.between(minDate, maxDate).toInt().coerceAtLeast(1)
+                } else 1
                 val averageDailyExpense = totalExpenses / daysBetween
 
                 val topCategory = categoryBreakdown.maxByOrNull { it.amount }
@@ -156,78 +143,6 @@ class StatisticsViewModel(
                 )
             }
         }
-    }
-
-    /**
-     * Changes the time period filter and recalculates filtered statistics.
-     */
-    fun changePeriod(period: TimePeriod, userId: String) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(selectedPeriod = period, isLoading = true)
-
-            try {
-                val allMovements = _state.value.allMovements
-                if (allMovements.isEmpty()) {
-                    loadStatistics(userId)
-                    return@launch
-                }
-
-                // Filter movements by new period
-                val filteredMovements = filterMovementsByPeriod(allMovements, period)
-
-                // Recalculate only filtered statistics
-                val categoryBreakdown = calculateCategoryBreakdown(filteredMovements)
-                val monthlyComparison = calculateMonthlyComparisonFromMovements(filteredMovements)
-
-                // Calculate summary stats
-                val totalIncome = filteredMovements.filter { it.type == MovementType.INCOME }.sumOf { it.total }
-                val totalExpenses = filteredMovements.filter { it.type == MovementType.EXPENSE }.sumOf { it.total }
-                val totalSavings = filteredMovements.filter { it.type == MovementType.SAVING }.sumOf { it.total }
-                val currentBalance = totalIncome - totalExpenses - totalSavings
-
-                val daysBetween = if (filteredMovements.isNotEmpty()) {
-                    val minDate = filteredMovements.minByOrNull { it.datetime }?.datetime ?: LocalDateTime.now()
-                    val maxDate = filteredMovements.maxByOrNull { it.datetime }?.datetime ?: LocalDateTime.now()
-                    ChronoUnit.DAYS.between(minDate, maxDate).toInt().coerceAtLeast(1)
-                } else 1
-                val averageDailyExpense = totalExpenses / daysBetween
-
-                val topCategory = categoryBreakdown.maxByOrNull { it.amount }
-
-                _state.value = _state.value.copy(
-                    categoryBreakdown = categoryBreakdown,
-                    monthlyComparison = monthlyComparison,
-                    totalIncome = totalIncome,
-                    totalExpenses = totalExpenses,
-                    totalSavings = totalSavings,
-                    currentBalance = currentBalance,
-                    averageDailyExpense = averageDailyExpense,
-                    transactionCount = filteredMovements.size,
-                    topCategory = topCategory?.category,
-                    topCategoryAmount = topCategory?.amount ?: 0.0,
-                    isLoading = false
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    error = MovementError.UNKNOWN_ERROR
-                )
-            }
-        }
-    }
-
-    /**
-     * Gets start and end dates for a period.
-     */
-    private fun getDateRange(period: TimePeriod): Pair<LocalDateTime, LocalDateTime> {
-        val now = LocalDateTime.now()
-        val startDate = when (period) {
-            TimePeriod.WEEK -> now.minusWeeks(1)
-            TimePeriod.MONTH -> now.minusMonths(1)
-            TimePeriod.THREE_MONTHS -> now.minusMonths(3)
-            TimePeriod.YEAR -> now.minusYears(1)
-        }
-        return Pair(startDate, now)
     }
 
     /**
@@ -289,63 +204,6 @@ class StatisticsViewModel(
                 )
             }
             .sortedByDescending { it.amount }
-    }
-
-    /**
-     * Calculates monthly comparison for the last 3 months.
-     */
-    private suspend fun calculateMonthlyComparison(userId: String): List<MonthlyData> {
-        val monthlyData = mutableListOf<MonthlyData>()
-        val formatter = DateTimeFormatter.ofPattern("MMM")
-        val now = LocalDateTime.now()
-
-        for (i in 2 downTo 0) {
-            val date = now.minusMonths(i.toLong())
-            val year = date.year
-            val month = date.monthValue
-
-            val expensesResult = movementRepository.getMonthlyExpensesByUser(userId, year, month)
-            val incomesResult = movementRepository.getMonthlyIncomesByUser(userId, year, month)
-
-            val expenses = expensesResult.getOrNull() ?: 0.0
-            val incomes = incomesResult.getOrNull() ?: 0.0
-
-            // Get savings for the month
-            val movementsResult = movementRepository.getMovementsByUserAndDateRange(
-                userId,
-                date.withDayOfMonth(1).withHour(0).withMinute(0),
-                date.withDayOfMonth(date.month.length(date.toLocalDate().isLeapYear)).withHour(23).withMinute(59)
-            )
-            val savings = movementsResult.getOrNull()
-                ?.filter { it.type == MovementType.SAVING }
-                ?.sumOf { it.total } ?: 0.0
-
-            monthlyData.add(
-                MonthlyData(
-                    month = date.format(formatter),
-                    income = incomes,
-                    expenses = expenses,
-                    savings = savings
-                )
-            )
-        }
-
-        return monthlyData
-    }
-
-    /**
-     * Filters movements by time period.
-     */
-    private fun filterMovementsByPeriod(movements: List<Movement>, period: TimePeriod): List<Movement> {
-        val now = LocalDateTime.now()
-        val startDate = when (period) {
-            TimePeriod.WEEK -> now.minusWeeks(1)
-            TimePeriod.MONTH -> now.minusMonths(1)
-            TimePeriod.THREE_MONTHS -> now.minusMonths(3)
-            TimePeriod.YEAR -> now.minusYears(1)
-        }
-
-        return movements.filter { it.datetime.isAfter(startDate) || it.datetime.isEqual(startDate) }
     }
 
     /**

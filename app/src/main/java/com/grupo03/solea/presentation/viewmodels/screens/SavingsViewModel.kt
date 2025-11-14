@@ -46,8 +46,6 @@ class SavingsViewModel(
         }
     }
 
-    // --- Form State Management ---
-
     fun prepareFormForCreate() {
         _formState.value = AddEditGoalFormState()
     }
@@ -74,8 +72,6 @@ class SavingsViewModel(
     fun onDeadlineChange(deadline: Instant) {
         _formState.update { it.copy(deadline = deadline) }
     }
-
-    // --- CRUD Operations using Form State ---
 
     fun saveGoal(userUid: String, onSuccess: () -> Unit) {
         val currentState = _formState.value
@@ -118,9 +114,7 @@ class SavingsViewModel(
         val goalId = _formState.value.existingGoal?.id ?: return
         viewModelScope.launch {
             _formState.update { it.copy(isLoading = true) }
-            
-            // Primero eliminar todos los savings asociados al goal
-            // Esto hará que el dinero "retorne" al balance (los movements se eliminan)
+
             val deleteSavingsResult = movementRepository.deleteSavingsByGoalId(goalId)
             if (deleteSavingsResult.isError) {
                 _formState.update { 
@@ -131,8 +125,7 @@ class SavingsViewModel(
                 }
                 return@launch
             }
-            
-            // Luego eliminar el goal
+
             val result = savingsGoalRepository.deleteGoal(goalId)
             when (result) {
                 is RepositoryResult.Success -> {
@@ -145,7 +138,6 @@ class SavingsViewModel(
             }
         }
     }
-    // --- Existing functions ---
     fun addMoneyToGoal(userUid: String, goalId: String, amount: Double, currentBalance: Double) {
         viewModelScope.launch {
             if (amount > currentBalance) {
@@ -182,7 +174,6 @@ class SavingsViewModel(
                 return@launch
             }
 
-            // Actualiza el monto acumulado del goal
             savingsGoalRepository.updateCurrentAmount(goalId, amount)
         }
     }

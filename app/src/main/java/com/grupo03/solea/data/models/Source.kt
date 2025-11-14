@@ -6,10 +6,8 @@ import java.time.LocalDateTime
  * Type of expense source.
  */
 enum class SourceType {
-    /** Single item purchase */
     ITEM,
 
-    /** Receipt containing multiple items */
     RECEIPT
 }
 

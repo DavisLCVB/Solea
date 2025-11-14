@@ -23,7 +23,6 @@ class FirebaseCategoryRepository(
 
     override suspend fun createCategory(category: Category): RepositoryResult<Category> {
         return try {
-            // Verificar si ya existe una categoría con el mismo nombre y userId
             val existingQuery = firestore
                 .collection(DatabaseContants.CATEGORIES_COLLECTION)
                 .whereEqualTo("name", category.name)

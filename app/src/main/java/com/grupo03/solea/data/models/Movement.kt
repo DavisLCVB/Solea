@@ -6,13 +6,10 @@ import java.time.LocalDateTime
  * Type of financial movement.
  */
 enum class MovementType {
-    /** A financial outflow (gasto) */
     EXPENSE,
 
-    /** A financial inflow (ingreso) */
     INCOME,
 
-    /** A movement of money into a savings goal */
     SAVING
 }
 

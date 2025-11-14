@@ -211,7 +211,6 @@ fun NavGraphBuilder.mainNavigationGraph(
             )
         }
 
-        // --- Savings Goals Routes (Corrected & Simplified to match EDIT_BUDGET pattern) ---
         composable(AppRoutes.GOAL_MANAGEMENT) { backStackEntry ->
             val mainGraphEntry = remember(backStackEntry) { navController.getBackStackEntry(AppRoutes.PREFIX) }
             val savingsViewModel: SavingsViewModel = koinViewModel(viewModelStoreOwner = mainGraphEntry)

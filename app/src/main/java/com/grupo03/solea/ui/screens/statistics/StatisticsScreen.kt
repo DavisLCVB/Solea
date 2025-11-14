@@ -15,7 +15,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.grupo03.solea.R
-import com.grupo03.solea.presentation.states.screens.TimePeriod
 import com.grupo03.solea.presentation.viewmodels.screens.StatisticsViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
@@ -25,6 +24,7 @@ import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLa
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +38,6 @@ fun StatisticsScreen(
     val authState = authViewModel.authState.collectAsState()
     val userId = authState.value.user?.uid ?: return
 
-    // Load statistics if not already loaded (fallback)
     LaunchedEffect(userId, state.value.transactionCount) {
         if (state.value.transactionCount == 0 && !state.value.isLoading) {
             statisticsViewModel.loadStatistics(userId)
@@ -79,66 +78,24 @@ fun StatisticsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Time period filter
-                TimePeriodFilter(
-                    selectedPeriod = state.value.selectedPeriod,
-                    onPeriodChange = { period ->
-                        statisticsViewModel.changePeriod(period, userId)
-                    }
-                )
-
-                // Summary cards
                 SummaryCards(state.value)
 
-                // Balance over time chart
                 if (state.value.balanceOverTime.isNotEmpty()) {
                     BalanceOverTimeChart(state.value)
                 }
 
-                // Category breakdown
                 if (state.value.categoryBreakdown.isNotEmpty()) {
                     CategoryBreakdownCard(state.value)
                 }
 
-                // Category pie chart
                 if (state.value.categoryBreakdown.isNotEmpty()) {
                     CategoryPieChart(state.value)
                 }
 
-                // Monthly comparison
                 if (state.value.monthlyComparison.isNotEmpty()) {
                     MonthlyComparisonChart(state.value)
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun TimePeriodFilter(
-    selectedPeriod: TimePeriod,
-    onPeriodChange: (TimePeriod) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        TimePeriod.entries.forEach { period ->
-            FilterChip(
-                selected = selectedPeriod == period,
-                onClick = { onPeriodChange(period) },
-                label = {
-                    Text(
-                        when (period) {
-                            TimePeriod.WEEK -> stringResource(R.string.stats_week)
-                            TimePeriod.MONTH -> stringResource(R.string.stats_month)
-                            TimePeriod.THREE_MONTHS -> stringResource(R.string.stats_three_months)
-                            TimePeriod.YEAR -> stringResource(R.string.stats_year)
-                        }
-                    )
-                },
-                modifier = Modifier.weight(1f)
-            )
         }
     }
 }
@@ -172,7 +129,7 @@ private fun SummaryCards(state: com.grupo03.solea.presentation.states.screens.St
             modifier = Modifier.weight(1f)
         )
         SummaryCard(
-            title = "Ahorros",
+            title = stringResource(R.string.savings_label),
             value = "$%.2f".format(state.totalSavings),
             modifier = Modifier.weight(1f),
             valueColor = Color(0xFFFFC107)
@@ -243,6 +200,7 @@ private fun BalanceOverTimeChart(state: com.grupo03.solea.presentation.states.sc
             )
 
             val modelProducer = remember { CartesianChartModelProducer() }
+            val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM") }
 
             LaunchedEffect(state.balanceOverTime) {
                 modelProducer.runTransaction {
@@ -256,7 +214,16 @@ private fun BalanceOverTimeChart(state: com.grupo03.solea.presentation.states.sc
                 chart = rememberCartesianChart(
                     rememberLineCartesianLayer(),
                     startAxis = rememberStartAxis(),
-                    bottomAxis = rememberBottomAxis()
+                    bottomAxis = rememberBottomAxis(
+                        valueFormatter = { value, _, _ ->
+                            val index = value.toInt()
+                            if (index >= 0 && index < state.balanceOverTime.size) {
+                                state.balanceOverTime[index].date.format(dateFormatter)
+                            } else {
+                                ""
+                            }
+                        }
+                    )
                 ),
                 modelProducer = modelProducer,
                 modifier = Modifier
@@ -320,18 +287,17 @@ private fun CategoryPieChart(state: com.grupo03.solea.presentation.states.screen
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Distribución de Gastos",
+                text = stringResource(R.string.expense_distribution),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
 
             val categories = state.categoryBreakdown.take(4)
+            val savingsLabel = stringResource(R.string.savings_label)
 
-            // Calculate total including savings
             val totalExpenses = categories.sumOf { it.amount }
             val totalWithSavings = totalExpenses + state.totalSavings
 
-            // Build items list with categories and savings
             data class PieChartItem(val label: String, val amount: Double, val percentage: Double)
             val pieItems = buildList {
                 addAll(categories.map {
@@ -343,7 +309,7 @@ private fun CategoryPieChart(state: com.grupo03.solea.presentation.states.screen
                 })
                 if (state.totalSavings > 0) {
                     add(PieChartItem(
-                        label = "Ahorros",
+                        label = savingsLabel,
                         amount = state.totalSavings,
                         percentage = if (totalWithSavings > 0) (state.totalSavings / totalWithSavings * 100) else 0.0
                     ))
@@ -355,14 +321,13 @@ private fun CategoryPieChart(state: com.grupo03.solea.presentation.states.screen
                 Color(0xFFFF5722),
                 Color(0xFF9C27B0),
                 Color(0xFF4CAF50),
-                Color(0xFFFFC107)  // Yellow for savings
+                Color(0xFFFFC107)
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Pie chart
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -387,7 +352,6 @@ private fun CategoryPieChart(state: com.grupo03.solea.presentation.states.screen
                     }
                 }
 
-                // Legend
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -437,7 +401,6 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                 fontWeight = FontWeight.Bold
             )
 
-            // Simple bar chart representation
             state.monthlyComparison.forEach { monthData ->
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -453,7 +416,6 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                         maxOf(it.income, it.expenses, it.savings)
                     } ?: 1.0
 
-                    // Income bar
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -484,7 +446,6 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                         )
                     }
 
-                    // Expense bar
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -515,7 +476,6 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                         )
                     }
 
-                    // Savings bar
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -550,7 +510,6 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                 }
             }
 
-            // Legend
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
@@ -565,7 +524,7 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                 )
                 LegendItem(
                     color = Color(0xFFFFC107),
-                    label = "Ahorros"
+                    label = stringResource(R.string.savings_label)
                 )
             }
         }

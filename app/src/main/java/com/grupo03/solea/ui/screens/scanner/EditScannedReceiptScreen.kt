@@ -95,10 +95,12 @@ fun EditScannedReceiptScreen(
     val locale = java.util.Locale.getDefault()
 
     LaunchedEffect(scannedReceipt.suggestedCategory, formState.value.categories) {
-        if (selectedCategory == null && !scannedReceipt.suggestedCategory.isNullOrBlank()) {
-            val suggested = scannedReceipt.suggestedCategory
+        if (selectedCategory == null &&
+            !scannedReceipt.suggestedCategory.isNullOrBlank() &&
+            formState.value.categories.isNotEmpty()) {
+            val suggested = scannedReceipt.suggestedCategory.trim()
             val existingCategory = formState.value.categories.find {
-                it.name.equals(suggested, ignoreCase = true)
+                it.name.trim().equals(suggested, ignoreCase = true)
             }
 
             if (existingCategory != null) {

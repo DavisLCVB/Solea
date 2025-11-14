@@ -50,12 +50,13 @@ fun EditVoiceNoteScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
-    // Auto-select suggested category
     LaunchedEffect(analyzedVoiceNote.suggestedCategory, formState.value.categories) {
-        if (selectedCategory == null && !analyzedVoiceNote.suggestedCategory.isNullOrBlank()) {
-            val suggested = analyzedVoiceNote.suggestedCategory
+        if (selectedCategory == null &&
+            !analyzedVoiceNote.suggestedCategory.isNullOrBlank() &&
+            formState.value.categories.isNotEmpty()) {
+            val suggested = analyzedVoiceNote.suggestedCategory.trim()
             val existingCategory = formState.value.categories.find {
-                it.name.equals(suggested, ignoreCase = true)
+                it.name.trim().equals(suggested, ignoreCase = true)
             }
 
             if (existingCategory != null) {
@@ -71,7 +72,6 @@ fun EditVoiceNoteScreen(
         newMovementFormViewModel.fetchCategories(userId)
     }
 
-    // Handle category creation dialog
     if (showNewCategoryDialog) {
         AlertDialog(
             onDismissRequest = { showNewCategoryDialog = false },
@@ -90,10 +90,8 @@ fun EditVoiceNoteScreen(
                         newCategoryFormViewModel.onNameChange(newCategoryName)
                         newCategoryFormViewModel.onDescriptionChange("Category automatically detected by AI")
                         newCategoryFormViewModel.createCategory(userId) {
-                            // Close dialog immediately
                             showNewCategoryDialog = false
 
-                            // Refresh categories and select the new one
                             coroutineScope.launch {
                                 kotlinx.coroutines.delay(300)
                                 newMovementFormViewModel.fetchCategories(userId)
@@ -142,7 +140,6 @@ fun EditVoiceNoteScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // AI Confidence indicator
             if (analyzedVoiceNote.confidence > 0) {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -169,7 +166,6 @@ fun EditVoiceNoteScreen(
                 }
             }
 
-            // Transcription (collapsible)
             if (analyzedVoiceNote.transcription.isNotBlank()) {
                 Card {
                     Column(
@@ -206,7 +202,6 @@ fun EditVoiceNoteScreen(
                 }
             }
 
-            // Movement Type selector
             Text(
                 stringResource(R.string.movement_type),
                 style = MaterialTheme.typography.titleMedium,
@@ -230,7 +225,6 @@ fun EditVoiceNoteScreen(
                 )
             }
 
-            // Amount field
             OutlinedTextField(
                 value = amount,
                 onValueChange = { amount = it },
@@ -246,7 +240,6 @@ fun EditVoiceNoteScreen(
                 singleLine = true
             )
 
-            // Description field
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
@@ -256,7 +249,6 @@ fun EditVoiceNoteScreen(
                 maxLines = 4
             )
 
-            // Category selector
             Text(
                 stringResource(R.string.category),
                 style = MaterialTheme.typography.titleMedium,
@@ -295,11 +287,9 @@ fun EditVoiceNoteScreen(
                 }
             }
 
-            // Save button
             Button(
                 onClick = {
                     selectedCategory?.let { category ->
-                        // Set all form values
                         newMovementFormViewModel.onNameChange(description)
                         newMovementFormViewModel.onDescriptionChange(analyzedVoiceNote.transcription)
                         newMovementFormViewModel.onAmountChange(amount)
@@ -309,7 +299,6 @@ fun EditVoiceNoteScreen(
                         if (movementType == "expense") {
                             newMovementFormViewModel.onMovementTypeChange(MovementType.EXPENSE)
 
-                            // For expenses, populate Item source fields
                             newMovementFormViewModel.onSourceTypeChange(com.grupo03.solea.data.models.SourceType.ITEM)
                             newMovementFormViewModel.onItemNameChange(description)
                             newMovementFormViewModel.onItemQuantityChange("1")
@@ -318,7 +307,6 @@ fun EditVoiceNoteScreen(
                             newMovementFormViewModel.onMovementTypeChange(MovementType.INCOME)
                         }
 
-                        // Create movement
                         newMovementFormViewModel.createMovement(userId) {
                             audioAnalysisViewModel.clearState()
                             onSuccess()

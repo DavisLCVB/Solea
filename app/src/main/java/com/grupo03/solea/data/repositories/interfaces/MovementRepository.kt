@@ -24,8 +24,6 @@ import java.time.LocalDateTime
  */
 interface MovementRepository {
 
-    // ==================== Basic CRUD ====================
-
     /**
      * Creates a new movement record.
      *

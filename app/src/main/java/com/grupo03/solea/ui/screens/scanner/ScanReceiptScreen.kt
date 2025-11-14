@@ -95,7 +95,6 @@ fun ScanReceiptScreen(
         permissionLauncher.launch(Manifest.permission.CAMERA)
     }
 
-    // Show error messages
     LaunchedEffect(state.value.error) {
         state.value.error?.let { error ->
             snackbarHostState.showSnackbar(context.getString(R.string.error_scanning_receipt))
@@ -137,7 +136,6 @@ fun ScanReceiptScreen(
                         )
                     },
                     onError = {
-                        // Handle error
                     }
                 )
             } else {
