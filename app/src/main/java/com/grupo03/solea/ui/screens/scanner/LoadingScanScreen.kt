@@ -39,14 +39,20 @@ fun LoadingScanScreen(
 
     LaunchedEffect(state.value.scannedReceipt) {
         if (state.value.scannedReceipt != null) {
+            android.util.Log.d("LoadingScanScreen", "Recibo escaneado detectado, navegando a edición...")
             onNavigateToEdit()
         }
     }
 
     LaunchedEffect(state.value.error) {
         if (state.value.error != null) {
+            android.util.Log.e("LoadingScanScreen", "Error detectado: ${state.value.error}, navegando hacia atrás...")
             onNavigateBack()
         }
+    }
+
+    LaunchedEffect(state.value.isScanning) {
+        android.util.Log.d("LoadingScanScreen", "Estado de escaneo: isScanning=${state.value.isScanning}")
     }
 
     Scaffold(

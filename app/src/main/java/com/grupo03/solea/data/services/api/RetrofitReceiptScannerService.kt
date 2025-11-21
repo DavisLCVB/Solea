@@ -36,11 +36,9 @@ data class GeminiApiResponse(
 interface ReceiptScannerApi {
     @Multipart
     @POST("analyze-image")
-
-    
     suspend fun scanReceipt(
-        @Part file: MultipartBody.Part,
-        @Part("prompt") prompt: RequestBody
+        @Part image: MultipartBody.Part,
+        @Part("prompt") prompt: String
     ): Response<GeminiApiResponse>
 }
 
@@ -55,92 +53,36 @@ class RetrofitReceiptScannerService : ReceiptScannerService {
     // Base prompt template for receipt scanning
     private fun buildPrompt(categories: List<Category>, defaultCurrency: String): String {
         val categoriesSection = if (categories.isNotEmpty()) {
-            val categoriesList = categories.joinToString("\n") { category ->
-                if (category.description.isNotEmpty()) {
-                    "  - \"${category.name}\": ${category.description}"
-                } else {
-                    "  - \"${category.name}\""
-                }
-            }
-            """
-## Available Categories for Classification
-
-The following categories are available in the system. Based on the establishment name and the items purchased in this receipt, **suggest ONE category** that best represents this entire expense. **Prefer to use these categories** if they match:
-
-$categoriesList
-
-If none of these categories fit well, you may suggest a different category name that represents the nature of this purchase.
-
-"""
+            val categoriesList = categories.joinToString(", ") { category -> "\"${category.name}\"" }
+            "Suggest ONE category from: $categoriesList (or a new one if none fit)."
         } else {
-            """
-## Category Suggestion
-
-Based on the establishment name and the items purchased in this receipt, suggest ONE category that best represents this entire expense (e.g., "Groceries", "Restaurant", "Pharmacy", etc.).
-
-"""
+            "Suggest ONE category (e.g., \"Groceries\", \"Restaurant\")."
         }
 
         return """
-You are a reliable receipt and sales ticket data extractor. Your job is to read receipts (image or OCR text) and return **only JSON** with structured and enriched information. **Do not invent data**. If something is not visible or does not exist, **leave it empty** (`null`, `""` or `[]` as appropriate).
+Extract receipt data and return ONLY JSON. Do not invent data - use null/"" if not visible.
 
-## General Rules (Very Important)
+Rules:
+1. Currency: Use receipt's currency or default to "$defaultCurrency"
+2. Date: ISO 8601 format (YYYY-MM-DDTHH:MM:SS-05:00) or null
+3. Numbers: 2 decimals, quantity defaults to 1.0 if not shown
+4. Items: Calculate totalPrice = quantity × unitPrice
 
-1. **Do not invent**: if a value is not explicit or cannot be inferred with high confidence, leave it empty (`null`, `""` or `[]`).
-2. **Currency**: if recognized on the receipt, use that currency code. Otherwise, default to "$defaultCurrency" based on the user's location. If completely uncertain, leave `currency` empty.
-3. **Dates and times**: return `date` in **ISO 8601** format with local timezone: `YYYY-MM-DDTHH:MM:SS-05:00` if deducible; if not, leave `null`.
-4. **Numbers**: use decimal point; normal rounding to 2 decimals when applicable.
-5. **Do not create discounts, taxes, or charges if they are not visible.**
-
-## Required JSON Output Format
-
-Return ONLY the JSON structured exactly as follows (no additional text, comments, or markdown):
-
+JSON format:
 {
   "receipt": {
-    "establishmentName": "Store or establishment name (string, empty if not visible)",
-    "date": "Transaction date in ISO 8601 format or null",
+    "establishmentName": "",
+    "date": null,
     "total": 0.00,
     "currency": "$defaultCurrency",
-    "items": [
-      {
-        "description": "Item description (string)",
-        "quantity": 1.0,
-        "unitPrice": 0.00,
-        "totalPrice": 0.00
-      }
-    ],
-    "suggestedCategory": "Category name that best represents this purchase (string or null)",
+    "items": [{"description": "", "quantity": 1.0, "unitPrice": 0.00, "totalPrice": 0.00}],
+    "suggestedCategory": null,
     "confidence": 0.95
   }
 }
 
-## Important Notes:
-
-- `establishmentName`: Extract from receipt header. Leave empty if not visible.
-- `date`: Parse date and time if visible, format as ISO 8601. Use null if unclear.
-- `total`: Total amount paid. Must be a number.
-- `currency`: Three-letter currency code (USD, PEN, EUR, etc.). Leave empty if unknown.
-- `items`: Array of line items. Each item must have:
-  - `description`: What was purchased
-  - `quantity`: Numeric quantity (default 1.0 if not shown)
-  - `unitPrice`: Price per unit
-  - `totalPrice`: Total for this line item (quantity × unitPrice)
-- `suggestedCategory`: ONE category that best represents this entire purchase based on the establishment and items. Prefer categories from the provided list if applicable, or suggest a new one if none fit well. Use null if you cannot determine a suitable category.
-- `confidence`: Your confidence level in the extraction (0.0 to 1.0)
-
-## Extraction Guidelines:
-
-1. Focus on line items with prices
-2. If quantity is not shown, assume 1.0
-3. Calculate totalPrice = quantity × unitPrice
-4. Extract establishment name from header/logo area
-5. Look for date/time near top or bottom of receipt
-6. Total should match the final amount paid
-7. Currency should match country/region indicators
-
 $categoriesSection
-Return ONLY the JSON object. No markdown, no explanations.
+Return ONLY JSON, no markdown.
 """.trimIndent()
     }
 
@@ -186,12 +128,11 @@ Return ONLY the JSON object. No markdown, no explanations.
 
             // Create multipart request
             val requestFile = imageFile.asRequestBody(mediaType)
-            val filePart = MultipartBody.Part.createFormData("file", imageFile.name, requestFile)
+            val imagePart = MultipartBody.Part.createFormData("image", imageFile.name, requestFile)
 
-            val promptMediaType = "text/plain; charset=utf-8".toMediaTypeOrNull()
-            val promptBody = promptText.toRequestBody(promptMediaType)
-
-            val response = api.scanReceipt(filePart, promptBody)
+            Log.d("ReceiptScanner", "Enviando request al backend...")
+            Log.d("ReceiptScanner", "Prompt length: ${promptText.length} chars")
+            val response = api.scanReceipt(imagePart, promptText)
 
             if (response.isSuccessful) {
                 val result = response.body()

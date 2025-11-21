@@ -85,9 +85,12 @@ fun ScanReceiptScreen(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         uri?.let {
+            android.util.Log.d("ScanReceiptScreen", "Imagen seleccionada de galería: $it")
             scanReceiptViewModel.onImageCaptured(it)
             scanReceiptViewModel.scanReceipt(context, it, userId)
             onNavigateToLoading()
+        } ?: run {
+            android.util.Log.w("ScanReceiptScreen", "No se seleccionó ninguna imagen de galería")
         }
     }
 
@@ -97,7 +100,8 @@ fun ScanReceiptScreen(
 
     LaunchedEffect(state.value.error) {
         state.value.error?.let { error ->
-            snackbarHostState.showSnackbar(context.getString(R.string.error_scanning_receipt))
+            android.util.Log.e("ScanReceiptScreen", "Error en escaneo: ${error.javaClass.simpleName} - $error")
+            snackbarHostState.showSnackbar("Error: ${error.javaClass.simpleName}")
         }
     }
 
@@ -126,16 +130,19 @@ fun ScanReceiptScreen(
             if (hasCameraPermission) {
                 CameraPreview(
                     onImageCaptured = { uri ->
+                        android.util.Log.d("ScanReceiptScreen", "Imagen capturada desde cámara: $uri")
                         scanReceiptViewModel.onImageCaptured(uri)
                         scanReceiptViewModel.scanReceipt(context, uri, userId)
                         onNavigateToLoading()
                     },
                     onGalleryClick = {
+                        android.util.Log.d("ScanReceiptScreen", "Abriendo galería...")
                         galleryLauncher.launch(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                         )
                     },
-                    onError = {
+                    onError = { exception ->
+                        android.util.Log.e("ScanReceiptScreen", "Error al capturar imagen: ${exception.message}", exception)
                     }
                 )
             } else {
@@ -231,6 +238,7 @@ private fun captureImage(
         "receipt_${System.currentTimeMillis()}.jpg"
     )
 
+    android.util.Log.d("ScanReceiptScreen", "Iniciando captura de imagen: ${photoFile.absolutePath}")
     val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
     imageCapture.takePicture(
@@ -238,10 +246,12 @@ private fun captureImage(
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                android.util.Log.d("ScanReceiptScreen", "Imagen guardada exitosamente: ${photoFile.absolutePath}, tamaño: ${photoFile.length()} bytes")
                 onImageCaptured(Uri.fromFile(photoFile))
             }
 
             override fun onError(exception: ImageCaptureException) {
+                android.util.Log.e("ScanReceiptScreen", "Error al guardar imagen: ${exception.message}", exception)
                 onError(exception)
             }
         }

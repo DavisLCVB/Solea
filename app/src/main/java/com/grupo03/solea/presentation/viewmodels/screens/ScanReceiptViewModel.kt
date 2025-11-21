@@ -69,33 +69,59 @@ class ScanReceiptViewModel(
      */
     fun scanReceipt(context: Context, imageUri: Uri, userId: String) {
         viewModelScope.launch {
+            android.util.Log.d("ScanReceiptVM", "=== INICIANDO ESCANEO ===")
+            android.util.Log.d("ScanReceiptVM", "URI imagen: $imageUri")
+            android.util.Log.d("ScanReceiptVM", "User ID: $userId")
             _state.value = _state.value.copy(isScanning = true, error = null)
 
             try {
                 // Fetch categories (default + user categories)
                 val categories = mutableListOf<Category>()
 
+                android.util.Log.d("ScanReceiptVM", "Obteniendo categorías por defecto...")
                 val defaultCategoriesResult = categoryRepository.getDefaultCategories()
                 if (defaultCategoriesResult.isSuccess) {
-                    categories.addAll(defaultCategoriesResult.getOrNull() ?: emptyList())
+                    val defaultCats = defaultCategoriesResult.getOrNull() ?: emptyList()
+                    categories.addAll(defaultCats)
+                    android.util.Log.d("ScanReceiptVM", "Categorías por defecto obtenidas: ${defaultCats.size}")
+                } else {
+                    android.util.Log.w("ScanReceiptVM", "Error obteniendo categorías por defecto")
                 }
 
+                android.util.Log.d("ScanReceiptVM", "Obteniendo categorías de usuario...")
                 val userCategoriesResult = categoryRepository.getCategoriesByUser(userId)
                 if (userCategoriesResult.isSuccess) {
-                    categories.addAll(userCategoriesResult.getOrNull() ?: emptyList())
+                    val userCats = userCategoriesResult.getOrNull() ?: emptyList()
+                    categories.addAll(userCats)
+                    android.util.Log.d("ScanReceiptVM", "Categorías de usuario obtenidas: ${userCats.size}")
+                } else {
+                    android.util.Log.w("ScanReceiptVM", "Error obteniendo categorías de usuario")
                 }
 
                 // Convert Uri to File
+                android.util.Log.d("ScanReceiptVM", "Convirtiendo URI a archivo...")
                 val imageFile = uriToFile(context, imageUri)
+                android.util.Log.d("ScanReceiptVM", "Archivo creado: ${imageFile.absolutePath}, tamaño: ${imageFile.length()} bytes")
 
                 // Get device currency
                 val deviceCurrency = CurrencyUtils.getCurrencyByCountry()
+                android.util.Log.d("ScanReceiptVM", "Moneda del dispositivo: $deviceCurrency")
+                android.util.Log.d("ScanReceiptVM", "Total de categorías a enviar: ${categories.size}")
 
                 // Call scanner service with categories and device currency
+                android.util.Log.d("ScanReceiptVM", "Llamando al servicio de escaneo...")
                 val result = receiptScannerService.scanReceipt(imageFile, categories, deviceCurrency)
+                android.util.Log.d("ScanReceiptVM", "Servicio de escaneo completado. Éxito: ${result.isSuccess}")
 
                 if (result.isSuccess) {
                     val scannedData = result.getOrNull()!!.receipt
+                    android.util.Log.d("ScanReceiptVM", "Recibo escaneado exitosamente:")
+                    android.util.Log.d("ScanReceiptVM", "  - Establecimiento: ${scannedData.establishmentName}")
+                    android.util.Log.d("ScanReceiptVM", "  - Fecha: ${scannedData.date}")
+                    android.util.Log.d("ScanReceiptVM", "  - Total: ${scannedData.total} ${scannedData.currency}")
+                    android.util.Log.d("ScanReceiptVM", "  - Items: ${scannedData.items.size}")
+                    android.util.Log.d("ScanReceiptVM", "  - Categoría sugerida: ${scannedData.suggestedCategory}")
+                    android.util.Log.d("ScanReceiptVM", "  - Confianza: ${scannedData.confidence}")
 
                     // Convert to editable format
                     val editableReceipt = EditableScannedReceipt(
@@ -114,11 +140,14 @@ class ScanReceiptViewModel(
                         confidence = scannedData.confidence
                     )
 
+                    android.util.Log.d("ScanReceiptVM", "Estado actualizado con recibo escaneado")
                     _state.value = _state.value.copy(
                         scannedReceipt = editableReceipt,
                         isScanning = false
                     )
                 } else {
+                    val error = result.exceptionOrNull()
+                    android.util.Log.e("ScanReceiptVM", "Error en el escaneo: ${error?.message}", error)
                     _state.value = _state.value.copy(
                         isScanning = false,
                         error = MovementError.UNKNOWN_ERROR
@@ -126,13 +155,19 @@ class ScanReceiptViewModel(
                 }
 
                 // Clean up temp file
-                imageFile.delete()
+                android.util.Log.d("ScanReceiptVM", "Limpiando archivo temporal...")
+                val deleted = imageFile.delete()
+                android.util.Log.d("ScanReceiptVM", "Archivo temporal eliminado: $deleted")
             } catch (e: Exception) {
+                android.util.Log.e("ScanReceiptVM", "EXCEPCIÓN CAPTURADA en scanReceipt: ${e.message}", e)
+                android.util.Log.e("ScanReceiptVM", "Tipo de excepción: ${e.javaClass.name}")
+                e.printStackTrace()
                 _state.value = _state.value.copy(
                     isScanning = false,
                     error = MovementError.UNKNOWN_ERROR
                 )
             }
+            android.util.Log.d("ScanReceiptVM", "=== FIN ESCANEO ===")
         }
     }
 
@@ -146,15 +181,24 @@ class ScanReceiptViewModel(
      * @return Temporary file containing the URI content
      */
     private fun uriToFile(context: Context, uri: Uri): File {
+        android.util.Log.d("ScanReceiptVM", "Convirtiendo URI a File: $uri")
         val inputStream = context.contentResolver.openInputStream(uri)
+        if (inputStream == null) {
+            android.util.Log.e("ScanReceiptVM", "No se pudo abrir InputStream para URI: $uri")
+            throw IllegalStateException("No se pudo abrir el archivo de imagen")
+        }
+        
         val tempFile = File.createTempFile("receipt", ".jpg", context.cacheDir)
+        android.util.Log.d("ScanReceiptVM", "Archivo temporal creado: ${tempFile.absolutePath}")
 
-        inputStream?.use { input ->
+        inputStream.use { input ->
             FileOutputStream(tempFile).use { output ->
-                input.copyTo(output)
+                val bytesCopied = input.copyTo(output)
+                android.util.Log.d("ScanReceiptVM", "Bytes copiados: $bytesCopied")
             }
         }
 
+        android.util.Log.d("ScanReceiptVM", "Conversión completada. Tamaño final: ${tempFile.length()} bytes")
         return tempFile
     }
 
