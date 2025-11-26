@@ -93,12 +93,12 @@ val appModule = module {
     viewModel { HomeViewModel() }
     viewModel { MovementsViewModel(get(), get()) }
     viewModel { NewCategoryFormViewModel(get()) }
-    viewModel { NewMovementFormViewModel(get(), get(), get(), get()) }
+    viewModel { NewMovementFormViewModel(get(), get(), get(), get(), get()) }
     viewModel { BudgetViewModel(get(), get()) }
     viewModel { SettingsViewModel(get()) }
     viewModel { HistoryViewModel(get()) }
-    viewModel { ScanReceiptViewModel(get(), get()) }
-    viewModel { AudioAnalysisViewModel(get(), get()) }
+    viewModel { ScanReceiptViewModel(get(), get(), get()) }
+    viewModel { AudioAnalysisViewModel(get(), get(), get()) }
     viewModel { SavingsViewModel(get(), get()) }
     viewModel { StatisticsViewModel(get()) }
 }

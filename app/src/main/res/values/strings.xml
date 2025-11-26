@@ -293,6 +293,8 @@
     <string name="expenses_notifications">Expense Notifications</string>
     <string name="set_category_limits_label">Set Limits by Category</string>
     <string name="limits_per_category_stablish">Set Limits by Category</string>
+    <string name="currency">Currency</string>
+    <string name="currency_label">Currency</string>
     <string name="general">General</string>
     <string name="general_title">General</string>
     <string name="dark_theme">Dark Theme</string>
@@ -304,6 +306,20 @@
     <string name="version_prefix">Version:</string>
     <string name="sign_out">Sign out</string>
     <string name="profile_picture">Profile picture</string>
+
+    <!-- Currency Selection Screen -->
+    <string name="currency_selection_title">Currency</string>
+    <string name="select_currency">Select currency</string>
+    <string name="select_currency_description">Select your preferred currency to display amounts in the app</string>
+    <string name="auto_detect_currency">Auto-detect (%1$s %2$s)</string>
+    <string name="selected">Selected</string>
+
+    <!-- Language Selection Screen -->
+    <string name="language_selection_title">Language</string>
+    <string name="select_language">Select Language</string>
+    <string name="select_language_description">Choose your preferred language for the app</string>
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
 
     <!-- Budget Limits Screen -->
     <string name="budget_limits_title">Spending Limits</string>

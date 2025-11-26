@@ -21,6 +21,7 @@ class DataStoreUserPreferencesRepository(
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val DARK_THEME = booleanPreferencesKey("dark_theme")
         val LANGUAGE = stringPreferencesKey("language")
+        val CURRENCY = stringPreferencesKey("currency")
     }
 
     override suspend fun saveNotificationsEnabled(enabled: Boolean) {
@@ -56,6 +57,24 @@ class DataStoreUserPreferencesRepository(
     override fun getLanguage(): Flow<String> {
         return context.dataStore.data.map { preferences ->
             preferences[LANGUAGE] ?: "es"
+        }
+    }
+
+    override suspend fun saveCurrency(currencyCode: String) {
+        context.dataStore.edit { preferences ->
+            preferences[CURRENCY] = currencyCode
+        }
+    }
+
+    override fun getCurrency(): Flow<String?> {
+        return context.dataStore.data.map { preferences ->
+            preferences[CURRENCY]
+        }
+    }
+
+    override suspend fun clearCurrency() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(CURRENCY)
         }
     }
 

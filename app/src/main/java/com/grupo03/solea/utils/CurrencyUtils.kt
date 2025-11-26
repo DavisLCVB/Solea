@@ -34,16 +34,14 @@ object CurrencyUtils {
     /**
      * Gets the currency symbol based on the device's locale.
      *
+     * Now uses getCurrencyByCountry() to ensure consistency between
+     * currency code and symbol detection.
+     *
      * @return Currency symbol (e.g., "$", "€", "AR$"). Defaults to "$" if unavailable.
      */
     fun getDeviceCurrencySymbol(): String {
-        return try {
-            val locale = Locale.getDefault()
-            val currency = Currency.getInstance(locale)
-            currency.symbol
-        } catch (_: Exception) {
-            "$"
-        }
+        val currencyCode = getCurrencyByCountry()
+        return getCurrencySymbol(currencyCode)
     }
 
     /**
@@ -165,5 +163,82 @@ object CurrencyUtils {
      */
     fun canConvert(fromCurrency: String, toCurrency: String): Boolean {
         return exchangeRates.containsKey(fromCurrency) && exchangeRates.containsKey(toCurrency)
+    }
+
+    /**
+     * Data class representing a currency option for selection.
+     *
+     * @property code ISO 4217 currency code (e.g., "USD", "EUR")
+     * @property symbol Currency symbol (e.g., "$", "€")
+     * @property name Human-readable name (e.g., "US Dollar", "Euro")
+     */
+    data class CurrencyOption(
+        val code: String,
+        val symbol: String,
+        val name: String
+    )
+
+    /**
+     * Returns a list of all supported currencies for user selection.
+     *
+     * Includes all currencies from the exchange rates table with their
+     * symbols and localized names.
+     *
+     * @return List of currency options sorted by name
+     */
+    fun getSupportedCurrencies(): List<CurrencyOption> {
+        val currencies = listOf(
+            CurrencyOption("USD", getCurrencySymbol("USD"), "Dólar estadounidense"),
+            CurrencyOption("EUR", getCurrencySymbol("EUR"), "Euro"),
+            CurrencyOption("ARS", getCurrencySymbol("ARS"), "Peso argentino"),
+            CurrencyOption("MXN", getCurrencySymbol("MXN"), "Peso mexicano"),
+            CurrencyOption("CLP", getCurrencySymbol("CLP"), "Peso chileno"),
+            CurrencyOption("COP", getCurrencySymbol("COP"), "Peso colombiano"),
+            CurrencyOption("BRL", getCurrencySymbol("BRL"), "Real brasileño"),
+            CurrencyOption("PEN", getCurrencySymbol("PEN"), "Sol peruano"),
+            CurrencyOption("UYU", getCurrencySymbol("UYU"), "Peso uruguayo"),
+            CurrencyOption("PYG", getCurrencySymbol("PYG"), "Guaraní paraguayo"),
+            CurrencyOption("BOB", getCurrencySymbol("BOB"), "Boliviano"),
+            CurrencyOption("VES", getCurrencySymbol("VES"), "Bolívar venezolano"),
+            CurrencyOption("CRC", getCurrencySymbol("CRC"), "Colón costarricense"),
+            CurrencyOption("GTQ", getCurrencySymbol("GTQ"), "Quetzal guatemalteco"),
+            CurrencyOption("HNL", getCurrencySymbol("HNL"), "Lempira hondureño"),
+            CurrencyOption("NIO", getCurrencySymbol("NIO"), "Córdoba nicaragüense"),
+            CurrencyOption("PAB", getCurrencySymbol("PAB"), "Balboa panameño"),
+            CurrencyOption("DOP", getCurrencySymbol("DOP"), "Peso dominicano"),
+            CurrencyOption("CUP", getCurrencySymbol("CUP"), "Peso cubano")
+        )
+        return currencies.sortedBy { it.name }
+    }
+
+    /**
+     * Gets the currency to use considering user preference.
+     *
+     * If userPreference is provided and valid, uses that. Otherwise
+     * falls back to device detection.
+     *
+     * @param userPreference User's saved currency preference, null if not set
+     * @return Currency code to use
+     */
+    fun getCurrency(userPreference: String?): String {
+        return if (userPreference != null && exchangeRates.containsKey(userPreference)) {
+            userPreference
+        } else {
+            getCurrencyByCountry()
+        }
+    }
+
+    /**
+     * Gets the currency symbol considering user preference.
+     *
+     * If userPreference is provided and valid, uses that. Otherwise
+     * falls back to device detection.
+     *
+     * @param userPreference User's saved currency preference, null if not set
+     * @return Currency symbol to use
+     */
+    fun getCurrencySymbolWithPreference(userPreference: String?): String {
+        val currencyCode = getCurrency(userPreference)
+        return getCurrencySymbol(currencyCode)
     }
 }

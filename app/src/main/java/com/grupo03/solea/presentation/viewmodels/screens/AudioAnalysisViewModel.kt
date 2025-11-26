@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.grupo03.solea.data.models.Category
 import com.grupo03.solea.data.models.EditableVoiceNote
 import com.grupo03.solea.data.repositories.interfaces.CategoryRepository
+import com.grupo03.solea.data.repositories.interfaces.UserPreferencesRepository
 import com.grupo03.solea.data.services.interfaces.AudioAnalyzerService
 import com.grupo03.solea.presentation.states.screens.VoiceNoteState
 import com.grupo03.solea.utils.AudioRecorderManager
@@ -16,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 import java.time.LocalDateTime
@@ -33,7 +35,8 @@ import java.time.format.DateTimeFormatter
  */
 class AudioAnalysisViewModel(
     private val audioAnalyzerService: AudioAnalyzerService,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(VoiceNoteState())
@@ -176,7 +179,8 @@ class AudioAnalysisViewModel(
                     categories.addAll(userCategoriesResult.getOrNull() ?: emptyList())
                 }
 
-                val deviceCurrency = CurrencyUtils.getCurrencyByCountry()
+                val userCurrencyPreference = userPreferencesRepository.getCurrency().first()
+                val deviceCurrency = CurrencyUtils.getCurrency(userCurrencyPreference)
 
                 val result = audioAnalyzerService.analyzeAudio(audioFile, categories, deviceCurrency)
 

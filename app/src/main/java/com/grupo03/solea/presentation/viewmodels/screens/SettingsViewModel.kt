@@ -34,7 +34,7 @@ class SettingsViewModel(
     /**
      * Loads user preferences from DataStore.
      *
-     * Combines all preference flows (notifications, theme, language) and updates
+     * Combines all preference flows (notifications, theme, language, currency) and updates
      * the UI state reactively whenever any preference changes.
      */
     private fun loadPreferences() {
@@ -42,12 +42,14 @@ class SettingsViewModel(
             combine(
                 userPreferencesRepository.getNotificationsEnabled(),
                 userPreferencesRepository.getDarkTheme(),
-                userPreferencesRepository.getLanguage()
-            ) { notifications, darkTheme, language ->
+                userPreferencesRepository.getLanguage(),
+                userPreferencesRepository.getCurrency()
+            ) { notifications, darkTheme, language, currency ->
                 SettingsState(
                     notificationsEnabled = notifications,
                     isDarkTheme = darkTheme,
-                    selectedLanguage = language
+                    selectedLanguage = language,
+                    selectedCurrency = currency
                 )
             }.collect { state ->
                 _uiState.value = state
@@ -119,6 +121,50 @@ class SettingsViewModel(
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = "Error al guardar preferencia de idioma"
+                )
+            }
+        }
+    }
+
+    /**
+     * Changes the currency preference.
+     *
+     * @param currencyCode Currency code (e.g., "USD", "EUR", "ARS")
+     */
+    fun changeCurrency(currencyCode: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            try {
+                userPreferencesRepository.saveCurrency(currencyCode)
+                _uiState.value = _uiState.value.copy(
+                    selectedCurrency = currencyCode,
+                    isLoading = false
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "Error al guardar preferencia de divisa"
+                )
+            }
+        }
+    }
+
+    /**
+     * Clears the currency preference to use auto-detection.
+     */
+    fun useAutoDetectCurrency() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            try {
+                userPreferencesRepository.clearCurrency()
+                _uiState.value = _uiState.value.copy(
+                    selectedCurrency = null,
+                    isLoading = false
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "Error al limpiar preferencia de divisa"
                 )
             }
         }

@@ -1,0 +1,573 @@
+<resources>
+    <!-- App -->
+    <string name="app_name">Solea</string>
+
+    <!-- Authentication -->
+    <string name="email_label">Correo electrónico</string>
+    <string name="password_label">Contraseña</string>
+    <string name="confirm_password_label">Confirmar contraseña</string>
+    <string name="name_label">Nombre</string>
+    <string name="display_name_label">Nombre para mostrar</string>
+    <string name="login_button_label">Iniciar sesión</string>
+    <string name="sign_up_button">Registrarse</string>
+    <string name="sign_out_button">Cerrar sesión</string>
+    <string name="button_sign_in_google">Iniciar sesión con Google</string>
+    <string name="no_accound_sign_up_label">¿No tienes cuenta? Regístrate</string>
+    <string name="already_have_an_account_log_in_button">¿Ya tienes cuenta? Inicia sesión</string>
+    <string name="create_your_account">¡Crea tu cuenta en Solea!</string>
+    <string name="welcome_message">¡Bienvenido a Solea!</string>
+    <string name="welcome_subtitle">Tu app para gestionar tu flujo de efectivo</string>
+    <string name="welcome_back">¡Bienvenido de nuevo!</string>
+    <string name="sign_in_subtitle">Inicia sesión para continuar</string>
+    <string name="sign_up_subtitle">Completa tus datos para comenzar</string>
+    <string name="button_to_sign_up">Crear una cuenta</string>
+    <string name="button_to_sign_in">Ya tengo una cuenta</string>
+    <string name="or">o</string>
+
+    <!-- Profile -->
+    <string name="profile_photo">Foto de perfil</string>
+    <string name="add_photo">Agregar foto</string>
+    <string name="tap_to_add_photo">Toca para agregar una foto de perfil (opcional)</string>
+    <string name="profile_photo_description">Foto de perfil</string>
+    <string name="avatar_description">Avatar</string>
+
+    <!-- Navigation -->
+    <string name="nav_home_title">Inicio</string>
+    <string name="nav_history_title">Historial</string>
+    <string name="nav_savings_title">Ahorros</string>
+    <string name="nav_shopping_list_title">Compras</string>
+    <string name="nav_settings_title">Ajustes</string>
+    <string name="navigate_description">Navegar</string>
+
+    <!-- Common -->
+    <string name="loading">Cargando...</string>
+    <string name="back_button">Atrás</string>
+    <string name="back">Atrás</string>
+    <string name="add_button">Agregar</string>
+    <string name="add">Agregar</string>
+    <string name="edit_button">Editar</string>
+    <string name="edit">Editar</string>
+    <string name="delete_button">Eliminar</string>
+    <string name="delete">Eliminar</string>
+    <string name="create_button">Crear</string>
+    <string name="create">Crear</string>
+    <string name="creating_button">Creando...</string>
+    <string name="creating">Creando...</string>
+    <string name="cancel_button">Cancelar</string>
+    <string name="accept_button">Aceptar</string>
+    <string name="update_limit_button">Actualizar límite</string>
+    <string name="create_limit_button">Crear límite</string>
+    <string name="configure_button">Configurar</string>
+    <string name="options_button">Opciones</string>
+    <string name="options">Opciones</string>
+    <string name="next">Siguiente</string>
+    <string name="confirm">Confirmar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="update">Actualizar</string>
+
+    <!-- Authentication Errors -->
+    <string name="error_auth_user_not_found">Error: ¡Usuario no encontrado!</string>
+    <string name="error_auth_invalid_credentials">Error: ¡Credenciales inválidas!</string>
+    <string name="error_auth_user_collision">Error: ¡El usuario ya existe!</string>
+    <string name="error_auth_email">Error: ¡Error al enviar correo!</string>
+    <string name="error_auth_unknown">Error: ¡Falló la autenticación!</string>
+    <string name="error_auth_invalid_email">Error: ¡Correo electrónico inválido!</string>
+    <string name="error_auth_weak_password">Error: ¡Contraseña débil!</string>
+    <string name="error_auth_google_sign_in_failed">Error: Falló el inicio de sesión con Google</string>
+    <string name="error_auth_passwords_do_not_match">Error: Las contraseñas no coinciden</string>
+    <string name="error_auth_email_empty">Error: ¡El correo electrónico está vacío!</string>
+    <string name="error_auth_email_too_long">Error: ¡Correo electrónico demasiado largo!</string>
+    <string name="error_auth_invalid_username">Error: ¡Nombre de usuario inválido!</string>
+    <string name="error_auth_password_empty">Error: ¡La contraseña está vacía!</string>
+    <string name="error_auth_user_creation_failed">Error: ¡Falló la creación del usuario!</string>
+
+    <!-- Movement Errors -->
+    <string name="error_movement_not_found">Error: ¡Movimiento no encontrado!</string>
+    <string name="error_movement_creation_failed">Error: ¡Falló la creación del movimiento!</string>
+    <string name="error_movement_update_failed">Error: ¡Falló la actualización del movimiento!</string>
+    <string name="error_movement_delete_failed">Error: ¡Falló la eliminación del movimiento!</string>
+    <string name="error_movement_fetch_failed">Error: ¡Falló la obtención del movimiento!</string>
+    <string name="error_movement_invalid_amount">Error: ¡Monto inválido!</string>
+    <string name="error_movement_invalid_type">Error: ¡Tipo de movimiento inválido!</string>
+    <string name="error_movement_insufficient_balance">Error: ¡Saldo insuficiente! El monto del ahorro no puede exceder el saldo disponible.</string>
+    <string name="error_movement_invalid_note">Error: ¡Nota inválida!</string>
+    <string name="error_movement_invalid_name">Error: ¡Nombre inválido!</string>
+    <string name="error_movement_invalid_description">Error: ¡Descripción inválida!</string>
+    <string name="error_movement_invalid_data">Error: ¡Datos del movimiento inválidos!</string>
+    <string name="error_movement_permission_denied">Error: ¡Permiso denegado!</string>
+    <string name="error_movement_network_error">Error: ¡Error de red!</string>
+    <string name="error_movement_unknown">Error: ¡Falló la operación del movimiento!</string>
+
+    <!-- Budget Errors -->
+    <string name="error_budget_not_found">Error: ¡Presupuesto no encontrado!</string>
+    <string name="error_budget_creation_failed">Error: ¡Falló la creación del presupuesto!</string>
+    <string name="error_budget_update_failed">Error: ¡Falló la actualización del presupuesto!</string>
+    <string name="error_budget_delete_failed">Error: ¡Falló la eliminación del presupuesto!</string>
+    <string name="error_budget_fetch_failed">Error: ¡Falló la obtención del presupuesto!</string>
+    <string name="error_budget_invalid_amount">Error: ¡Monto de presupuesto inválido!</string>
+    <string name="error_budget_invalid_category">Error: ¡Categoría inválida!</string>
+    <string name="error_budget_invalid_date">Error: ¡Fecha inválida!</string>
+    <string name="error_budget_invalid_data">Error: ¡Datos del presupuesto inválidos!</string>
+    <string name="error_budget_already_exists">Error: ¡El presupuesto ya existe!</string>
+    <string name="error_budget_permission_denied">Error: ¡Permiso denegado!</string>
+    <string name="error_budget_network_error">Error: ¡Error de red!</string>
+    <string name="error_budget_unknown">Error: ¡Falló la operación del presupuesto!</string>
+
+    <!-- Receipt Errors -->
+    <string name="error_receipt_not_found">Error: ¡Recibo no encontrado!</string>
+    <string name="error_receipt_creation_failed">Error: ¡Falló la creación del recibo!</string>
+    <string name="error_receipt_update_failed">Error: ¡Falló la actualización del recibo!</string>
+    <string name="error_receipt_delete_failed">Error: ¡Falló la eliminación del recibo!</string>
+    <string name="error_receipt_fetch_failed">Error: ¡Falló la obtención del recibo!</string>
+    <string name="error_receipt_invalid_data">Error: ¡Datos del recibo inválidos!</string>
+    <string name="error_receipt_permission_denied">Error: ¡Permiso denegado!</string>
+    <string name="error_receipt_network_error">Error: ¡Error de red!</string>
+    <string name="error_receipt_unknown">Error: ¡Falló la operación del recibo!</string>
+
+    <!-- Item Errors -->
+    <string name="error_item_not_found">Error: ¡Artículo no encontrado!</string>
+    <string name="error_item_creation_failed">Error: ¡Falló la creación del artículo!</string>
+    <string name="error_item_update_failed">Error: ¡Falló la actualización del artículo!</string>
+    <string name="error_item_delete_failed">Error: ¡Falló la eliminación del artículo!</string>
+    <string name="error_item_fetch_failed">Error: ¡Falló la obtención del artículo!</string>
+    <string name="error_item_invalid_data">Error: ¡Datos del artículo inválidos!</string>
+    <string name="error_item_permission_denied">Error: ¡Permiso denegado!</string>
+    <string name="error_item_network_error">Error: ¡Error de red!</string>
+    <string name="error_item_unknown">Error: ¡Falló la operación del artículo!</string>
+
+    <!-- Category Errors -->
+    <string name="error_category_not_found">Error: ¡Categoría no encontrada!</string>
+    <string name="error_category_creation_failed">Error: ¡Falló la creación de la categoría!</string>
+    <string name="error_category_update_failed">Error: ¡Falló la actualización de la categoría!</string>
+    <string name="error_category_delete_failed">Error: ¡Falló la eliminación de la categoría!</string>
+    <string name="error_category_fetch_failed">Error: ¡Falló la obtención de la categoría!</string>
+    <string name="error_category_invalid_name">Error: ¡Nombre de categoría inválido!</string>
+    <string name="error_category_invalid_data">Error: ¡Datos de categoría inválidos!</string>
+    <string name="error_category_already_exists">Error: ¡La categoría ya existe!</string>
+    <string name="error_category_permission_denied">Error: ¡Permiso denegado!</string>
+    <string name="error_category_network_error">Error: ¡Error de red!</string>
+    <string name="error_category_unknown">Error: ¡Falló la operación de categoría!</string>
+
+    <!-- Source Errors -->
+    <string name="error_source_not_found">Error: ¡Fuente no encontrada!</string>
+    <string name="error_source_creation_failed">Error: ¡Falló la creación de la fuente!</string>
+    <string name="error_source_update_failed">Error: ¡Falló la actualización de la fuente!</string>
+    <string name="error_source_delete_failed">Error: ¡Falló la eliminación de la fuente!</string>
+    <string name="error_source_fetch_failed">Error: ¡Falló la obtención de la fuente!</string>
+    <string name="error_source_invalid_data">Error: ¡Datos de fuente inválidos!</string>
+    <string name="error_source_permission_denied">Error: ¡Permiso denegado!</string>
+    <string name="error_source_network_error">Error: ¡Error de red!</string>
+    <string name="error_source_unknown">Error: ¡Falló la operación de fuente!</string>
+
+    <!-- User Errors -->
+    <string name="error_user_not_found">Error: ¡Usuario no encontrado!</string>
+    <string name="error_user_creation_failed">Error: ¡Falló la creación del usuario!</string>
+    <string name="error_user_update_failed">Error: ¡Falló la actualización del usuario!</string>
+    <string name="error_user_delete_failed">Error: ¡Falló la eliminación del usuario!</string>
+    <string name="error_user_fetch_failed">Error: ¡Falló la obtención del usuario!</string>
+    <string name="error_user_invalid_data">Error: ¡Datos del usuario inválidos!</string>
+    <string name="error_user_permission_denied">Error: ¡Permiso denegado!</string>
+    <string name="error_user_network_error">Error: ¡Error de red!</string>
+    <string name="error_user_unknown">Error: ¡Falló la operación del usuario!</string>
+
+    <!-- Repository Errors -->
+    <string name="error_repository_database_connection_failed">Error: ¡Falló la conexión a la base de datos!</string>
+    <string name="error_repository_transaction_failed">Error: ¡Falló la transacción!</string>
+    <string name="error_repository_serialization_error">Error: ¡Error de serialización de datos!</string>
+    <string name="error_repository_unknown">Error: ¡Error de repositorio desconocido!</string>
+    <string name="unknown_error">Error desconocido</string>
+
+    <!-- Savings Goal Errors -->
+    <string name="error_goal_not_found">Meta de ahorro no encontrada</string>
+    <string name="error_goal_creation_failed">Error al crear la meta de ahorro</string>
+    <string name="error_goal_update_failed">Error al actualizar la meta de ahorro</string>
+    <string name="error_goal_delete_failed">Error al eliminar la meta de ahorro</string>
+    <string name="error_goal_fetch_failed">Error al obtener las metas de ahorro</string>
+    <string name="error_goal_invalid_amount">Monto inválido</string>
+    <string name="error_goal_invalid_name">Nombre inválido para la meta</string>
+    <string name="error_goal_permission_denied">No tienes permiso para esta operación</string>
+    <string name="error_goal_network_error">Error de conexión</string>
+    <string name="error_goal_unknown">Error desconocido en meta de ahorro</string>
+
+    <!-- Home Screen -->
+    <string name="home">Inicio</string>
+    <string name="home_title">Solea</string>
+    <string name="current_balance">Saldo actual</string>
+    <string name="current_balance_label">Saldo actual</string>
+    <string name="home_current_balance">Saldo actual</string>
+    <string name="income_vs_expenses">Ingresos vs gastos</string>
+    <string name="income_vs_expenses_title">Ingresos vs gastos</string>
+    <string name="chart_title">Ingresos vs gastos</string>
+    <string name="chart_placeholder_text">Gráfico de ingresos vs gastos\n(Por implementar)</string>
+    <string name="latest_movements">Últimos movimientos</string>
+    <string name="latest_movements_separator">Últimos movimientos</string>
+    <string name="home_last_movements">Últimos movimientos</string>
+    <string name="income_label_format">Ingresos: %1$s %2$s</string>
+    <string name="expenses_label_format">Gastos: %1$s %2$s</string>
+    <string name="home_income_prefix">Ingresos:</string>
+    <string name="home_expenses_prefix">Gastos:</string>
+    <string name="income_short">Ingresos</string>
+    <string name="income_label">Ingreso</string>
+    <string name="income">Ingreso</string>
+    <string name="Incomes">Ingresos</string>
+    <string name="expenses_short">Gastos</string>
+    <string name="expense_label">Gasto</string>
+    <string name="expense">Gasto</string>
+    <string name="expenses">Gastos</string>
+    <string name="new_movement_fab">Nuevo movimiento</string>
+    <string name="button_new_movement">Nuevo movimiento</string>
+    <string name="new_category_fab">Nueva categoría</string>
+    <string name="button_new_category">Nueva categoría</string>
+
+    <!-- History Screen -->
+    <string name="history">Historial</string>
+    <string name="transactions">Transacciones</string>
+    <string name="transactions_title">Transacciones</string>
+    <string name="history_transactions">Transacciones</string>
+    <string name="no_transactions">Sin transacciones</string>
+    <string name="calendar_description">Calendario</string>
+    <string name="date_range_display">23 - 30 de marzo de 2025</string>
+    <string name="today">HOY</string>
+    <string name="today_filter">HOY</string>
+    <string name="history_filter_today">HOY</string>
+    <string name="week">SEMANA</string>
+    <string name="week_filter">SEMANA</string>
+    <string name="history_filter_week">SEMANA</string>
+    <string name="month">MES</string>
+    <string name="month_filter">MES</string>
+    <string name="history_filter_month">MES</string>
+    <string name="year">AÑO</string>
+    <string name="year_filter">AÑO</string>
+    <string name="history_filter_year">AÑO</string>
+    <string name="custom">PERSONALIZADO</string>
+    <string name="custom_filter">PERSONALIZADO</string>
+    <string name="history_filter_pers">PERSONALIZADO</string>
+    <string name="transaction_detail_format">%1$s, a las %2$s</string>
+    <string name="picker_next">Siguiente</string>
+    <string name="picker_confirm">Confirmar</string>
+    <string name="history_filters_cancel">Cancelar</string>
+    <string name="select_start_date">Seleccionar fecha de inicio</string>
+    <string name="history_filter_select_initial_date">Seleccionar fecha de inicio</string>
+    <string name="select_end_date">Seleccionar fecha de fin</string>
+    <string name="history_filter_select_end_date">Seleccionar fecha de fin</string>
+
+    <!-- Savings Screen -->
+    <string name="savings">Ahorros</string>
+    <string name="savings_title">Ahorros</string>
+    <string name="manage_goals_limits_subtitle">Gestiona tus metas y límites</string>
+    <string name="savings_goals">Metas de ahorro</string>
+    <string name="savings_goals_title">Metas de ahorro</string>
+    <string name="saving_goals">Metas de ahorro</string>
+    <string name="spending_limits">Límites de gasto</string>
+    <string name="spending_limits_title">Límites de gasto</string>
+    <string name="add_new">Agregar nuevo</string>
+    <string name="add_new_button">Agregar nuevo</string>
+    <string name="edit_limit">Editar límite</string>
+    <string name="edit_limit_menu">Editar límite</string>
+    <string name="saving_edit_limits">Editar límite</string>
+    <string name="deactivate_limit">Desactivar límite</string>
+    <string name="deactivate_limit_menu">Desactivar límite</string>
+    <string name="savings_deactivate_limit">Desactivar límite</string>
+    <string name="of_format">%1$s %.2f de %2$s %.2f</string>
+    <string name="goal_edit">Editar meta</string>
+    <string name="goal_complete">Marcar como completada</string>
+    <string name="goal_deactivate">Desactivar meta</string>
+    <string name="goal_save">Ahorrar dinero</string>
+
+    <!-- Settings Screen -->
+    <string name="configuration">Configuración</string>
+    <string name="profile_settings_title">Perfil / Configuración</string>
+    <string name="user">Usuario</string>
+    <string name="example_email">correo@ejemplo.com</string>
+    <string name="google_account">Cuenta de Google</string>
+    <string name="google_account_label">Cuenta de Google</string>
+    <string name="edit_profile">Editar perfil</string>
+    <string name="edit_profile_button">Editar perfil</string>
+    <string name="cannot_edit_google_profile">No se puede editar el perfil de Google</string>
+    <string name="cannot_edit_google_profile_text">No se puede editar el perfil de Google</string>
+    <string name="spending_configuration">Configuración de gastos</string>
+    <string name="spending_settings_title">Configuración de gastos</string>
+    <string name="expenses_configuration">Configuración de gastos</string>
+    <string name="expense_notifications">Notificaciones de gastos</string>
+    <string name="expense_notifications_label">Notificaciones de gastos</string>
+    <string name="expenses_notifications">Notificaciones de gastos</string>
+    <string name="set_category_limits_label">Establecer límites por categoría</string>
+    <string name="limits_per_category_stablish">Establecer límites por categoría</string>
+    <string name="currency">Moneda</string>
+    <string name="currency_label">Moneda</string>
+    <string name="general">General</string>
+    <string name="general_title">General</string>
+    <string name="dark_theme">Tema oscuro</string>
+    <string name="dark_theme_label">Tema oscuro</string>
+    <string name="about_app">Acerca de la app</string>
+    <string name="about_app_label">Acerca de la app</string>
+    <string name="version">Versión 1.0.1</string>
+    <string name="version_label">Versión 1.0.1</string>
+    <string name="version_prefix">Versión:</string>
+    <string name="sign_out">Cerrar sesión</string>
+    <string name="profile_picture">Foto de perfil</string>
+
+    <!-- Currency Selection Screen -->
+    <string name="currency_selection_title">Moneda</string>
+    <string name="select_currency">Seleccionar moneda</string>
+    <string name="select_currency_description">Selecciona tu moneda preferida para mostrar los montos en la app</string>
+    <string name="auto_detect_currency">Detectar automáticamente (%1$s %2$s)</string>
+    <string name="selected">Seleccionado</string>
+
+    <!-- Language Selection Screen -->
+    <string name="language_selection_title">Idioma</string>
+    <string name="select_language">Seleccionar idioma</string>
+    <string name="select_language_description">Elige tu idioma preferido para la app</string>
+    <string name="language_english">English</string>
+    <string name="language_spanish">Español</string>
+
+    <!-- Budget Limits Screen -->
+    <string name="budget_limits_title">Límites de gasto</string>
+    <string name="budget_limits_subtitle">Gestiona tus límites por categoría</string>
+    <string name="with_limit_set">Con límite establecido</string>
+    <string name="without_limit">Sin límite</string>
+    <string name="limit_amount_format">Límite: %1$s %2$.2f</string>
+    <string name="active_status">Activo</string>
+
+    <!-- Edit Budget Form Screen -->
+    <string name="edit_limit_title">Editar límite</string>
+    <string name="new_limit_title">Nuevo límite</string>
+    <string name="set_your_budget">Establece tu presupuesto</string>
+    <string name="category_label">Categoría</string>
+    <string name="category">Categoría</string>
+    <string name="no_category">Sin categoría</string>
+    <string name="limit_amount_label">Monto del límite</string>
+    <string name="monthly_limit_label">Límite mensual</string>
+    <string name="enter_valid_amount">Ingresa un monto válido mayor a 0</string>
+    <string name="maximum_spending_category">Máximo que puedes gastar en esta categoría</string>
+    <string name="validity_period_label">Período de validez</string>
+    <string name="valid_until_label">Válido hasta</string>
+    <string name="date_format_pattern">dd \'de\' MMMM, yyyy</string>
+    <string name="select_date">Seleccionar fecha</string>
+    <string name="notification_info_text">Te notificaremos cuando alcances el 80% del límite y cuando lo superes</string>
+
+    <!-- Goal Management Screen -->
+    <string name="goal_management">Gestión de metas</string>
+    <string name="goal_actives">Metas activas</string>
+    <string name="goal_completed">Metas completadas</string>
+
+    <!-- Add Edit Goal Form Screen -->
+    <string name="goal_name">Nombre de la meta</string>
+    <string name="goal_mock_desc">Ej: Vacaciones, Laptop, Aniversario</string>
+    <string name="goal_amount">Monto de la meta</string>
+    <string name="goal_amount_adv">Por favor, ingresa un monto válido</string>
+    <string name="goal_name_adv">El nombre no puede estar vacío</string>
+    <string name="goal_deadline">Fecha límite</string>
+    <string name="goal_delete_title">¿Eliminar meta?</string>
+    <string name="goal_delete_adv">Esta acción no se puede deshacer</string>
+
+    <!-- Movement Form Screen -->
+    <string name="new_movement">Nuevo movimiento</string>
+    <string name="new_movement_title">Nuevo movimiento</string>
+    <string name="register_new_movement_subtitle">Registra un nuevo ingreso o gasto</string>
+    <string name="register_a_new_income_or_expense">Registra un nuevo ingreso o gasto</string>
+    <string name="movement_type">Tipo de movimiento</string>
+    <string name="movement_type_label">Tipo de movimiento</string>
+    <string name="new_mvm_type_label">Tipo de movimiento</string>
+    <string name="income_button">Ingreso</string>
+    <string name="expense_button">Gasto</string>
+    <string name="movement_name">Nombre del movimiento</string>
+    <string name="movement_name_label">Nombre del movimiento</string>
+    <string name="new_mov_name_label">Nombre</string>
+    <string name="name">Nombre</string>
+    <string name="movement_name_placeholder">ej.: Salario, Compras, etc.</string>
+    <string name="name_example">ej.: Salario, Compras, etc.</string>
+    <string name="name_required_error">El nombre es requerido</string>
+    <string name="amount">Monto</string>
+    <string name="amount_label">Monto</string>
+    <string name="amount_placeholder">0.00</string>
+    <string name="enter_valid_amount_error">Ingresa un monto válido mayor a 0</string>
+    <string name="enter_a_new_amount">Ingresa un monto válido mayor a 0</string>
+    <string name="select_category_label">Selecciona una categoría</string>
+    <string name="select_category">Selecciona una categoría</string>
+    <string name="select_a_category">Selecciona una categoría</string>
+    <string name="must_select_category_error">Debes seleccionar una categoría</string>
+    <string name="must_select_a_category">Debes seleccionar una categoría</string>
+    <string name="create_new_category_option">Crear nueva categoría</string>
+    <string name="create_new_category">Crear nueva categoría</string>
+    <string name="add_new_category">Crear nueva categoría</string>
+    <string name="description_optional_label">Descripción (opcional)</string>
+    <string name="optional_description">Descripción (opcional)</string>
+    <string name="add_description_placeholder">Agregar una descripción</string>
+    <string name="add_a_description">Agregar una descripción</string>
+    <string name="expense_details">Detalles del gasto</string>
+    <string name="expense_details_title">Detalles del gasto</string>
+    <string name="single_item">Artículo único</string>
+    <string name="single_item_label">Artículo único</string>
+    <string name="receipt_invoice">Recibo/Factura</string>
+    <string name="receipt_invoice_label">Recibo/Factura</string>
+    <string name="item_name">Nombre del artículo</string>
+    <string name="item_name_label">Nombre del artículo</string>
+    <string name="item_name_placeholder">ej.: Laptop, Comida, etc.</string>
+    <string name="item_name_example">ej.: Laptop, Comida, etc.</string>
+    <string name="quantity">Cantidad</string>
+    <string name="quantity_label">Cantidad</string>
+    <string name="quantity_placeholder">1</string>
+    <string name="enter_valid_quantity">Ingresa una cantidad válida</string>
+    <string name="enter_valid_quantity_error">Ingresa una cantidad válida</string>
+    <string name="unit_price">Precio unitario</string>
+    <string name="unit_price_label">Precio unitario</string>
+    <string name="price_label">Precio</string>
+    <string name="price_placeholder">0.00</string>
+    <string name="enter_valid_price">Ingresa un precio válido</string>
+    <string name="enter_valid_price_error">Ingresa un precio válido</string>
+    <string name="receipt_description">Descripción del recibo (opcional)</string>
+    <string name="receipt_description_optional">Descripción del recibo (opcional)</string>
+    <string name="receipt_description_placeholder">ej.: Supermercado, Ferretería, etc.</string>
+    <string name="receipt_example">ej.: Supermercado, Ferretería, etc.</string>
+    <string name="items">Artículos</string>
+    <string name="items_label">Artículos</string>
+    <string name="add_item">Agregar artículo</string>
+    <string name="add_item_button">Agregar artículo</string>
+    <string name="add_item_description">Agregar artículo</string>
+    <string name="item_number">Artículo %1$d</string>
+    <string name="item_number_format">Artículo %1$d</string>
+
+    <!-- Category Form Screen -->
+    <string name="new_category">Nueva categoría</string>
+    <string name="new_category_title">Nueva categoría</string>
+    <string name="create_category_subtitle">Crea una nueva categoría para organizar tus movimientos</string>
+    <string name="category_creation_subtitle">Crea una nueva categoría para organizar tus movimientos</string>
+    <string name="category_name">Nombre de la categoría</string>
+    <string name="category_name_label">Nombre de la categoría</string>
+    <string name="category_name_placeholder">ej.: Comida, Transporte, Entretenimiento</string>
+    <string name="category_example">ej.: Comida, Transporte, Entretenimiento</string>
+    <string name="name_min_3_chars">El nombre debe tener al menos 3 caracteres</string>
+    <string name="name_min_3_chars_error">El nombre debe tener al menos 3 caracteres</string>
+    <string name="description_placeholder">Agrega una descripción para esta categoría</string>
+    <string name="category_description">Agrega una descripción para esta categoría</string>
+    <string name="category_description_ai_helper">Esta descripción será usada por la IA para clasificar automáticamente los gastos cuando subas recibos por foto o voz.</string>
+
+    <!-- New Categories Dialog -->
+    <string name="new_categories_detected_title">Nuevas categorías detectadas</string>
+    <string name="new_categories_detected_message">La IA sugirió las siguientes categorías. ¿Te gustaría crearlas?</string>
+    <string name="create_selected_categories">Crear seleccionadas</string>
+    <string name="skip_button">Omitir</string>
+    <string name="select_all">Seleccionar todo</string>
+    <string name="ai_suggested_category_description">Categoría detectada automáticamente por IA</string>
+
+    <!-- Category Names (for icon matching) -->
+    <string name="category_food">comida</string>
+    <string name="category_restaurant">restaurante</string>
+    <string name="category_transportation">transporte</string>
+    <string name="category_taxi">taxi</string>
+    <string name="category_uber">uber</string>
+    <string name="category_entertainment">entretenimiento</string>
+    <string name="category_health">salud</string>
+    <string name="category_medicine">medicina</string>
+    <string name="category_home">hogar</string>
+    <string name="category_shopping">compras</string>
+    <string name="category_education">educación</string>
+    <string name="category_services">servicios</string>
+    <string name="category_clothing">ropa</string>
+    <string name="category_technology">tecnología</string>
+
+    <!-- Shopping List Screen -->
+    <string name="shopping_list">Lista de compras</string>
+    <string name="shopping_list_title">Listas de compras</string>
+
+    <!-- Modal Bottom Sheet -->
+    <string name="add_movement">Agregar un movimiento</string>
+    <string name="button_add_movement">Agregar un movimiento</string>
+    <string name="add_movement_by_form">Agregar movimiento por formulario</string>
+    <string name="button_add_movement_by_form">Agregar movimiento por formulario</string>
+    <string name="add_type_by_form">Agregar tipo por formulario</string>
+    <string name="button_add_category_by_form">Agregar categoría por formulario</string>
+
+    <!-- Movement Card -->
+    <string name="no_name_label">Sin nombre</string>
+    <string name="arrow_up_description">Flecha arriba</string>
+    <string name="arrow_down_description">Flecha abajo</string>
+    <string name="expenses_limits">Límites de gastos</string>
+
+    <!-- Receipt Scanner -->
+    <string name="scan_receipt">Escanear recibo</string>
+    <string name="scan_receipt_title">Escanear recibo</string>
+    <string name="button_scan_receipt">Escanear recibo</string>
+    <string name="camera_permission_required">Se requiere permiso de cámara para escanear recibos</string>
+    <string name="scanning_receipt">Escaneando recibo…</string>
+    <string name="error_scanning_receipt">Error al escanear el recibo. Por favor, intenta de nuevo.</string>
+    <string name="processing_receipt_title">Procesando recibo</string>
+    <string name="processing_receipt_message">Por favor espera mientras analizamos tu recibo usando IA.</string>
+    <string name="analyzing_receipt">Analizando recibo…</string>
+    <string name="this_may_take_time">Este proceso puede tomar hasta 2 minutos</string>
+    <string name="capture">Capturar</string>
+    <string name="convert_to_your_currency">Convertir a tu moneda</string>
+    <string name="convert_currency_format">Convertir de %1$s a %2$s</string>
+    <string name="gallery">Galería</string>
+    <string name="select_from_gallery">Seleccionar de la galería</string>
+    <string name="review_receipt">Revisar recibo</string>
+    <string name="review_receipt_title">Revisar recibo</string>
+    <string name="review_edit_detected_info">Revisa y edita la información detectada</string>
+    <string name="confidence_format">Confianza: %d%%</string>
+    <string name="establishment">Establecimiento</string>
+    <string name="establishment_label">Establecimiento</string>
+    <string name="total">Total</string>
+    <string name="total_label">Total</string>
+    <string name="article">Artículo</string>
+    <string name="article_label">Artículo</string>
+    <string name="articles">Artículos</string>
+    <string name="articles_label">Artículos</string>
+    <string name="description">Descripción</string>
+    <string name="description_label">Descripción</string>
+    <string name="category_optional">Categoría (opcional)</string>
+    <string name="category_optional_label">Categoría (opcional)</string>
+    <string name="new_category_suggested_title">Nueva categoría sugerida</string>
+    <string name="new_category_suggested_message">La IA sugirió la categoría \"%1$s\". ¿Te gustaría crearla?</string>
+    <string name="create_movement">Crear movimiento</string>
+    <string name="create_movement_button">Crear movimiento</string>
+
+    <!-- Voice Note / Audio Analysis -->
+    <string name="button_voice_note">Nota de voz</string>
+    <string name="voice_note_title">Nota de voz</string>
+    <string name="audio_permission_required">Se requiere permiso de micrófono para grabar notas de voz</string>
+    <string name="voice_note_instructions">Presiona el botón y describe tu gasto o ingreso</string>
+    <string name="voice_note_example">Ejemplo: \"Gasté 50 soles en almuerzo en un restaurante\"</string>
+    <string name="recording_in_progress">Grabación en progreso</string>
+    <string name="start_recording">Iniciar grabación</string>
+    <string name="stop_recording">Detener grabación</string>
+    <string name="analyzing_audio">Analizando audio…</string>
+    <string name="analyzing_audio_description">Por favor espera mientras transcribimos y analizamos tu nota de voz</string>
+    <string name="error_analyzing_audio">Error al analizar el audio. Por favor, intenta de nuevo.</string>
+    <string name="review_voice_note_title">Revisar nota de voz</string>
+    <string name="transcription">Transcripción</string>
+    <string name="show">Mostrar</string>
+    <string name="hide">Ocultar</string>
+    <string name="ai_confidence">Confianza de la IA</string>
+    <string name="save_movement">Guardar movimiento</string>
+
+    <!-- Movement Details Modal -->
+    <string name="movement_type_income">Ingreso</string>
+    <string name="movement_type_expense">Gasto</string>
+    <string name="detail_name_label">Nombre</string>
+    <string name="detail_category_label">Categoría</string>
+    <string name="detail_date_label">Fecha</string>
+    <string name="detail_currency_label">Moneda</string>
+    <string name="detail_description_label">Descripción</string>
+    <string name="detail_delete_button">Eliminar movimiento</string>
+    <string name="detail_delete_confirm_title">¿Eliminar movimiento?</string>
+    <string name="detail_delete_confirm_message">¿Estás seguro de que quieres eliminar este movimiento? Esta acción no se puede deshacer.</string>
+    <string name="detail_delete_confirm_yes">Eliminar</string>
+    <string name="detail_delete_confirm_no">Cancelar</string>
+
+    <!-- Statistics -->
+    <string name="statistics_title">Estadísticas</string>
+    <string name="stats_week">Semana</string>
+    <string name="stats_month">Mes</string>
+    <string name="stats_three_months">3 m</string>
+    <string name="stats_year">Año</string>
+    <string name="balance">Saldo</string>
+    <string name="avg_daily_expense">Gasto diario prom.</string>
+    <string name="top_category">Categoría principal</string>
+    <string name="none">Ninguno</string>
+    <string name="balance_over_time">Saldo a lo largo del tiempo</string>
+    <string name="expenses_by_category">Gastos por categoría</string>
+    <string name="monthly_comparison">Comparación mensual</string>
+    <string name="savings_label">Ahorros</string>
+    <string name="expense_distribution">Distribución de gastos</string>
+</resources>

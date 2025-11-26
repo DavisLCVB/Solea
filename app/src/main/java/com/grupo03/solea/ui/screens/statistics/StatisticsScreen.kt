@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.grupo03.solea.R
 import com.grupo03.solea.presentation.viewmodels.screens.StatisticsViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
+import com.grupo03.solea.ui.theme.soleaColors
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottomAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStartAxis
@@ -102,6 +103,10 @@ fun StatisticsScreen(
 
 @Composable
 private fun SummaryCards(state: com.grupo03.solea.presentation.states.screens.StatisticsState) {
+    val incomeColor = MaterialTheme.soleaColors.income
+    val expenseColor = MaterialTheme.soleaColors.expense
+    val warningColor = MaterialTheme.soleaColors.warning
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -110,7 +115,7 @@ private fun SummaryCards(state: com.grupo03.solea.presentation.states.screens.St
             title = stringResource(R.string.balance),
             value = "$%.2f".format(state.currentBalance),
             modifier = Modifier.weight(1f),
-            valueColor = if (state.currentBalance >= 0) Color(0xFF4CAF50) else Color(0xFFF44336)
+            valueColor = if (state.currentBalance >= 0) incomeColor else expenseColor
         )
         SummaryCard(
             title = stringResource(R.string.transactions),
@@ -132,7 +137,7 @@ private fun SummaryCards(state: com.grupo03.solea.presentation.states.screens.St
             title = stringResource(R.string.savings_label),
             value = "$%.2f".format(state.totalSavings),
             modifier = Modifier.weight(1f),
-            valueColor = Color(0xFFFFC107)
+            valueColor = warningColor
         )
     }
 
@@ -186,6 +191,9 @@ private fun SummaryCard(
 
 @Composable
 private fun BalanceOverTimeChart(state: com.grupo03.solea.presentation.states.screens.StatisticsState) {
+    val lineColor = MaterialTheme.colorScheme.primary
+    val axisLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -196,7 +204,8 @@ private fun BalanceOverTimeChart(state: com.grupo03.solea.presentation.states.sc
             Text(
                 text = stringResource(R.string.balance_over_time),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             val modelProducer = remember { CartesianChartModelProducer() }
@@ -212,9 +221,29 @@ private fun BalanceOverTimeChart(state: com.grupo03.solea.presentation.states.sc
 
             CartesianChartHost(
                 chart = rememberCartesianChart(
-                    rememberLineCartesianLayer(),
-                    startAxis = rememberStartAxis(),
+                    rememberLineCartesianLayer(
+                        lineProvider = com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer.LineProvider.series(
+                            com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine(
+                                fill = remember(lineColor) {
+                                    com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer.LineFill.single(
+                                        com.patrykandpatrick.vico.compose.common.fill(lineColor)
+                                    )
+                                },
+                                thickness = 3.dp
+                            )
+                        )
+                    ),
+                    startAxis = rememberStartAxis(
+                        line = null,
+                        label = com.patrykandpatrick.vico.compose.common.component.rememberTextComponent(
+                            color = axisLabelColor
+                        )
+                    ),
                     bottomAxis = rememberBottomAxis(
+                        line = null,
+                        label = com.patrykandpatrick.vico.compose.common.component.rememberTextComponent(
+                            color = axisLabelColor
+                        ),
                         valueFormatter = { value, _, _ ->
                             val index = value.toInt()
                             if (index >= 0 && index < state.balanceOverTime.size) {
@@ -246,7 +275,8 @@ private fun CategoryBreakdownCard(state: com.grupo03.solea.presentation.states.s
             Text(
                 text = stringResource(R.string.expenses_by_category),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             state.categoryBreakdown.take(5).forEach { category ->
@@ -259,17 +289,21 @@ private fun CategoryBreakdownCard(state: com.grupo03.solea.presentation.states.s
                     ) {
                         Text(
                             text = category.category,
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "$%.2f (%.1f%%)".format(category.amount, category.percentage),
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     LinearProgressIndicator(
                         progress = { (category.percentage / 100.0).toFloat() },
                         modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 }
             }
@@ -279,6 +313,12 @@ private fun CategoryBreakdownCard(state: com.grupo03.solea.presentation.states.s
 
 @Composable
 private fun CategoryPieChart(state: com.grupo03.solea.presentation.states.screens.StatisticsState) {
+    val chartBlue = MaterialTheme.soleaColors.chartBlue
+    val chartOrange = MaterialTheme.soleaColors.chartOrange
+    val chartPurple = MaterialTheme.soleaColors.chartPurple
+    val chartGreen = MaterialTheme.soleaColors.chartGreen
+    val warningColor = MaterialTheme.soleaColors.warning
+
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -289,7 +329,8 @@ private fun CategoryPieChart(state: com.grupo03.solea.presentation.states.screen
             Text(
                 text = stringResource(R.string.expense_distribution),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             val categories = state.categoryBreakdown.take(4)
@@ -317,11 +358,11 @@ private fun CategoryPieChart(state: com.grupo03.solea.presentation.states.screen
             }
 
             val colors = listOf(
-                Color(0xFF2196F3),
-                Color(0xFFFF5722),
-                Color(0xFF9C27B0),
-                Color(0xFF4CAF50),
-                Color(0xFFFFC107)
+                chartBlue,
+                chartOrange,
+                chartPurple,
+                chartGreen,
+                warningColor
             )
 
             Row(
@@ -370,7 +411,8 @@ private fun CategoryPieChart(state: com.grupo03.solea.presentation.states.screen
                                 Text(
                                     text = item.label,
                                     style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     text = "%.1f%%".format(item.percentage),
@@ -388,6 +430,10 @@ private fun CategoryPieChart(state: com.grupo03.solea.presentation.states.screen
 
 @Composable
 private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.screens.StatisticsState) {
+    val incomeColor = MaterialTheme.soleaColors.income
+    val expenseColor = MaterialTheme.soleaColors.expense
+    val warningColor = MaterialTheme.soleaColors.warning
+
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -398,7 +444,8 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
             Text(
                 text = stringResource(R.string.monthly_comparison),
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             state.monthlyComparison.forEach { monthData ->
@@ -409,7 +456,8 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                     Text(
                         text = monthData.month,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     val maxValue = state.monthlyComparison.maxOfOrNull {
@@ -424,7 +472,7 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                         Box(
                             modifier = Modifier
                                 .size(12.dp)
-                                .background(Color(0xFF4CAF50))
+                                .background(incomeColor)
                         )
                         val incomeWidth = if (maxValue > 0) ((monthData.income / maxValue) * 100).toFloat() else 0f
                         Box(
@@ -436,12 +484,13 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .fillMaxWidth(incomeWidth / 100f)
-                                    .background(Color(0xFF4CAF50))
+                                    .background(incomeColor)
                             )
                         }
                         Text(
                             text = "$%.0f".format(monthData.income),
                             style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.width(60.dp)
                         )
                     }
@@ -454,7 +503,7 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                         Box(
                             modifier = Modifier
                                 .size(12.dp)
-                                .background(Color(0xFFF44336))
+                                .background(expenseColor)
                         )
                         val expenseWidth = if (maxValue > 0) ((monthData.expenses / maxValue) * 100).toFloat() else 0f
                         Box(
@@ -466,12 +515,13 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .fillMaxWidth(expenseWidth / 100f)
-                                    .background(Color(0xFFF44336))
+                                    .background(expenseColor)
                             )
                         }
                         Text(
                             text = "$%.0f".format(monthData.expenses),
                             style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.width(60.dp)
                         )
                     }
@@ -484,7 +534,7 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                         Box(
                             modifier = Modifier
                                 .size(12.dp)
-                                .background(Color(0xFFFFC107))
+                                .background(warningColor)
                         )
                         val savingsWidth = if (maxValue > 0) ((monthData.savings / maxValue) * 100).toFloat() else 0f
                         Box(
@@ -496,12 +546,13 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .fillMaxWidth(savingsWidth / 100f)
-                                    .background(Color(0xFFFFC107))
+                                    .background(warningColor)
                             )
                         }
                         Text(
                             text = "$%.0f".format(monthData.savings),
                             style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.width(60.dp)
                         )
                     }
@@ -515,15 +566,15 @@ private fun MonthlyComparisonChart(state: com.grupo03.solea.presentation.states.
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
             ) {
                 LegendItem(
-                    color = Color(0xFF4CAF50),
+                    color = incomeColor,
                     label = stringResource(R.string.income)
                 )
                 LegendItem(
-                    color = Color(0xFFF44336),
+                    color = expenseColor,
                     label = stringResource(R.string.expenses)
                 )
                 LegendItem(
-                    color = Color(0xFFFFC107),
+                    color = warningColor,
                     label = stringResource(R.string.savings_label)
                 )
             }
@@ -544,7 +595,8 @@ private fun LegendItem(color: Color, label: String) {
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }

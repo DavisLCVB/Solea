@@ -221,6 +221,26 @@ val soleaRed = Color(0xFFF65F5F)
 val soleaGreen = Color(0xFF6EDC73)
 val soleaYellow = Color(color = 0xFFFFEB3B)
 
+// Income and Expense colors for light theme
+val incomeLight = Color(0xFF4CAF50)
+val expenseLight = Color(0xFFF44336)
+val warningLight = Color(0xFFFFC107)
+
+// Income and Expense colors for dark theme (more vibrant and visible)
+val incomeDark = Color(0xFF66BB6A)
+val expenseDark = Color(0xFFEF5350)
+val warningDark = Color(0xFFFFD54F)
+
+// Chart colors for light theme
+val chartBlueLight = Color(0xFF2196F3)
+val chartOrangeLight = Color(0xFFFF5722)
+val chartPurpleLight = Color(0xFF9C27B0)
+
+// Chart colors for dark theme (adjusted for better visibility)
+val chartBlueDark = Color(0xFF64B5F6)
+val chartOrangeDark = Color(0xFFFF7043)
+val chartPurpleDark = Color(0xFFBA68C8)
+
 
 
 

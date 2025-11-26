@@ -15,6 +15,7 @@ import com.grupo03.solea.data.repositories.interfaces.CategoryRepository
 import com.grupo03.solea.data.repositories.interfaces.ItemRepository
 import com.grupo03.solea.data.repositories.interfaces.MovementRepository
 import com.grupo03.solea.data.repositories.interfaces.ReceiptRepository
+import com.grupo03.solea.data.repositories.interfaces.UserPreferencesRepository
 import com.grupo03.solea.presentation.states.screens.NewMovementFormState
 import com.grupo03.solea.presentation.states.screens.ReceiptItemData
 import com.grupo03.solea.utils.CurrencyUtils
@@ -31,13 +32,24 @@ class NewMovementFormViewModel(
     private val movementRepository: MovementRepository,
     private val categoryRepository: CategoryRepository,
     private val itemRepository: ItemRepository,
-    private val receiptRepository: ReceiptRepository
+    private val receiptRepository: ReceiptRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _formState = MutableStateFlow(
         NewMovementFormState(currency = CurrencyUtils.getCurrencyByCountry())
     )
     val formState: StateFlow<NewMovementFormState> = _formState.asStateFlow()
+
+    init {
+        // Observe currency preference and update form state
+        viewModelScope.launch {
+            userPreferencesRepository.getCurrency().collect { userCurrency ->
+                val currency = CurrencyUtils.getCurrency(userCurrency)
+                _formState.value = _formState.value.copy(currency = currency)
+            }
+        }
+    }
 
     fun fetchCategories(userId: String) {
         viewModelScope.launch {

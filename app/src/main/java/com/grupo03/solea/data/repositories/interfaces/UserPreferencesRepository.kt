@@ -53,6 +53,25 @@ interface UserPreferencesRepository {
     fun getLanguage(): Flow<String>
 
     /**
+     * Saves the preferred currency.
+     *
+     * @param currencyCode Currency code (e.g., "USD", "EUR", "ARS")
+     */
+    suspend fun saveCurrency(currencyCode: String)
+
+    /**
+     * Observes the currency preference.
+     *
+     * @return Flow emitting the current currency code, or null if not set (should use device detection)
+     */
+    fun getCurrency(): Flow<String?>
+
+    /**
+     * Clears the currency preference to use auto-detection.
+     */
+    suspend fun clearCurrency()
+
+    /**
      * Clears all stored preferences.
      *
      * This resets all settings to their default values.

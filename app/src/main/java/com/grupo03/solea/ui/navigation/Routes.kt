@@ -14,6 +14,8 @@ object AppRoutes {
 
     const val BUDGET_LIMITS = "budget_limits"
     const val EDIT_BUDGET = "edit_budget"
+    const val CURRENCY_SELECTION = "currency_selection"
+    const val LANGUAGE_SELECTION = "language_selection"
 
     const val GOAL_MANAGEMENT = "goal_management"
     const val ADD_EDIT_GOAL = "edit_goal"

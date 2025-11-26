@@ -8,6 +8,7 @@ import com.grupo03.solea.data.models.Category
 import com.grupo03.solea.data.models.EditableScannedItem
 import com.grupo03.solea.data.models.EditableScannedReceipt
 import com.grupo03.solea.data.repositories.interfaces.CategoryRepository
+import com.grupo03.solea.data.repositories.interfaces.UserPreferencesRepository
 import com.grupo03.solea.data.services.interfaces.ReceiptScannerService
 import com.grupo03.solea.presentation.states.screens.ScanReceiptState
 import com.grupo03.solea.utils.CurrencyUtils
@@ -15,6 +16,7 @@ import com.grupo03.solea.utils.MovementError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
@@ -33,7 +35,8 @@ import java.time.format.DateTimeFormatter
  */
 class ScanReceiptViewModel(
     private val receiptScannerService: ReceiptScannerService,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     /** Receipt scanning state including captured image, scanning status, and extracted data */
@@ -103,8 +106,9 @@ class ScanReceiptViewModel(
                 val imageFile = uriToFile(context, imageUri)
                 android.util.Log.d("ScanReceiptVM", "Archivo creado: ${imageFile.absolutePath}, tamaño: ${imageFile.length()} bytes")
 
-                // Get device currency
-                val deviceCurrency = CurrencyUtils.getCurrencyByCountry()
+                // Get user's preferred currency
+                val userCurrencyPreference = userPreferencesRepository.getCurrency().first()
+                val deviceCurrency = CurrencyUtils.getCurrency(userCurrencyPreference)
                 android.util.Log.d("ScanReceiptVM", "Moneda del dispositivo: $deviceCurrency")
                 android.util.Log.d("ScanReceiptVM", "Total de categorías a enviar: ${categories.size}")
 

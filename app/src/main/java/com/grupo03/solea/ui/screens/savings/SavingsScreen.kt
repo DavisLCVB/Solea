@@ -60,6 +60,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.grupo03.solea.R
 import com.grupo03.solea.ui.components.AddMoneyToGoalDialog
+import com.grupo03.solea.ui.theme.soleaColors
 
 @Composable
 fun SavingsScreen(
@@ -73,6 +74,11 @@ fun SavingsScreen(
     onEditBudget: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val incomeColor = MaterialTheme.soleaColors.income
+    val expenseColor = MaterialTheme.soleaColors.expense
+    val warningColor = MaterialTheme.soleaColors.warning
+    val chartBlue = MaterialTheme.soleaColors.chartBlue
+
     val budgetState = budgetViewModel.budgetState.collectAsState()
     val movementsState = movementsViewModel.movementsState.collectAsState()
     val authState = authViewModel.authState.collectAsState()
@@ -145,9 +151,9 @@ fun SavingsScreen(
                     spent = spent,
                     limit = budget.amount,
                     color = when {
-                        percent >= 100 -> Color(0xFFF44336)
-                        percent >= 80 -> Color(0xFFFFC107)
-                        else -> Color(0xFF4CAF50)
+                        percent >= 100 -> expenseColor
+                        percent >= 80 -> warningColor
+                        else -> incomeColor
                     },
                     onEditClick = { onEditBudget(budget.category) },
                     onDeactivateClick = { user?.uid?.let { budgetViewModel.deleteBudget(it, budget.id) {} } }
@@ -195,12 +201,15 @@ fun GoalCard(
     onDeactivateClick: () -> Unit,
     onCompleteClick: () -> Unit
 ) {
+    val incomeColor = MaterialTheme.soleaColors.income
+    val chartBlue = MaterialTheme.soleaColors.chartBlue
+
     var showMenu by remember { mutableStateOf(false) }
     val progress = goal.progress()
     val color = when {
-        goal.isCompleted -> Color(0xFF4CAF50)
-        progress >= 1f -> Color(0xFF4CAF50)
-        progress >= 0.7f -> Color(0xFF2196F3)
+        goal.isCompleted -> incomeColor
+        progress >= 1f -> incomeColor
+        progress >= 0.7f -> chartBlue
         else -> MaterialTheme.colorScheme.primary
     }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMMM, yyyy", Locale.getDefault()) }

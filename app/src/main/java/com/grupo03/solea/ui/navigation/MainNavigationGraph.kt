@@ -30,7 +30,9 @@ import com.grupo03.solea.ui.screens.scanner.ScanReceiptScreen
 import com.grupo03.solea.ui.screens.voicenote.AudioAnalysisScreen
 import com.grupo03.solea.ui.screens.voicenote.EditVoiceNoteScreen
 import com.grupo03.solea.ui.screens.settings.BudgetLimitsScreen
+import com.grupo03.solea.ui.screens.settings.CurrencySelectionScreen
 import com.grupo03.solea.ui.screens.settings.EditBudgetForm
+import com.grupo03.solea.ui.screens.settings.LanguageSelectionScreen
 import com.grupo03.solea.ui.screens.settings.SettingsScreen
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -145,6 +147,30 @@ fun NavGraphBuilder.mainNavigationGraph(
                 settingsViewModel = koinViewModel(),
                 onNavigateToBudgetLimits = {
                     navController.navigate(AppRoutes.BUDGET_LIMITS)
+                },
+                onNavigateToCurrencySelection = {
+                    navController.navigate(AppRoutes.CURRENCY_SELECTION)
+                },
+                onNavigateToLanguageSelection = {
+                    navController.navigate(AppRoutes.LANGUAGE_SELECTION)
+                },
+                modifier = Modifier.padding(contentPadding)
+            )
+        }
+        composable(AppRoutes.CURRENCY_SELECTION) {
+            CurrencySelectionScreen(
+                settingsViewModel = koinViewModel(),
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                modifier = Modifier.padding(contentPadding)
+            )
+        }
+        composable(AppRoutes.LANGUAGE_SELECTION) {
+            LanguageSelectionScreen(
+                settingsViewModel = koinViewModel(),
+                onNavigateBack = {
+                    navController.popBackStack()
                 },
                 modifier = Modifier.padding(contentPadding)
             )

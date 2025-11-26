@@ -65,6 +65,7 @@ import com.grupo03.solea.ui.components.MovementDetailsModal
 import com.grupo03.solea.ui.components.SectionTitle
 import com.grupo03.solea.ui.components.TopBar
 import com.grupo03.solea.ui.theme.SoleaTheme
+import com.grupo03.solea.ui.theme.soleaColors
 import com.grupo03.solea.utils.CurrencyUtils
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottomAxis
@@ -452,7 +453,7 @@ fun BalanceCard(
                         )
                     }",
                     fontSize = 12.sp,
-                    color = Color(0xFF4CAF50), // Green for income
+                    color = MaterialTheme.soleaColors.income,
                     fontWeight = FontWeight.Medium
                 )
 
@@ -465,7 +466,7 @@ fun BalanceCard(
                         )
                     }",
                     fontSize = 12.sp,
-                    color = Color(0xFFF44336), // Red for expenses
+                    color = MaterialTheme.soleaColors.expense,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -480,6 +481,8 @@ fun ChartCard(
     currency: String = CurrencyUtils.getCurrencyByCountry(),
     onClick: () -> Unit = {}
 ) {
+    val incomeColor = MaterialTheme.soleaColors.income
+    val expenseColor = MaterialTheme.soleaColors.expense
     val modelProducer = remember { CartesianChartModelProducer() }
 
     LaunchedEffect(income, expenses) {
@@ -517,13 +520,9 @@ fun ChartCard(
                     rememberLineCartesianLayer(
                         lineProvider = LineCartesianLayer.LineProvider.series(
                             rememberLine(
-                                fill = remember {
+                                fill = remember(incomeColor) {
                                     LineCartesianLayer.LineFill.single(
-                                        fill(
-                                            Color(
-                                                0xFF4CAF50
-                                            )
-                                        )
+                                        fill(incomeColor)
                                     )
                                 },
                                 thickness = 3.dp,
@@ -531,20 +530,16 @@ fun ChartCard(
                                     LineCartesianLayer.Point(
                                         component = rememberShapeComponent(
                                             shape = Shape.Pill,
-                                            color = Color(0xFF4CAF50)
+                                            color = incomeColor
                                         ),
                                         sizeDp = 8f
                                     )
                                 )
                             ),
                             rememberLine(
-                                fill = remember {
+                                fill = remember(expenseColor) {
                                     LineCartesianLayer.LineFill.single(
-                                        fill(
-                                            Color(
-                                                0xFFF44336
-                                            )
-                                        )
+                                        fill(expenseColor)
                                     )
                                 },
                                 thickness = 3.dp,
@@ -552,7 +547,7 @@ fun ChartCard(
                                     LineCartesianLayer.Point(
                                         component = rememberShapeComponent(
                                             shape = Shape.Pill,
-                                            color = Color(0xFFF44336)
+                                            color = expenseColor
                                         ),
                                         sizeDp = 8f
                                     )
@@ -560,8 +555,18 @@ fun ChartCard(
                             )
                         )
                     ),
-                    startAxis = rememberStartAxis(),
-                    bottomAxis = rememberBottomAxis()
+                    startAxis = rememberStartAxis(
+                        line = null,
+                        label = com.patrykandpatrick.vico.compose.common.component.rememberTextComponent(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ),
+                    bottomAxis = rememberBottomAxis(
+                        line = null,
+                        label = com.patrykandpatrick.vico.compose.common.component.rememberTextComponent(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    )
                 ),
                 modelProducer = modelProducer,
                 modifier = Modifier
@@ -582,7 +587,7 @@ fun ChartCard(
                     Box(
                         modifier = Modifier
                             .size(12.dp)
-                            .background(Color(0xFF4CAF50), CircleShape)
+                            .background(incomeColor, CircleShape)
                     )
                     Column {
                         Text(
@@ -600,7 +605,7 @@ fun ChartCard(
                             }",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF4CAF50)
+                            color = incomeColor
                         )
                     }
                 }
@@ -612,7 +617,7 @@ fun ChartCard(
                     Box(
                         modifier = Modifier
                             .size(12.dp)
-                            .background(Color(0xFFF44336), CircleShape)
+                            .background(expenseColor, CircleShape)
                     )
                     Column {
                         Text(
@@ -630,7 +635,7 @@ fun ChartCard(
                             }",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFF44336)
+                            color = expenseColor
                         )
                     }
                 }

@@ -269,10 +269,64 @@ fun SoleaTheme(
         else -> lightScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = AppTypography,
-        content = content
+    val soleaColors = if (darkTheme) {
+        SoleaColors(
+            income = incomeDark,
+            expense = expenseDark,
+            warning = warningDark,
+            chartBlue = chartBlueDark,
+            chartOrange = chartOrangeDark,
+            chartPurple = chartPurpleDark,
+            chartGreen = incomeDark
+        )
+    } else {
+        SoleaColors(
+            income = incomeLight,
+            expense = expenseLight,
+            warning = warningLight,
+            chartBlue = chartBlueLight,
+            chartOrange = chartOrangeLight,
+            chartPurple = chartPurpleLight,
+            chartGreen = incomeLight
+        )
+    }
+
+    androidx.compose.runtime.CompositionLocalProvider(LocalSoleaColors provides soleaColors) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = AppTypography,
+            content = content
+        )
+    }
+}
+
+/**
+ * Extended color scheme for Solea app that adapts to light/dark theme
+ */
+data class SoleaColors(
+    val income: Color,
+    val expense: Color,
+    val warning: Color,
+    val chartBlue: Color,
+    val chartOrange: Color,
+    val chartPurple: Color,
+    val chartGreen: Color
+)
+
+private val LocalSoleaColors = androidx.compose.runtime.staticCompositionLocalOf {
+    SoleaColors(
+        income = incomeLight,
+        expense = expenseLight,
+        warning = warningLight,
+        chartBlue = chartBlueLight,
+        chartOrange = chartOrangeLight,
+        chartPurple = chartPurpleLight,
+        chartGreen = incomeLight
     )
 }
+
+val MaterialTheme.soleaColors: SoleaColors
+    @Composable
+    @androidx.compose.runtime.ReadOnlyComposable
+    get() = LocalSoleaColors.current
 

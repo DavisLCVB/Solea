@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Wallet
@@ -52,6 +53,8 @@ fun SettingsScreen(
     authViewModel: AuthViewModel,
     settingsViewModel: com.grupo03.solea.presentation.viewmodels.screens.SettingsViewModel,
     onNavigateToBudgetLimits: () -> Unit,
+    onNavigateToCurrencySelection: () -> Unit,
+    onNavigateToLanguageSelection: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val authState = authViewModel.authState.collectAsState()
@@ -64,6 +67,8 @@ fun SettingsScreen(
         onToggleTheme = settingsViewModel::toggleTheme,
         onSignOut = { authViewModel.signOut() },
         onNavigateToBudgetLimits = onNavigateToBudgetLimits,
+        onNavigateToCurrencySelection = onNavigateToCurrencySelection,
+        onNavigateToLanguageSelection = onNavigateToLanguageSelection,
         modifier = modifier
     )
 }
@@ -77,6 +82,8 @@ private fun SettingsContent(
     onToggleTheme: (Boolean) -> Unit,
     onSignOut: () -> Unit,
     onNavigateToBudgetLimits: () -> Unit,
+    onNavigateToCurrencySelection: () -> Unit,
+    onNavigateToLanguageSelection: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val userName = user?.displayName ?: "Usuario"
@@ -140,6 +147,14 @@ private fun SettingsContent(
                 onClick = onNavigateToBudgetLimits
             )
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SettingNavigationCard(
+                icon = Icons.Default.MonetizationOn,
+                title = stringResource(R.string.currency),
+                onClick = onNavigateToCurrencySelection
+            )
+
             Spacer(modifier = Modifier.height(20.dp))
 
             // General Section
@@ -162,6 +177,14 @@ private fun SettingsContent(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SettingNavigationCard(
+                icon = Icons.Default.Language,
+                title = stringResource(R.string.language_selection_title),
+                onClick = onNavigateToLanguageSelection
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
