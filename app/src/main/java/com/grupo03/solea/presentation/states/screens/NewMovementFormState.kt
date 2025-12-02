@@ -61,7 +61,9 @@ data class NewMovementFormState(
     val receiptItems: List<ReceiptItemData> = emptyList(),
     val isSourceValid: Boolean = true,
     // Source files for savings
-    val selectedGoalId: String? = null
+    val selectedGoalId: String? = null,
+    // Shopping item link (when creating expense from shopping list)
+    val shoppingItemId: String? = null
 )
 
 /**

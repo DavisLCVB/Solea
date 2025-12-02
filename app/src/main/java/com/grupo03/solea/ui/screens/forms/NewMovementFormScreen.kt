@@ -129,7 +129,11 @@ fun NewMovementFormScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Movement Type Selector
+            // Movement Type Selector - Disabled if pre-filled from shopping item
+            val isFromShoppingItem = formState.value.name.isNotBlank() && 
+                                     formState.value.movementType == MovementType.EXPENSE &&
+                                     formState.value.itemName == formState.value.name
+            
             Text(
                 text = stringResource(R.string.movement_type),
                 fontSize = 14.sp,
@@ -140,7 +144,12 @@ fun NewMovementFormScreen(
             ) {
                 SegmentedButton(
                     selected = formState.value.movementType == MovementType.INCOME,
-                    onClick = { newMovementFormViewModel.onMovementTypeChange(MovementType.INCOME) },
+                    onClick = { 
+                        if (!isFromShoppingItem) {
+                            newMovementFormViewModel.onMovementTypeChange(MovementType.INCOME)
+                        }
+                    },
+                    enabled = !isFromShoppingItem,
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
                 ) {
                     Text(stringResource(R.string.income))

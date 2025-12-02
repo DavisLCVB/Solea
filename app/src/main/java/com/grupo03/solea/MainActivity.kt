@@ -3,6 +3,7 @@ package com.grupo03.solea
 import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.PaddingValues
@@ -63,7 +64,11 @@ class MainActivity : ComponentActivity() {
             }
 
             // Provide locale context to entire app - this enables instant language switching
-            CompositionLocalProvider(LocalContext provides localeContext) {
+            // Also explicitly provide the ActivityResultRegistryOwner to prevent crashes due to Context wrapping
+            CompositionLocalProvider(
+                LocalContext provides localeContext,
+                LocalActivityResultRegistryOwner provides this@MainActivity
+            ) {
                 SoleaTheme(darkTheme = settingsState.value.isDarkTheme) {
                     val isDarkTheme = settingsState.value.isDarkTheme
 
@@ -93,8 +98,9 @@ fun AppNavigation() {
     val movementsViewModel: MovementsViewModel = koinViewModel()
     val budgetViewModel: BudgetViewModel =
         koinViewModel()
+    val userId = authState.value.user?.uid
 
-    if (authState.value.user == null) {
+    if (userId == null) {
         NavHost(
             navController = navController,
             startDestination = AuthRoutes.PREFIX
@@ -102,7 +108,7 @@ fun AppNavigation() {
             authNavigationGraph(navController, authViewModel)
         }
     } else {
-        movementsViewModel.fetchMovements(userId = authState.value.user!!.uid)
+        movementsViewModel.fetchMovements(userId = userId)
         MainAppContent(
             navController = navController,
             authViewModel = authViewModel,
@@ -140,7 +146,7 @@ fun MainAppContent(
                 budgetViewModel = budgetViewModel,
                 movementsViewModel = movementsViewModel,
                 scanReceiptViewModel = scanReceiptViewModel,
-                audioAnalysisViewModel = audioAnalysisViewModel,
+                audioAnalysisViewModel = audioAnalysisViewModel, // Pass the viewmodel here
                 contentPadding = PaddingValues(0.dp)
             )
 

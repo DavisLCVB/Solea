@@ -189,6 +189,17 @@
     <string name="error_goal_network_error">Error de conexión</string>
     <string name="error_goal_unknown">Error desconocido en meta de ahorro</string>
 
+    <!-- Shopping List Errors -->
+    <string name="error_shopping_list_not_found">Lista de compras no encontrada</string>
+    <string name="error_shopping_list_creation_failed">Error al crear la lista de compras</string>
+    <string name="error_shopping_list_update_failed">Error al actualizar la lista de compras</string>
+    <string name="error_shopping_list_delete_failed">Error al eliminar la lista de compras</string>
+    <string name="error_shopping_list_fetch_failed">Error al obtener la lista de compras</string>
+    <string name="error_shopping_list_invalid_name">Nombre inválido para la lista de compras</string>
+    <string name="error_shopping_list_permission_denied">No tienes permiso para acceder a esta lista de compras</string>
+    <string name="error_shopping_list_network_error">Error de red al acceder a la lista de compras</string>
+    <string name="error_shopping_list_unknown">Error desconocido con la lista de compras</string>
+
     <!-- Home Screen -->
     <string name="home">Home</string>
     <string name="home_title">Solea</string>

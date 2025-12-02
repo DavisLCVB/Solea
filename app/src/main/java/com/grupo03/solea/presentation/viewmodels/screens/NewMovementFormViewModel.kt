@@ -15,6 +15,7 @@ import com.grupo03.solea.data.repositories.interfaces.CategoryRepository
 import com.grupo03.solea.data.repositories.interfaces.ItemRepository
 import com.grupo03.solea.data.repositories.interfaces.MovementRepository
 import com.grupo03.solea.data.repositories.interfaces.ReceiptRepository
+import com.grupo03.solea.data.repositories.interfaces.ShoppingListRepository
 import com.grupo03.solea.data.repositories.interfaces.UserPreferencesRepository
 import com.grupo03.solea.presentation.states.screens.NewMovementFormState
 import com.grupo03.solea.presentation.states.screens.ReceiptItemData
@@ -33,6 +34,7 @@ class NewMovementFormViewModel(
     private val categoryRepository: CategoryRepository,
     private val itemRepository: ItemRepository,
     private val receiptRepository: ReceiptRepository,
+    private val shoppingListRepository: ShoppingListRepository,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
@@ -92,6 +94,25 @@ class NewMovementFormViewModel(
             selectedCategory = category,
             isCategorySelected = true,
             error = null
+        )
+    }
+
+    /**
+     * Pre-fills the form with data from a shopping item.
+     * Forces movement type to EXPENSE and locks it.
+     */
+    fun prefillFromShoppingItem(itemId: String, itemName: String, estimatedPrice: Double?) {
+        _formState.value = _formState.value.copy(
+            movementType = MovementType.EXPENSE,
+            name = itemName,
+            itemName = itemName,
+            amount = estimatedPrice?.toString() ?: "",
+            itemUnitPrice = estimatedPrice?.toString() ?: "",
+            itemQuantity = "1.0",
+            sourceType = SourceType.ITEM,
+            shoppingItemId = itemId,
+            isNameValid = itemName.isNotBlank(),
+            isAmountValid = estimatedPrice != null && estimatedPrice > 0
         )
     }
 
@@ -395,6 +416,19 @@ class NewMovementFormViewModel(
                                 )
                                 return@launch
                             }
+
+                            // Process expense entry for shopping list matching
+                            // If shoppingItemId is set, update that specific item
+                            if (currentState.shoppingItemId != null) {
+                                shoppingListRepository.markItemAsBought(
+                                    itemId = currentState.shoppingItemId!!,
+                                    movementId = movementId,
+                                    realPrice = amount
+                                )
+                            } else {
+                                // Otherwise, use fuzzy matching
+                                processExpenseMatching(userId, movement)
+                            }
                         }
                     }
                 }
@@ -448,11 +482,120 @@ class NewMovementFormViewModel(
 
             }
 
+            // Process expense entry matching with shopping list (if expense was created)
+            if (currentState.movementType == MovementType.EXPENSE) {
+                processExpenseMatching(userId, movement)
+            }
+
             _formState.value = NewMovementFormState(
                 successMessage = "Movimiento creado exitosamente"
             )
             onSuccess()
         }
+    }
+
+    /**
+     * Processes expense entry and matches it with shopping list items.
+     * 
+     * Logic:
+     * 1. Get active shopping list
+     * 2. Iterate over unbought items
+     * 3. Fuzzy matching: Compare expense name with item name
+     * 4. If match: Mark item as bought and link to movement
+     */
+    private suspend fun processExpenseMatching(userId: String, movement: Movement) {
+        try {
+            // Get active shopping list
+            val activeListResult = shoppingListRepository.getActiveShoppingList(userId)
+            if (activeListResult.isError || 
+                activeListResult is RepositoryResult.Success && activeListResult.data == null) {
+                return // No active list, nothing to match
+            }
+
+            val activeList = (activeListResult as RepositoryResult.Success).data ?: return
+            val expenseName = movement.name.lowercase().trim()
+            if (expenseName.isEmpty()) return
+
+            // Get real price from movement total
+            val realPrice = movement.total
+
+            // Fuzzy matching with unbought items
+            val unboughtItems = activeList.items.filter { !it.isBought }
+            var bestMatch: com.grupo03.solea.data.models.ShoppingItem? = null
+            var bestScore = 0.0
+
+            for (item in unboughtItems) {
+                val itemName = item.name.lowercase().trim()
+                val score = calculateMatchScore(expenseName, itemName)
+                if (score > bestScore && score >= MATCH_THRESHOLD) {
+                    bestScore = score
+                    bestMatch = item
+                }
+            }
+
+            // If match found, mark as bought
+            if (bestMatch != null) {
+                shoppingListRepository.markItemAsBought(
+                    itemId = bestMatch.id,
+                    movementId = movement.id,
+                    realPrice = realPrice
+                )
+            }
+        } catch (e: Exception) {
+            // Silently fail - matching is optional
+        }
+    }
+
+    /**
+     * Simple fuzzy matching algorithm using contains and word matching.
+     * Returns a score between 0.0 and 1.0.
+     */
+    private fun calculateMatchScore(expenseName: String, itemName: String): Double {
+        val normalizedExpense = normalizeString(expenseName)
+        val normalizedItem = normalizeString(itemName)
+
+        // Exact match
+        if (normalizedExpense == normalizedItem) {
+            return 1.0
+        }
+
+        // Contains match
+        if (normalizedExpense.contains(normalizedItem) || normalizedItem.contains(normalizedExpense)) {
+            val longer = maxOf(normalizedExpense.length, normalizedItem.length)
+            val shorter = minOf(normalizedExpense.length, normalizedItem.length)
+            return (shorter.toDouble() / longer) * 0.8
+        }
+
+        // Word-by-word matching
+        val expenseWords = normalizedExpense.split(" ").filter { it.length > 2 }
+        val itemWords = normalizedItem.split(" ").filter { it.length > 2 }
+        if (expenseWords.isNotEmpty() && itemWords.isNotEmpty()) {
+            val matchingWords = expenseWords.count { expenseWord ->
+                itemWords.any { itemWord ->
+                    expenseWord.contains(itemWord) || itemWord.contains(expenseWord)
+                }
+            }
+            if (matchingWords > 0) {
+                return (matchingWords.toDouble() / maxOf(expenseWords.size, itemWords.size)) * 0.6
+            }
+        }
+
+        return 0.0
+    }
+
+    private fun normalizeString(str: String): String {
+        return str.lowercase()
+            .replace("á", "a")
+            .replace("é", "e")
+            .replace("í", "i")
+            .replace("ó", "o")
+            .replace("ú", "u")
+            .replace("ñ", "n")
+            .trim()
+    }
+
+    companion object {
+        private const val MATCH_THRESHOLD = 0.5
     }
 
     fun clearForm() {

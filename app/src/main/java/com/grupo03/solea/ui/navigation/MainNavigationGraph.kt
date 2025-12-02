@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.grupo03.solea.presentation.viewmodels.screens.AudioAnalysisViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.BudgetViewModel
+import com.grupo03.solea.presentation.viewmodels.screens.NewMovementFormViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.SavingsViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.ScanReceiptViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
@@ -136,9 +137,41 @@ fun NavGraphBuilder.mainNavigationGraph(
                 modifier = Modifier.padding(contentPadding)
             )
         }
-        composable(AppRoutes.SHOPPING_LIST) {
+        composable(AppRoutes.SHOPPING_LIST) { backStackEntry ->
+            val newMovementViewModel: NewMovementFormViewModel = koinViewModel()
+            
             com.grupo03.solea.ui.screens.shoppinglist.ShoppingListScreen(
+                onNavigateToEditList = {
+                    navController.navigate(AppRoutes.EDIT_SHOPPING_LIST)
+                },
+                onNavigateToHistory = {
+                    navController.navigate(AppRoutes.SHOPPING_LIST_HISTORY)
+                },
+                onNavigateToNewMovement = { item, _ ->
+                    if (item != null) {
+                        newMovementViewModel.prefillFromShoppingItem(
+                            itemId = item.id,
+                            itemName = item.name,
+                            estimatedPrice = item.estimatedPrice
+                        )
+                        navController.navigate(AppRoutes.NEW_MOVEMENT)
+                    }
+                },
                 modifier = Modifier.padding(contentPadding)
+            )
+        }
+        composable(AppRoutes.EDIT_SHOPPING_LIST) {
+            com.grupo03.solea.ui.screens.shoppinglist.EditShoppingListScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable(AppRoutes.SHOPPING_LIST_HISTORY) {
+            com.grupo03.solea.ui.screens.shoppinglist.ShoppingListHistoryScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
         composable(AppRoutes.SETTINGS) {

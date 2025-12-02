@@ -127,213 +127,58 @@ interface MovementRepository {
         receiptItems: List<Item>?
     ): RepositoryResult<ExpenseDetails>
 
-    /**
-     * Retrieves complete expense details by expense ID.
-     *
-     * @param id Unique identifier of the expense
-     * @return Result containing complete expense details if found (nullable) or an error
-     */
     suspend fun getExpenseById(id: String): RepositoryResult<ExpenseDetails?>
-
-    /**
-     * Retrieves all expenses for a specific user with complete details.
-     *
-     * @param userUid User's unique identifier
-     * @return Result containing list of expense details or an error
-     */
     suspend fun getExpensesByUserId(userUid: String): RepositoryResult<List<ExpenseDetails>>
 
-    // ==================== Income-specific Operations ====================
-
-    /**
-     * Creates a complete income with movement.
-     *
-     * @param movement The base movement record (type must be INCOME)
-     * @return Result containing complete income details or an error
-     */
     suspend fun createIncome(movement: Movement): RepositoryResult<IncomeDetails>
 
-    /**
-     * Creates just an income record (helper method).
-     *
-     * @param income The income record to create
-     * @return Result containing the created income or an error
-     */
     suspend fun createIncome(income: Income): RepositoryResult<Income>
 
-    /**
-     * Retrieves complete income details by income ID.
-     *
-     * @param id Unique identifier of the income
-     * @return Result containing complete income details if found (nullable) or an error
-     */
     suspend fun getIncomeById(id: String): RepositoryResult<IncomeDetails?>
 
-    /**
-     * Retrieves all incomes for a specific user with complete details.
-     *
-     * @param userUid User's unique identifier
-     * @return Result containing list of income details or an error
-     */
     suspend fun getIncomesByUserId(userUid: String): RepositoryResult<List<IncomeDetails>>
 
-    // ==================== Saving-specific Operations ====================
-
-    /**
-     * Creates a complete saving with movement.
-     *
-     * @param movement The base movement record (type must be SAVING)
-     * @param save The save record containing goal and amount info
-     * @return Result containing complete saving details or an error
-     */
     suspend fun createSaving(
         movement: Movement,
         save: Save
     ): RepositoryResult<SaveDetails>
 
-    /**
-     * Retrieves complete saving details by saving ID.
-     *
-     * @param id Unique identifier of the saving
-     * @return Result containing complete saving details if found (nullable) or an error
-     */
     suspend fun getSavingById(id: String): RepositoryResult<SaveDetails?>
 
-    /**
-     * Retrieves all savings for a specific user with complete details.
-     *
-     * @param userUid User's unique identifier
-     * @return Result containing list of saving details or an error
-     */
     suspend fun getSavingsByUserId(userUid: String): RepositoryResult<List<SaveDetails>>
 
-    /**
-     * Retrieves all savings for a specific goal with complete details.
-     *
-     * @param goalId Goal's unique identifier
-     * @return Result containing list of saving details or an error
-     */
     suspend fun getSavingsByGoalId(goalId: String): RepositoryResult<List<SaveDetails>>
 
-    /**
-     * Deletes all savings associated with a goal, including their movements.
-     * This will restore the money to the user's balance.
-     *
-     * @param goalId Goal's unique identifier
-     * @return Result indicating success or error
-     */
     suspend fun deleteSavingsByGoalId(goalId: String): RepositoryResult<Unit>
 
-    // ==================== Helper Operations for Expenses ====================
-
-    /**
-     * Creates just an expense record (helper method).
-     *
-     * @param expense The expense record to create
-     * @return Result containing the created expense or an error
-     */
     suspend fun createExpense(expense: Expense): RepositoryResult<Expense>
 
-    /**
-     * Creates a source record (helper method).
-     *
-     * @param source The source record to create
-     * @return Result containing the created source or an error
-     */
     suspend fun createSource(source: Source): RepositoryResult<Source>
 
-    // ==================== Analytics ====================
-
-    /**
-     * Calculates total expenses for a user.
-     *
-     * @param userUid User's unique identifier
-     * @return Result containing the total expense amount or an error
-     */
     suspend fun getTotalExpensesByUser(userUid: String): RepositoryResult<Double>
 
-    /**
-     * Calculates total incomes for a user.
-     *
-     * @param userUid User's unique identifier
-     * @return Result containing the total income amount or an error
-     */
     suspend fun getTotalIncomesByUser(userUid: String): RepositoryResult<Double>
 
-    /**
-     * Calculates balance (incomes - expenses) for a user.
-     *
-     * @param userUid User's unique identifier
-     * @return Result containing the balance or an error
-     */
     suspend fun getBalanceByUser(userUid: String): RepositoryResult<Double>
 
-    /**
-     * Groups and sums expenses by category for a user.
-     *
-     * @param userUid User's unique identifier
-     * @return Result containing a map of category names to total amounts or an error
-     */
     suspend fun getExpensesByCategory(userUid: String): RepositoryResult<Map<String, Double>>
 
-    /**
-     * Calculates total expenses for a specific month.
-     *
-     * @param userUid User's unique identifier
-     * @param year Year to query
-     * @param month Month to query (1-12)
-     * @return Result containing the monthly expense total or an error
-     */
     suspend fun getMonthlyExpensesByUser(
         userUid: String,
         year: Int,
         month: Int
     ): RepositoryResult<Double>
 
-    /**
-     * Calculates total incomes for a specific month.
-     *
-     * @param userUid User's unique identifier
-     * @param year Year to query
-     * @param month Month to query (1-12)
-     * @return Result containing the monthly income total or an error
-     */
     suspend fun getMonthlyIncomesByUser(
         userUid: String,
         year: Int,
         month: Int
     ): RepositoryResult<Double>
 
-    // ==================== Real-time Observers ====================
-
-    /**
-     * Observes incomes for a user in real-time.
-     *
-     * Returns a Flow that emits updates whenever the user's incomes change.
-     *
-     * @param userUid User's unique identifier
-     * @return Flow of results containing lists of income details
-     */
     fun observeIncomesByUserId(userUid: String): Flow<RepositoryResult<List<IncomeDetails>>>
 
-    /**
-     * Observes expenses for a user in real-time.
-     *
-     * Returns a Flow that emits updates whenever the user's expenses change.
-     *
-     * @param userUid User's unique identifier
-     * @return Flow of results containing lists of expense details
-     */
     fun observeExpensesByUserId(userUid: String): Flow<RepositoryResult<List<ExpenseDetails>>>
 
-    /**
-     * Observes savings for a user in real-time.
-     *
-     * Returns a Flow that emits updates whenever the user's savings change.
-     *
-     * @param userUid User's unique identifier
-     * @return Flow of results containing lists of saving details
-     */
     fun observeSavingsByUserId(userUid: String): Flow<RepositoryResult<List<SaveDetails>>>
 
 }

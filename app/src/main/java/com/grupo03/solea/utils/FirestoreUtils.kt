@@ -192,3 +192,23 @@ fun mapFirestoreException(
         networkError = SavingsGoalError.NETWORK_ERROR
     )
 }
+
+/**
+ * Maps FirebaseFirestoreException to ShoppingListError.
+ *
+ * @param e The exception to map
+ * @param defaultError The default error to use for unmapped exceptions
+ * @return The appropriate ShoppingListError
+ */
+fun mapFirestoreException(
+    e: FirebaseFirestoreException,
+    defaultError: ShoppingListError
+): ShoppingListError {
+    return mapFirestoreException(
+        e,
+        defaultError,
+        notFound = ShoppingListError.NOT_FOUND,
+        permissionDenied = ShoppingListError.PERMISSION_DENIED,
+        networkError = ShoppingListError.NETWORK_ERROR
+    )
+}

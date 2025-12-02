@@ -26,6 +26,9 @@ object AppRoutes {
 
     const val AUDIO_ANALYSIS = "audio_analysis"
     const val EDIT_VOICE_NOTE = "edit_voice_note"
+
+    const val EDIT_SHOPPING_LIST = "edit_shopping_list"
+    const val SHOPPING_LIST_HISTORY = "shopping_list_history"
 }
 
 object AuthRoutes {

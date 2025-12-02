@@ -24,17 +24,13 @@ class FirebaseSavingsGoalRepository(
 
     override suspend fun createGoal(goal: SavingsGoal): RepositoryResult<SavingsGoal> {
         return try {
-            Log.d(TAG, "createGoal: Starting goal creation for userId=${goal.userId}")
             val doc = firestore.collection(COLLECTION_NAME).document()
             val goalWithId = goal.copy(id = doc.id)
             doc.set(goalWithId.toMap()).await()
-            Log.d(TAG, "createGoal: Goal created successfully with ID: ${doc.id}")
             RepositoryResult.Success(goalWithId)
         } catch (e: FirebaseFirestoreException) {
-            Log.e(TAG, "createGoal: FirebaseFirestoreException", e)
             RepositoryResult.Error(mapFirestoreException(e, SavingsGoalError.CREATION_FAILED))
         } catch (e: Exception) {
-            Log.e(TAG, "createGoal: Exception", e)
             RepositoryResult.Error(SavingsGoalError.UNKNOWN_ERROR)
         }
     }
@@ -48,10 +44,8 @@ class FirebaseSavingsGoalRepository(
             val goal = SavingsGoal.fromMap(docSnapshot.data ?: emptyMap())
             RepositoryResult.Success(goal)
         } catch (e: FirebaseFirestoreException) {
-            Log.e(TAG, "getGoalById: FirebaseFirestoreException", e)
             RepositoryResult.Error(mapFirestoreException(e, SavingsGoalError.FETCH_FAILED))
         } catch (e: Exception) {
-            Log.e(TAG, "getGoalById: Exception", e)
             RepositoryResult.Error(SavingsGoalError.UNKNOWN_ERROR)
         }
     }
@@ -67,10 +61,8 @@ class FirebaseSavingsGoalRepository(
             }
             RepositoryResult.Success(goals)
         } catch (e: FirebaseFirestoreException) {
-            Log.e(TAG, "getGoalsByUser: FirebaseFirestoreException", e)
             RepositoryResult.Error(mapFirestoreException(e, SavingsGoalError.FETCH_FAILED))
         } catch (e: Exception) {
-            Log.e(TAG, "getGoalsByUser: Exception", e)
             RepositoryResult.Error(SavingsGoalError.UNKNOWN_ERROR)
         }
     }
@@ -83,10 +75,8 @@ class FirebaseSavingsGoalRepository(
                 .await()
             RepositoryResult.Success(goal)
         } catch (e: FirebaseFirestoreException) {
-            Log.e(TAG, "updateGoal: FirebaseFirestoreException", e)
             RepositoryResult.Error(mapFirestoreException(e, SavingsGoalError.UPDATE_FAILED))
         } catch (e: Exception) {
-            Log.e(TAG, "updateGoal: Exception", e)
             RepositoryResult.Error(SavingsGoalError.UNKNOWN_ERROR)
         }
     }
@@ -99,10 +89,8 @@ class FirebaseSavingsGoalRepository(
                 .await()
             RepositoryResult.Success(Unit)
         } catch (e: FirebaseFirestoreException) {
-            Log.e(TAG, "deleteGoal: FirebaseFirestoreException", e)
             RepositoryResult.Error(mapFirestoreException(e, SavingsGoalError.DELETE_FAILED))
         } catch (e: Exception) {
-            Log.e(TAG, "deleteGoal: Exception", e)
             RepositoryResult.Error(SavingsGoalError.UNKNOWN_ERROR)
         }
     }
@@ -131,10 +119,8 @@ class FirebaseSavingsGoalRepository(
             } ?: RepositoryResult.Error(SavingsGoalError.UPDATE_FAILED)
 
         } catch (e: FirebaseFirestoreException) {
-            Log.e(TAG, "updateCurrentAmount: FirebaseFirestoreException", e)
             RepositoryResult.Error(mapFirestoreException(e, SavingsGoalError.UPDATE_FAILED))
         } catch (e: Exception) {
-            Log.e(TAG, "updateCurrentAmount: Exception", e)
             RepositoryResult.Error(SavingsGoalError.UNKNOWN_ERROR)
         }
     }
@@ -144,7 +130,6 @@ class FirebaseSavingsGoalRepository(
             .whereEqualTo("userId", userId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e(TAG, "observeGoalsByUser: FirebaseFirestoreException", error)
                     trySend(RepositoryResult.Error(mapFirestoreException(error, SavingsGoalError.FETCH_FAILED)))
                     return@addSnapshotListener
                 }

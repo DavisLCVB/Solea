@@ -13,20 +13,24 @@ import com.grupo03.solea.data.repositories.firebase.FirebaseItemRepository
 import com.grupo03.solea.data.repositories.firebase.FirebaseMovementRepository
 import com.grupo03.solea.data.repositories.firebase.FirebaseReceiptRepository
 import com.grupo03.solea.data.repositories.firebase.FirebaseSavingsGoalRepository
+import com.grupo03.solea.data.repositories.firebase.FirebaseShoppingListRepository
 import com.grupo03.solea.data.repositories.interfaces.BudgetRepository
 import com.grupo03.solea.data.repositories.interfaces.CategoryRepository
 import com.grupo03.solea.data.repositories.interfaces.ItemRepository
 import com.grupo03.solea.data.repositories.interfaces.MovementRepository
 import com.grupo03.solea.data.repositories.interfaces.ReceiptRepository
 import com.grupo03.solea.data.repositories.interfaces.SavingsGoalRepository
+import com.grupo03.solea.data.repositories.interfaces.ShoppingListRepository
 import com.grupo03.solea.data.repositories.interfaces.UserPreferencesRepository
 import com.grupo03.solea.data.repositories.local.DataStoreUserPreferencesRepository
 import com.grupo03.solea.data.services.api.RetrofitAudioAnalyzerService
 import com.grupo03.solea.data.services.api.RetrofitReceiptScannerService
+import com.grupo03.solea.data.services.api.RetrofitShoppingListVoiceService
 import com.grupo03.solea.data.services.firebase.FirebaseAuthService
 import com.grupo03.solea.data.services.interfaces.AudioAnalyzerService
 import com.grupo03.solea.data.services.interfaces.AuthService
 import com.grupo03.solea.data.services.interfaces.ReceiptScannerService
+import com.grupo03.solea.data.services.interfaces.ShoppingListVoiceService
 import com.grupo03.solea.presentation.viewmodels.screens.AudioAnalysisViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.BudgetViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.HistoryViewModel
@@ -36,6 +40,7 @@ import com.grupo03.solea.presentation.viewmodels.screens.NewMovementFormViewMode
 import com.grupo03.solea.presentation.viewmodels.screens.SavingsViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.ScanReceiptViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.SettingsViewModel
+import com.grupo03.solea.presentation.viewmodels.screens.ShoppingViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.StatisticsViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
 import com.grupo03.solea.presentation.viewmodels.shared.MovementsViewModel
@@ -73,6 +78,7 @@ val appModule = module {
     // Services
     single<ReceiptScannerService> { RetrofitReceiptScannerService() }
     single<AudioAnalyzerService> { RetrofitAudioAnalyzerService() }
+    single<ShoppingListVoiceService> { RetrofitShoppingListVoiceService() }
 
     // Repositories
     single<MovementRepository> {
@@ -86,6 +92,7 @@ val appModule = module {
     single<ItemRepository> { FirebaseItemRepository(get()) }
     single<ReceiptRepository> { FirebaseReceiptRepository(get()) }
     single<SavingsGoalRepository> { FirebaseSavingsGoalRepository(get()) }
+    single<ShoppingListRepository> { FirebaseShoppingListRepository(get()) }
     single<UserPreferencesRepository> { DataStoreUserPreferencesRepository(androidContext()) }
 
     // ViewModels
@@ -93,12 +100,13 @@ val appModule = module {
     viewModel { HomeViewModel() }
     viewModel { MovementsViewModel(get(), get()) }
     viewModel { NewCategoryFormViewModel(get()) }
-    viewModel { NewMovementFormViewModel(get(), get(), get(), get(), get()) }
+    viewModel { NewMovementFormViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { BudgetViewModel(get(), get()) }
     viewModel { SettingsViewModel(get()) }
     viewModel { HistoryViewModel(get()) }
     viewModel { ScanReceiptViewModel(get(), get(), get()) }
     viewModel { AudioAnalysisViewModel(get(), get(), get()) }
     viewModel { SavingsViewModel(get(), get()) }
+    viewModel { ShoppingViewModel(get(), get()) }
     viewModel { StatisticsViewModel(get()) }
 }

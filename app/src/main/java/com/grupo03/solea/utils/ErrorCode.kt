@@ -229,6 +229,24 @@ enum class SavingsGoalError(
 }
 
 /**
+ * Shopping List related errors
+ */
+enum class ShoppingListError(
+    override val code: String,
+    @StringRes override val messageRes: Int
+) : AppError {
+    NOT_FOUND("SHL_001", R.string.error_shopping_list_not_found),
+    CREATION_FAILED("SHL_002", R.string.error_shopping_list_creation_failed),
+    UPDATE_FAILED("SHL_003", R.string.error_shopping_list_update_failed),
+    DELETE_FAILED("SHL_004", R.string.error_shopping_list_delete_failed),
+    FETCH_FAILED("SHL_005", R.string.error_shopping_list_fetch_failed),
+    INVALID_NAME("SHL_006", R.string.error_shopping_list_invalid_name),
+    PERMISSION_DENIED("SHL_007", R.string.error_shopping_list_permission_denied),
+    NETWORK_ERROR("SHL_008", R.string.error_shopping_list_network_error),
+    UNKNOWN_ERROR("SHL_999", R.string.error_shopping_list_unknown);
+}
+
+/**
  * Extension function to get string resource from any AppError
  */
 @StringRes
