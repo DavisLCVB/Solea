@@ -29,6 +29,7 @@ object AppRoutes {
 
     const val EDIT_SHOPPING_LIST = "edit_shopping_list"
     const val SHOPPING_LIST_HISTORY = "shopping_list_history"
+    const val VIEW_SHOPPING_LIST = "view_shopping_list/{listId}"
 }
 
 object AuthRoutes {

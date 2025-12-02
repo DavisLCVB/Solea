@@ -15,6 +15,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -157,16 +159,27 @@ fun ShoppingListScreen(
             }
         },
         floatingActionButton = {
+            val isEnabled = activeList == null || uiState.isRecording
             FloatingActionButton(
                 onClick = {
-                    if (uiState.isRecording) {
-                        shoppingViewModel.stopRecordingAndAnalyze(userId)
-                    } else {
-                        shoppingViewModel.startRecording()
+                    if (isEnabled) {
+                        if (uiState.isRecording) {
+                            shoppingViewModel.stopRecordingAndAnalyze(userId)
+                        } else {
+                            shoppingViewModel.startRecording()
+                        }
                     }
                 },
                 containerColor = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier
+                    .padding(16.dp)
+                    .then(
+                        if (!isEnabled) {
+                            Modifier.alpha(0.6f)
+                        } else {
+                            Modifier
+                        }
+                    )
             ) {
                 Icon(
                     if (uiState.isRecording) Icons.Default.Stop else Icons.Default.Mic,

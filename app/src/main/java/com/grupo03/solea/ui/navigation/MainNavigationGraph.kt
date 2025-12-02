@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.grupo03.solea.presentation.viewmodels.screens.AudioAnalysisViewModel
 import com.grupo03.solea.presentation.viewmodels.screens.BudgetViewModel
@@ -169,6 +170,25 @@ fun NavGraphBuilder.mainNavigationGraph(
         }
         composable(AppRoutes.SHOPPING_LIST_HISTORY) {
             com.grupo03.solea.ui.screens.shoppinglist.ShoppingListHistoryScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToViewList = { listId ->
+                    navController.navigate("view_shopping_list/$listId")
+                }
+            )
+        }
+        composable(
+            route = AppRoutes.VIEW_SHOPPING_LIST,
+            arguments = listOf(
+                androidx.navigation.navArgument("listId") {
+                    type = androidx.navigation.NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val listId = backStackEntry.arguments?.getString("listId") ?: ""
+            com.grupo03.solea.ui.screens.shoppinglist.ViewShoppingListScreen(
+                listId = listId,
                 onNavigateBack = {
                     navController.popBackStack()
                 }
