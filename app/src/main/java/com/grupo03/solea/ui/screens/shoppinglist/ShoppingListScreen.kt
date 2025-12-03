@@ -66,9 +66,17 @@ fun ShoppingListScreen(
         permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
     }
 
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let {
-            snackbarHostState.showSnackbar("Error: ${it.messageRes}")
+    // Mostrar errores como texto legible (con mensaje detallado si está disponible)
+    val errorMessage = uiState.error?.let { error ->
+        // Si hay un mensaje detallado, usarlo; si no, usar el mensaje genérico del error
+        uiState.errorMessage ?: stringResource(error.messageRes)
+    }
+
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let { message ->
+            scope.launch {
+                snackbarHostState.showSnackbar(message)
+            }
         }
     }
 
