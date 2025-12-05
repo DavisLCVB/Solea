@@ -84,7 +84,7 @@ fun SavingsScreen(
     val authState = authViewModel.authState.collectAsState()
     val savingsState = savingsViewModel.uiState.collectAsState()
     val user = authState.value.user
-    val userCurrency = user?.currency ?: "USD"
+    val userCurrency = user?.currency ?: "PEN"
     var selectedGoal by remember { mutableStateOf<SavingsGoal?>(null) }
     var showAddMoneyDialog by remember { mutableStateOf(false) }
 
@@ -307,7 +307,7 @@ fun LimitCard(
     percent: Int,
     spent: Double,
     limit: Double,
-    userCurrency: String = "USD",
+    userCurrency: String = "PEN",
     color: Color,
     onEditClick: () -> Unit,
     onDeactivateClick: () -> Unit

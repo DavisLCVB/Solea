@@ -47,7 +47,7 @@ fun ShoppingListScreen(
     val uiState by shoppingViewModel.uiState.collectAsState()
     val authState by authViewModel.authState.collectAsState()
     val userId = authState.user?.uid ?: ""
-    val userCurrency = authState.user?.currency ?: "USD"
+    val userCurrency = authState.user?.currency ?: "PEN"
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -476,7 +476,7 @@ fun EmptyListContent(onRecordClick: () -> Unit) {
 @Composable
 fun ActiveListContent(
     shoppingListDetails: com.grupo03.solea.data.models.ShoppingListDetails,
-    userCurrency: String = "USD",
+    userCurrency: String = "PEN",
     onItemChecked: (ShoppingItem, Boolean) -> Unit
 ) {
     Column(
@@ -512,7 +512,7 @@ fun ActiveListContent(
 @Composable
 fun ShoppingItemCard(
     item: com.grupo03.solea.data.models.ShoppingItem,
-    userCurrency: String = "USD",
+    userCurrency: String = "PEN",
     onCheckedChange: (Boolean) -> Unit
 ) {
     val currencySymbol = CurrencyUtils.getCurrencySymbol(userCurrency)

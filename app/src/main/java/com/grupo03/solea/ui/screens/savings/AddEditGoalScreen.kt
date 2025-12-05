@@ -62,7 +62,7 @@ fun AddEditGoalScreen(
     val formState by savingsViewModel.formState.collectAsState()
     val authState by authViewModel.authState.collectAsState()
     val user = authState.user
-    val userCurrency = user?.currency ?: "USD"
+    val userCurrency = user?.currency ?: "PEN"
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }

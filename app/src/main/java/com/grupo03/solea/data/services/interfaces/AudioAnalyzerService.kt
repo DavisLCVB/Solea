@@ -26,7 +26,7 @@ interface AudioAnalyzerService {
      * @param audioFile The audio file to analyze (supported formats: MP3, WAV, OGG, WebM)
      * @param categories List of available categories (both default and user-created)
      *                   to help the AI suggest the most appropriate category
-     * @param defaultCurrency Default currency code for the device locale (e.g., "PEN", "USD")
+     * @param defaultCurrency Default currency code for the device locale (e.g., "PEN", "PEN")
      * @param language User's preferred language code (e.g., "en", "es") for AI responses
      * @return Result containing AnalyzedVoiceNoteResponse with extracted data on success,
      *         or an error if analysis fails

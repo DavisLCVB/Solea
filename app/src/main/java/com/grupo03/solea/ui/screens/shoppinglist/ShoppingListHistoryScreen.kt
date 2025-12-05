@@ -37,7 +37,7 @@ fun ShoppingListHistoryScreen(
     val uiState by shoppingViewModel.uiState.collectAsState()
     val authState by authViewModel.authState.collectAsState()
     val userId = authState.user?.uid ?: ""
-    val userCurrency = authState.user?.currency ?: "USD"
+    val userCurrency = authState.user?.currency ?: "PEN"
 
     LaunchedEffect(Unit) {
         shoppingViewModel.fetchShoppingListsHistory(userId)
@@ -109,7 +109,7 @@ fun ShoppingListHistoryScreen(
 fun ShoppingListHistoryCard(
     shoppingList: com.grupo03.solea.data.models.ShoppingList,
     totalAmount: Double = 0.0,
-    userCurrency: String = "USD",
+    userCurrency: String = "PEN",
     onItemClick: () -> Unit
 ) {
     val statusText = when (shoppingList.status) {
@@ -181,7 +181,7 @@ fun ShoppingListHistoryCard(
 fun ShoppingListHistoryCardWithTotal(
     shoppingList: com.grupo03.solea.data.models.ShoppingList,
     shoppingViewModel: ShoppingViewModel,
-    userCurrency: String = "USD",
+    userCurrency: String = "PEN",
     onItemClick: () -> Unit
 ) {
     var totalAmount by remember { mutableStateOf(0.0) }

@@ -36,7 +36,7 @@ fun EditShoppingListScreen(
     val uiState by shoppingViewModel.uiState.collectAsState()
     val authState by authViewModel.authState.collectAsState()
     val userId = authState.user?.uid ?: ""
-    val userCurrency = authState.user?.currency ?: "USD"
+    val userCurrency = authState.user?.currency ?: "PEN"
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -226,7 +226,7 @@ fun EditShoppingListScreen(
 @Composable
 fun ShoppingItemEditCard(
     item: com.grupo03.solea.data.models.ShoppingItem,
-    userCurrency: String = "USD",
+    userCurrency: String = "PEN",
     onDelete: () -> Unit,
     canDelete: Boolean
 ) {

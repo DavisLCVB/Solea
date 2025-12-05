@@ -73,7 +73,7 @@ class FirebaseUserRepository(
                 email = document.getString(FIELD_EMAIL) ?: "",
                 displayName = document.getString(FIELD_DISPLAY_NAME),
                 photoUrl = document.getString(FIELD_PHOTO_URL),
-                currency = document.getString(FIELD_CURRENCY) ?: "USD"
+                currency = document.getString(FIELD_CURRENCY) ?: "PEN"
             )
 
             Log.d(TAG, "User profile fetched successfully for uid: $uid")

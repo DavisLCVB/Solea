@@ -253,7 +253,7 @@ fun NavGraphBuilder.mainNavigationGraph(
             val editBudgetFormState by budgetViewModel.editBudgetFormState.collectAsState()
             val authState by authViewModel.authState.collectAsState()
             val userId = authState.user?.uid ?: ""
-            val userCurrency = authState.user?.currency ?: "USD"
+            val userCurrency = authState.user?.currency ?: "PEN"
 
             LaunchedEffect(Unit) {
                 budgetViewModel.fetchStatuses()

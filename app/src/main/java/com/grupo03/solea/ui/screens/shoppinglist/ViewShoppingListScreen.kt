@@ -32,7 +32,7 @@ fun ViewShoppingListScreen(
 ) {
     val uiState by shoppingViewModel.uiState.collectAsState()
     val authState by authViewModel.authState.collectAsState()
-    val userCurrency = authState.user?.currency ?: "USD"
+    val userCurrency = authState.user?.currency ?: "PEN"
 
     LaunchedEffect(listId) {
         shoppingViewModel.fetchShoppingListDetails(listId) {
@@ -166,7 +166,7 @@ fun ViewShoppingListScreen(
 @Composable
 fun ViewShoppingItemCard(
     item: com.grupo03.solea.data.models.ShoppingItem,
-    userCurrency: String = "USD"
+    userCurrency: String = "PEN"
 ) {
     val currencySymbol = CurrencyUtils.getCurrencySymbol(userCurrency)
     val isBought = item.isBought

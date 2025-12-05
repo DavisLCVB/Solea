@@ -65,8 +65,8 @@ val appModule = module {
     // Firebase
     single { Firebase.auth }
     single { Firebase.firestore }
-    single<AuthService> { FirebaseAuthService(get()) }
     single<UserRepository> { FirebaseUserRepository(get()) }
+    single<AuthService> { FirebaseAuthService(get(), get()) }
 
     // Room Database
     single {

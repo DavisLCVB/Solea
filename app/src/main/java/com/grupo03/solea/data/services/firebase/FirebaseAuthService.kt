@@ -16,14 +16,17 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.userProfileChangeRequest
 import com.grupo03.solea.data.models.User
+import com.grupo03.solea.data.repositories.interfaces.UserRepository
 import com.grupo03.solea.data.services.interfaces.AuthService
 import com.grupo03.solea.utils.AuthResult
 import com.grupo03.solea.utils.AuthError
+import com.grupo03.solea.utils.RepositoryResult
 import com.grupo03.solea.utils.ServiceConstants
 import kotlinx.coroutines.tasks.await
 
 class FirebaseAuthService(
     private val auth: FirebaseAuth,
+    private val userRepository: UserRepository
 ) : AuthService {
 
     private companion object {
@@ -52,14 +55,24 @@ class FirebaseAuthService(
         return try {
             val authResponse = auth.signInWithEmailAndPassword(email, password).await()
             if (authResponse.user != null) {
-                AuthResult.Success(
-                    user = User(
-                        uid = authResponse.user!!.uid,
-                        email = authResponse.user!!.email ?: "",
-                        displayName = authResponse.user!!.displayName,
-                        photoUrl = authResponse.user!!.photoUrl?.toString()
-                    )
-                )
+                val uid = authResponse.user!!.uid
+
+                // Get full user profile from Firestore (includes currency)
+                val userProfileResult = userRepository.getUserProfile(uid)
+                val user = when (userProfileResult) {
+                    is RepositoryResult.Success -> userProfileResult.data
+                    is RepositoryResult.Error -> {
+                        // Fallback to auth data if Firestore profile not found
+                        User(
+                            uid = uid,
+                            email = authResponse.user!!.email ?: "",
+                            displayName = authResponse.user!!.displayName,
+                            photoUrl = authResponse.user!!.photoUrl?.toString()
+                        )
+                    }
+                }
+
+                AuthResult.Success(user = user)
             } else {
                 AuthResult.Error(AuthError.UNKNOWN_ERROR)
             }
@@ -99,14 +112,25 @@ class FirebaseAuthService(
                 // Reload user to get updated profile
                 authResponse.user!!.reload().await()
 
-                AuthResult.Success(
-                    user = User(
-                        uid = authResponse.user!!.uid,
-                        email = authResponse.user!!.email ?: "",
-                        displayName = authResponse.user!!.displayName,
-                        photoUrl = authResponse.user!!.photoUrl?.toString()
-                    )
-                )
+                val uid = authResponse.user!!.uid
+
+                // Try to get full user profile from Firestore (includes currency)
+                // Note: This might not exist yet if called before profile creation
+                val userProfileResult = userRepository.getUserProfile(uid)
+                val user = when (userProfileResult) {
+                    is RepositoryResult.Success -> userProfileResult.data
+                    is RepositoryResult.Error -> {
+                        // Fallback to auth data if Firestore profile not created yet
+                        User(
+                            uid = uid,
+                            email = authResponse.user!!.email ?: "",
+                            displayName = authResponse.user!!.displayName,
+                            photoUrl = authResponse.user!!.photoUrl?.toString()
+                        )
+                    }
+                }
+
+                AuthResult.Success(user = user)
             } else {
                 AuthResult.Error(AuthError.UNKNOWN_ERROR)
             }
@@ -140,14 +164,24 @@ class FirebaseAuthService(
             val authCredential = GoogleAuthProvider.getCredential(idToken, null)
             val authResponse = auth.signInWithCredential(authCredential).await()
             if (authResponse.user != null) {
-                AuthResult.Success(
-                    user = User(
-                        uid = authResponse.user!!.uid,
-                        email = authResponse.user!!.email ?: "",
-                        displayName = authResponse.user!!.displayName,
-                        photoUrl = authResponse.user!!.photoUrl?.toString()
-                    )
-                )
+                val uid = authResponse.user!!.uid
+
+                // Get full user profile from Firestore (includes currency)
+                val userProfileResult = userRepository.getUserProfile(uid)
+                val user = when (userProfileResult) {
+                    is RepositoryResult.Success -> userProfileResult.data
+                    is RepositoryResult.Error -> {
+                        // Fallback to auth data if Firestore profile not found
+                        User(
+                            uid = uid,
+                            email = authResponse.user!!.email ?: "",
+                            displayName = authResponse.user!!.displayName,
+                            photoUrl = authResponse.user!!.photoUrl?.toString()
+                        )
+                    }
+                }
+
+                AuthResult.Success(user = user)
             } else {
                 AuthResult.Error(AuthError.UNKNOWN_ERROR)
             }
@@ -178,14 +212,21 @@ class FirebaseAuthService(
     }
 
     override suspend fun getCurrentUser(): User? {
-        val currentUser = auth.currentUser
-        return currentUser?.let {
-            User(
-                uid = it.uid,
-                email = it.email ?: "",
-                displayName = it.displayName,
-                photoUrl = it.photoUrl?.toString()
-            )
+        val currentUser = auth.currentUser ?: return null
+
+        // Try to get full user profile from Firestore (includes currency)
+        val userProfileResult = userRepository.getUserProfile(currentUser.uid)
+        return when (userProfileResult) {
+            is RepositoryResult.Success -> userProfileResult.data
+            is RepositoryResult.Error -> {
+                // Fallback to auth data if Firestore profile not found
+                User(
+                    uid = currentUser.uid,
+                    email = currentUser.email ?: "",
+                    displayName = currentUser.displayName,
+                    photoUrl = currentUser.photoUrl?.toString()
+                )
+            }
         }
     }
 

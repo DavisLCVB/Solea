@@ -120,7 +120,7 @@ fun HomeScreen(
     val movementsState = movementsViewModel.movementsState.collectAsState()
     val authState = authViewModel.authState.collectAsState()
     val userId = authState.value.user!!.uid
-    val userCurrency = authState.value.user?.currency ?: "USD"
+    val userCurrency = authState.value.user?.currency ?: "PEN"
 
     LaunchedEffect(userId) {
         movementsViewModel.observeMovements(userId)
@@ -198,7 +198,7 @@ fun HomeScreenContent(
     homeState: com.grupo03.solea.presentation.states.screens.HomeScreenState? = null,
     movementsViewModel: MovementsViewModel? = null,
     userId: String = "",
-    userCurrency: String = "USD",
+    userCurrency: String = "PEN",
     statisticsViewModel: StatisticsViewModel? = null,
     onNavigateToStatistics: () -> Unit = {}
 ) {

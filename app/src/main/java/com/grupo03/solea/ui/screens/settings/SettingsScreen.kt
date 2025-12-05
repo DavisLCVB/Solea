@@ -109,7 +109,7 @@ private fun SettingsContent(
     val userName = user?.displayName ?: "Usuario"
     val userEmail = user?.email ?: "correo@ejemplo.com"
     val isGoogleUser = user?.photoUrl?.contains("googleusercontent.com") == true
-    val userCurrency = user?.currency ?: "USD"
+    val userCurrency = user?.currency ?: "PEN"
 
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }

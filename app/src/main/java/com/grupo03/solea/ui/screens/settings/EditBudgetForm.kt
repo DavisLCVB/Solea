@@ -62,7 +62,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun EditBudgetForm(
     budgetFormState: EditBudgetFormState,
-    userCurrency: String = "USD",
+    userCurrency: String = "PEN",
     onAmountChange: (String) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,

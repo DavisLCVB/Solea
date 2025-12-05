@@ -65,7 +65,7 @@ fun BudgetLimitsScreen(
 ) {
     val budgetState = budgetViewModel.budgetLimitsScreenState.collectAsState()
     val authState = authViewModel.authState.collectAsState()
-    val userCurrency = authState.value.user?.currency ?: "USD"
+    val userCurrency = authState.value.user?.currency ?: "PEN"
 
     val categoriesWithLimit = budgetState.value.categoriesWithBudgets.filter { it.second != null }
     val categoriesWithoutLimit =
@@ -194,7 +194,7 @@ fun getCategoryIcon(categoryName: String): ImageVector {
 fun CategoryBudgetCard(
     category: Category,
     budget: Budget?,
-    userCurrency: String = "USD",
+    userCurrency: String = "PEN",
     onClick: () -> Unit
 ) {
     val icon = getCategoryIcon(category.name)

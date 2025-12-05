@@ -27,7 +27,7 @@ object CurrencyUtils {
             val currency = Currency.getInstance(locale)
             currency.currencyCode
         } catch (_: Exception) {
-            "USD"
+            "PEN"
         }
     }
 
@@ -84,7 +84,7 @@ object CurrencyUtils {
             val countryCode = locale.country
             countryToCurrency[countryCode] ?: getDeviceCurrency()
         } catch (_: Exception) {
-            "USD"
+            "PEN"
         }
     }
 
