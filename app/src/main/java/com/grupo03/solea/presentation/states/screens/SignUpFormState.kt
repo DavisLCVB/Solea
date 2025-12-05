@@ -10,6 +10,7 @@ package com.grupo03.solea.presentation.states.screens
  * @property password User's chosen password
  * @property confirmPassword Password confirmation for validation
  * @property photoUri Optional URI to user's profile photo
+ * @property currency User's preferred currency code (ISO 4217)
  * @property isNameValid Whether the name meets validation requirements
  * @property isEmailValid Whether the email format is valid
  * @property isPasswordValid Whether the password meets strength requirements
@@ -21,6 +22,7 @@ data class SignUpFormState(
     val password: String = "",
     val confirmPassword: String = "",
     val photoUri: String? = null,
+    val currency: String = "",
     val isNameValid: Boolean = true,
     val isEmailValid: Boolean = true,
     val isPasswordValid: Boolean = true,

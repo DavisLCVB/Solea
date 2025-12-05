@@ -84,6 +84,7 @@ fun SavingsScreen(
     val authState = authViewModel.authState.collectAsState()
     val savingsState = savingsViewModel.uiState.collectAsState()
     val user = authState.value.user
+    val userCurrency = user?.currency ?: "USD"
     var selectedGoal by remember { mutableStateOf<SavingsGoal?>(null) }
     var showAddMoneyDialog by remember { mutableStateOf(false) }
 
@@ -150,6 +151,7 @@ fun SavingsScreen(
                     percent = percent,
                     spent = spent,
                     limit = budget.amount,
+                    userCurrency = userCurrency,
                     color = when {
                         percent >= 100 -> expenseColor
                         percent >= 80 -> warningColor
@@ -305,6 +307,7 @@ fun LimitCard(
     percent: Int,
     spent: Double,
     limit: Double,
+    userCurrency: String = "USD",
     color: Color,
     onEditClick: () -> Unit,
     onDeactivateClick: () -> Unit
@@ -376,7 +379,7 @@ fun LimitCard(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        val currencySymbol = CurrencyUtils.getDeviceCurrencySymbol()
+                        val currencySymbol = CurrencyUtils.getCurrencySymbol(userCurrency)
                         Text(
                             text = "%s %.2f de %s %.2f".format(
                                 Locale.getDefault(),

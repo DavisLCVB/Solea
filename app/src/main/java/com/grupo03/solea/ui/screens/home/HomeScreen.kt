@@ -118,7 +118,9 @@ fun HomeScreen(
 ) {
     val homeState = homeViewModel.homeState.collectAsState()
     val movementsState = movementsViewModel.movementsState.collectAsState()
-    val userId = authViewModel.authState.collectAsState().value.user!!.uid
+    val authState = authViewModel.authState.collectAsState()
+    val userId = authState.value.user!!.uid
+    val userCurrency = authState.value.user?.currency ?: "USD"
 
     LaunchedEffect(userId) {
         movementsViewModel.observeMovements(userId)
@@ -139,6 +141,7 @@ fun HomeScreen(
                 homeState = homeState.value,
                 movementsViewModel = movementsViewModel,
                 userId = userId,
+                userCurrency = userCurrency,
                 statisticsViewModel = statisticsViewModel,
                 onNavigateToStatistics = onNavigateToStatistics
             )
@@ -195,6 +198,7 @@ fun HomeScreenContent(
     homeState: com.grupo03.solea.presentation.states.screens.HomeScreenState? = null,
     movementsViewModel: MovementsViewModel? = null,
     userId: String = "",
+    userCurrency: String = "USD",
     statisticsViewModel: StatisticsViewModel? = null,
     onNavigateToStatistics: () -> Unit = {}
 ) {
@@ -203,9 +207,7 @@ fun HomeScreenContent(
     val totalSavings = movementsState.saveDetailsList.sumOf { it.movement.total }
     val balance = totalIncome - totalExpense - totalSavings
 
-    val currency = (movementsState.incomeDetailsList.firstOrNull()?.movement?.currency
-        ?: movementsState.expenseDetailsList.firstOrNull()?.movement?.currency
-        ?: CurrencyUtils.getCurrencyByCountry())
+    val currency = userCurrency
 
     val allMovements = buildList {
         addAll(movementsState.incomeDetailsList.map { MovementItem.IncomeItem(it) })

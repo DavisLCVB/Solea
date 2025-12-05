@@ -24,7 +24,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +39,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,6 +64,7 @@ import com.grupo03.solea.presentation.states.shared.FormType
 import com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel
 import com.grupo03.solea.ui.theme.SoleaTheme
 import com.grupo03.solea.utils.AuthError
+import com.grupo03.solea.utils.CurrencyUtils
 import com.grupo03.solea.utils.getStringRes
 
 @Composable
@@ -86,6 +94,7 @@ fun SignUpScreen(
         onEmailChange = ::onEmailChange,
         onPasswordChange = ::onPasswordChange,
         onConfirmPasswordChange = viewModel::onSignUpConfirmPasswordChange,
+        onCurrencyChange = viewModel::onSignUpCurrencyChange,
         onPhotoChange = viewModel::onSignUpPhotoChange,
         onSignUpClick = viewModel::signUpWithEmailAndPassword,
         onNavigateToLogin = navigateToLogin,
@@ -104,6 +113,7 @@ fun SignUpForm(
     onNameChange: (String) -> Unit = {},
     onPasswordChange: (String) -> Unit = {},
     onConfirmPasswordChange: (String) -> Unit = {},
+    onCurrencyChange: (String) -> Unit = {},
     onPhotoChange: (String?) -> Unit = {},
     onSignUpClick: () -> Unit = {},
     onGoogleSignUp: () -> Unit = {},
@@ -301,6 +311,28 @@ fun SignUpForm(
                         modifier = Modifier.fillMaxWidth()
                     )
 
+                    Spacer(modifier = Modifier.padding(top = 16.dp))
+
+                    // Currency selector
+                    Text(
+                        text = stringResource(R.string.currency_label),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    CurrencyDropdown(
+                        selectedCurrency = formState.currency,
+                        onCurrencyChange = onCurrencyChange,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Text(
+                        text = stringResource(R.string.currency_permanent_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
+                    )
+
                     if (errorCode != null) {
                         Text(
                             text = stringResource(errorCode.getStringRes()),
@@ -420,6 +452,58 @@ fun SignUpForm(
         }
 
         Spacer(modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun CurrencyDropdown(
+    selectedCurrency: String,
+    onCurrencyChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val currencies = CurrencyUtils.getSupportedCurrencies()
+
+    OutlinedButton(
+        onClick = { expanded = true },
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (selectedCurrency.isNotEmpty()) {
+                    "${CurrencyUtils.getCurrencySymbol(selectedCurrency)} $selectedCurrency"
+                } else {
+                    stringResource(R.string.select_currency)
+                }
+            )
+            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+        }
+    }
+
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = { expanded = false }
+    ) {
+        currencies.forEach { currency ->
+            DropdownMenuItem(
+                text = {
+                    Text("${currency.symbol} ${currency.code} - ${currency.name}")
+                },
+                onClick = {
+                    onCurrencyChange(currency.code)
+                    expanded = false
+                },
+                leadingIcon = {
+                    if (currency.code == selectedCurrency) {
+                        Icon(Icons.Default.Check, contentDescription = null)
+                    }
+                }
+            )
+        }
     }
 }
 

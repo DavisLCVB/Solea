@@ -226,20 +226,28 @@ class ShoppingViewModel(
      */
     fun observeActiveList(userUid: String) {
         viewModelScope.launch {
+            android.util.Log.d("ShoppingViewModel", "observeActiveList: Starting observation for userUid=$userUid")
             _uiState.update { it.copy(isLoading = true) }
             shoppingListRepository.observeActiveShoppingList(userUid).collect { result ->
+                android.util.Log.d("ShoppingViewModel", "observeActiveList: Received result - type=${result::class.simpleName}")
                 _uiState.update {
                     when (result) {
-                        is RepositoryResult.Success -> it.copy(
-                            activeList = result.data,
-                            isLoading = false,
-                            error = null,
-                            errorMessage = null
-                        )
-                        is RepositoryResult.Error -> it.copy(
-                            error = result.error,
-                            isLoading = false
-                        )
+                        is RepositoryResult.Success -> {
+                            android.util.Log.d("ShoppingViewModel", "observeActiveList: Success - list=${result.data?.shoppingList?.name}, items=${result.data?.items?.size}")
+                            it.copy(
+                                activeList = result.data,
+                                isLoading = false,
+                                error = null,
+                                errorMessage = null
+                            )
+                        }
+                        is RepositoryResult.Error -> {
+                            android.util.Log.e("ShoppingViewModel", "observeActiveList: Error - ${result.error}")
+                            it.copy(
+                                error = result.error,
+                                isLoading = false
+                            )
+                        }
                     }
                 }
             }
@@ -248,10 +256,11 @@ class ShoppingViewModel(
 
     /**
      * Creates a shopping list from analyzed voice data.
-     * 
+     *
      * Steps:
-     * 1. Maps response to ShoppingList and ShoppingItems
-     * 2. Saves in DB (Status: ACTIVE)
+     * 1. Archives any existing active list
+     * 2. Maps response to ShoppingList and ShoppingItems
+     * 3. Saves in DB (Status: ACTIVE)
      */
     fun createListFromAnalyzedVoice(
         userUid: String,
@@ -272,6 +281,13 @@ class ShoppingViewModel(
                         }
                         return@launch
                     }
+
+                // Step 1: Archive any existing active list
+                val existingActiveListResult = shoppingListRepository.getActiveShoppingList(userUid)
+                if (existingActiveListResult is RepositoryResult.Success && existingActiveListResult.data != null) {
+                    val existingList = existingActiveListResult.data.shoppingList
+                    shoppingListRepository.archiveShoppingList(existingList.id)
+                }
 
                 // Step 2: Map to ShoppingList and ShoppingItems
                 val listId = UUID.randomUUID().toString()
@@ -406,6 +422,7 @@ class ShoppingViewModel(
                 it.copy(
                     isEditing = true,
                     editingList = list,
+                    editingListName = list.shoppingList.name,
                     editingItems = list.items.toList()
                 )
             }
@@ -420,6 +437,7 @@ class ShoppingViewModel(
             it.copy(
                 isEditing = false,
                 editingList = null,
+                editingListName = "",
                 editingItems = emptyList(),
                 newItemName = "",
                 newItemQuantity = "1.0",
@@ -439,7 +457,8 @@ class ShoppingViewModel(
             try {
                 // Update list name if changed
                 val updatedList = editingList.shoppingList.copy(
-                    name = editingList.shoppingList.name,
+                    name = _uiState.value.editingListName.takeIf { it.isNotBlank() }
+                        ?: editingList.shoppingList.name,
                     updatedAt = LocalDateTime.now()
                 )
                 val updateListResult = shoppingListRepository.updateShoppingList(updatedList)
@@ -559,6 +578,13 @@ class ShoppingViewModel(
     }
 
     /**
+     * Updates editing list name.
+     */
+    fun updateEditingListName(name: String) {
+        _uiState.update { it.copy(editingListName = name) }
+    }
+
+    /**
      * Updates new item name.
      */
     fun updateNewItemName(name: String) {
@@ -675,6 +701,58 @@ class ShoppingViewModel(
                         )
                     }
                     onError("Error al eliminar la lista")
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates the name of a shopping list.
+     */
+    fun updateListName(listId: String, newName: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            // Get the current list
+            val listResult = shoppingListRepository.getShoppingListById(listId)
+            if (listResult.isError) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = listResult.errorOrNull()
+                    )
+                }
+                onError("Error al obtener la lista")
+                return@launch
+            }
+
+            val list = (listResult as RepositoryResult.Success).data
+            if (list == null) {
+                _uiState.update { it.copy(isLoading = false) }
+                onError("Lista no encontrada")
+                return@launch
+            }
+
+            // Update the name
+            val updatedList = list.copy(
+                name = newName,
+                updatedAt = LocalDateTime.now()
+            )
+
+            val updateResult = shoppingListRepository.updateShoppingList(updatedList)
+            when (updateResult) {
+                is RepositoryResult.Success -> {
+                    _uiState.update { it.copy(isLoading = false) }
+                    onSuccess()
+                }
+                is RepositoryResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = updateResult.error
+                        )
+                    }
+                    onError("Error al actualizar el nombre")
                 }
             }
         }

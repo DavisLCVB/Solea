@@ -16,7 +16,7 @@ import com.grupo03.solea.data.repositories.interfaces.ItemRepository
 import com.grupo03.solea.data.repositories.interfaces.MovementRepository
 import com.grupo03.solea.data.repositories.interfaces.ReceiptRepository
 import com.grupo03.solea.data.repositories.interfaces.ShoppingListRepository
-import com.grupo03.solea.data.repositories.interfaces.UserPreferencesRepository
+import com.grupo03.solea.data.services.interfaces.AuthService
 import com.grupo03.solea.presentation.states.screens.NewMovementFormState
 import com.grupo03.solea.presentation.states.screens.ReceiptItemData
 import com.grupo03.solea.utils.CurrencyUtils
@@ -30,12 +30,12 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 class NewMovementFormViewModel(
+    private val authService: AuthService,
     private val movementRepository: MovementRepository,
     private val categoryRepository: CategoryRepository,
     private val itemRepository: ItemRepository,
     private val receiptRepository: ReceiptRepository,
-    private val shoppingListRepository: ShoppingListRepository,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val shoppingListRepository: ShoppingListRepository
 ) : ViewModel() {
 
     private val _formState = MutableStateFlow(
@@ -44,12 +44,11 @@ class NewMovementFormViewModel(
     val formState: StateFlow<NewMovementFormState> = _formState.asStateFlow()
 
     init {
-        // Observe currency preference and update form state
+        // Obtener currency del usuario actual
         viewModelScope.launch {
-            userPreferencesRepository.getCurrency().collect { userCurrency ->
-                val currency = CurrencyUtils.getCurrency(userCurrency)
-                _formState.value = _formState.value.copy(currency = currency)
-            }
+            val user = authService.getCurrentUser()
+            val currency = user?.currency ?: CurrencyUtils.getCurrencyByCountry()
+            _formState.value = _formState.value.copy(currency = currency)
         }
     }
 
@@ -89,7 +88,7 @@ class NewMovementFormViewModel(
         )
     }
 
-    fun onCategorySelected(category: Category) {
+    fun onCategorySelected(category: Category?) {
         _formState.value = _formState.value.copy(
             selectedCategory = category,
             isCategorySelected = true,
@@ -616,10 +615,10 @@ class NewMovementFormViewModel(
             )
         }
 
+        // Don't override user's currency - keep the one from init
         _formState.value = _formState.value.copy(
             name = establishmentName,
             amount = total,
-            currency = currency,
             movementType = MovementType.EXPENSE,
             sourceType = SourceType.RECEIPT,
             receiptDescription = establishmentName,

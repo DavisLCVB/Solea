@@ -317,12 +317,20 @@
     <string name="version_prefix">Version:</string>
     <string name="sign_out">Sign out</string>
     <string name="profile_picture">Profile picture</string>
+    <string name="export_data">Export Data</string>
+    <string name="export_excel">Export as Excel</string>
+    <string name="export_pdf">Export as PDF</string>
+    <string name="export_movements_title">Export Movements</string>
+    <string name="export_success">Export successful!</string>
+    <string name="export_error">Export failed</string>
+    <string name="exporting">Exporting...</string>
 
     <!-- Currency Selection Screen -->
     <string name="currency_selection_title">Currency</string>
     <string name="select_currency">Select currency</string>
     <string name="select_currency_description">Select your preferred currency to display amounts in the app</string>
     <string name="auto_detect_currency">Auto-detect (%1$s %2$s)</string>
+    <string name="currency_permanent_note">Currency cannot be changed after registration</string>
     <string name="selected">Selected</string>
 
     <!-- Language Selection Screen -->

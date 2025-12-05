@@ -51,7 +51,7 @@ class RetrofitReceiptScannerService : ReceiptScannerService {
     private val gson = Gson()
 
     // Base prompt template for receipt scanning
-    private fun buildPrompt(categories: List<Category>, defaultCurrency: String): String {
+    private fun buildPrompt(categories: List<Category>, defaultCurrency: String, language: String): String {
         val categoriesSection = if (categories.isNotEmpty()) {
             val categoriesList = categories.joinToString(", ") { category -> "\"${category.name}\"" }
             "Suggest ONE category from: $categoriesList (or a new one if none fit)."
@@ -59,8 +59,16 @@ class RetrofitReceiptScannerService : ReceiptScannerService {
             "Suggest ONE category (e.g., \"Groceries\", \"Restaurant\")."
         }
 
+        val languageInstruction = when (language) {
+            "es" -> "Respond in Spanish. Item descriptions and establishment name should be in Spanish."
+            "en" -> "Respond in English. Item descriptions and establishment name should be in English."
+            else -> "Respond in the same language as the receipt text."
+        }
+
         return """
 Extract receipt data and return ONLY JSON. Do not invent data - use null/"" if not visible.
+
+$languageInstruction
 
 Rules:
 1. Currency: Use receipt's currency or default to "$defaultCurrency"
@@ -107,12 +115,12 @@ Return ONLY JSON, no markdown.
         api = retrofit.create(ReceiptScannerApi::class.java)
     }
 
-    override suspend fun scanReceipt(imageFile: File, categories: List<Category>, defaultCurrency: String): Result<ScannedReceiptResponse> {
+    override suspend fun scanReceipt(imageFile: File, categories: List<Category>, defaultCurrency: String, language: String): Result<ScannedReceiptResponse> {
         return try {
             Log.d("ReceiptScanner", "Scanning receipt: ${imageFile.name} (${imageFile.length()} bytes)")
 
             // Build prompt with categories and default currency
-            val promptText = buildPrompt(categories, defaultCurrency)
+            val promptText = buildPrompt(categories, defaultCurrency, language)
 
             // Determine MIME type based on file extension
             val mimeType = when {

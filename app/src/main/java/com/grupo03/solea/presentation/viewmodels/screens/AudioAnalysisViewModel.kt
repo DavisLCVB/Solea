@@ -8,6 +8,7 @@ import com.grupo03.solea.data.models.EditableVoiceNote
 import com.grupo03.solea.data.repositories.interfaces.CategoryRepository
 import com.grupo03.solea.data.repositories.interfaces.UserPreferencesRepository
 import com.grupo03.solea.data.services.interfaces.AudioAnalyzerService
+import com.grupo03.solea.data.services.interfaces.AuthService
 import com.grupo03.solea.presentation.states.screens.VoiceNoteState
 import com.grupo03.solea.utils.AudioRecorderManager
 import com.grupo03.solea.utils.CurrencyUtils
@@ -34,6 +35,7 @@ import java.time.format.DateTimeFormatter
  * @property categoryRepository Repository for fetching categories for AI categorization
  */
 class AudioAnalysisViewModel(
+    private val authService: AuthService,
     private val audioAnalyzerService: AudioAnalyzerService,
     private val categoryRepository: CategoryRepository,
     private val userPreferencesRepository: UserPreferencesRepository
@@ -179,10 +181,11 @@ class AudioAnalysisViewModel(
                     categories.addAll(userCategoriesResult.getOrNull() ?: emptyList())
                 }
 
-                val userCurrencyPreference = userPreferencesRepository.getCurrency().first()
-                val deviceCurrency = CurrencyUtils.getCurrency(userCurrencyPreference)
+                val user = authService.getCurrentUser()
+                val userCurrency = user?.currency ?: CurrencyUtils.getCurrencyByCountry()
+                val userLanguage = userPreferencesRepository.getLanguage().first()
 
-                val result = audioAnalyzerService.analyzeAudio(audioFile, categories, deviceCurrency)
+                val result = audioAnalyzerService.analyzeAudio(audioFile, categories, userCurrency, userLanguage)
 
                 if (result.isSuccess) {
                     val analyzedData = result.getOrNull()!!.voiceNote

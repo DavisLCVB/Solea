@@ -110,6 +110,13 @@ dependencies {
     // WorkManager for background sync
     implementation(libs.androidx.work.runtime.ktx)
 
+    // Apache POI for Excel export
+    implementation("org.apache.poi:poi:5.2.5")
+    implementation("org.apache.poi:poi-ooxml:5.2.5")
+
+    // iText for PDF export
+    implementation("com.itextpdf:itext7-core:7.2.5")
+
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
 }

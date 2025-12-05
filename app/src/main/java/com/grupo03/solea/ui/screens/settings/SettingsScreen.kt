@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Notifications
@@ -31,10 +32,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,12 +59,12 @@ fun SettingsScreen(
     authViewModel: AuthViewModel,
     settingsViewModel: com.grupo03.solea.presentation.viewmodels.screens.SettingsViewModel,
     onNavigateToBudgetLimits: () -> Unit,
-    onNavigateToCurrencySelection: () -> Unit,
     onNavigateToLanguageSelection: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val authState = authViewModel.authState.collectAsState()
     val settingsState = settingsViewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     SettingsContent(
         user = authState.value.user,
@@ -67,8 +73,19 @@ fun SettingsScreen(
         onToggleTheme = settingsViewModel::toggleTheme,
         onSignOut = { authViewModel.signOut() },
         onNavigateToBudgetLimits = onNavigateToBudgetLimits,
-        onNavigateToCurrencySelection = onNavigateToCurrencySelection,
         onNavigateToLanguageSelection = onNavigateToLanguageSelection,
+        onExportExcel = {
+            authState.value.user?.uid?.let { userUid ->
+                settingsViewModel.exportMovementsToExcel(context, userUid)
+            }
+        },
+        onExportPdf = {
+            authState.value.user?.uid?.let { userUid ->
+                settingsViewModel.exportMovementsToPdf(context, userUid)
+            }
+        },
+        onClearExportSuccess = settingsViewModel::clearExportSuccess,
+        onClearError = settingsViewModel::clearError,
         modifier = modifier
     )
 }
@@ -82,20 +99,42 @@ private fun SettingsContent(
     onToggleTheme: (Boolean) -> Unit,
     onSignOut: () -> Unit,
     onNavigateToBudgetLimits: () -> Unit,
-    onNavigateToCurrencySelection: () -> Unit,
     onNavigateToLanguageSelection: () -> Unit,
+    onExportExcel: () -> Unit,
+    onExportPdf: () -> Unit,
+    onClearExportSuccess: () -> Unit,
+    onClearError: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val userName = user?.displayName ?: "Usuario"
     val userEmail = user?.email ?: "correo@ejemplo.com"
     val isGoogleUser = user?.photoUrl?.contains("googleusercontent.com") == true
+    val userCurrency = user?.currency ?: "USD"
 
     val scrollState = rememberScrollState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Column(
-        modifier = modifier.fillMaxSize()
-    ) {
-        TopBar(title = stringResource(R.string.configuration))
+    // Show success message
+    LaunchedEffect(settingsState.exportSuccess) {
+        settingsState.exportSuccess?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            onClearExportSuccess()
+        }
+    }
+
+    // Show error message
+    LaunchedEffect(settingsState.error) {
+        settingsState.error?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            onClearError()
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            TopBar(title = stringResource(R.string.configuration))
 
         Column(
             modifier = Modifier
@@ -110,6 +149,7 @@ private fun SettingsContent(
                 userEmail = userEmail,
                 photoUrl = user?.photoUrl,
                 isGoogleUser = isGoogleUser,
+                userCurrency = userCurrency,
                 onEditProfile = { }
             )
 
@@ -145,14 +185,6 @@ private fun SettingsContent(
                 icon = Icons.Default.Receipt,
                 title = stringResource(R.string.limits_per_category_stablish),
                 onClick = onNavigateToBudgetLimits
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            SettingNavigationCard(
-                icon = Icons.Default.MonetizationOn,
-                title = stringResource(R.string.currency),
-                onClick = onNavigateToCurrencySelection
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -217,6 +249,72 @@ private fun SettingsContent(
                 }
             }
 
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Export Data Section
+            SectionTitle(text = stringResource(R.string.export_data), icon = Icons.Default.FileDownload)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = stringResource(R.string.export_movements_title),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = onExportExcel,
+                            enabled = !settingsState.isExporting,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            if (settingsState.isExporting) {
+                                Text(stringResource(R.string.exporting))
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.FileDownload,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.export_excel))
+                            }
+                        }
+
+                        Button(
+                            onClick = onExportPdf,
+                            enabled = !settingsState.isExporting,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            if (settingsState.isExporting) {
+                                Text(stringResource(R.string.exporting))
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.FileDownload,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.export_pdf))
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             // Sign Out Button
@@ -236,6 +334,14 @@ private fun SettingsContent(
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        )
     }
 }
 
@@ -245,6 +351,7 @@ private fun UserProfileCard(
     userEmail: String,
     photoUrl: String?,
     isGoogleUser: Boolean,
+    userCurrency: String,
     onEditProfile: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -314,6 +421,34 @@ private fun UserProfileCard(
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Currency info (read-only)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MonetizationOn,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = stringResource(R.string.currency_label),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${com.grupo03.solea.utils.CurrencyUtils.getCurrencySymbol(userCurrency)} $userCurrency",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
 

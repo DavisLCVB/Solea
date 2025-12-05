@@ -47,29 +47,73 @@ fun EditVoiceNoteScreen(
     var showNewCategoryDialog by remember { mutableStateOf(false) }
     var newCategoryName by remember { mutableStateOf("") }
     var showTranscription by remember { mutableStateOf(false) }
+    var suggestedCategoryProcessed by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(analyzedVoiceNote.suggestedCategory, formState.value.categories) {
-        if (selectedCategory == null &&
-            !analyzedVoiceNote.suggestedCategory.isNullOrBlank() &&
-            formState.value.categories.isNotEmpty()) {
+    // Check suggested category - wait for categories to be fetched (even if empty)
+    var categoriesFetched by remember { mutableStateOf(false) }
+
+    LaunchedEffect(userId) {
+        newMovementFormViewModel.fetchCategories(userId)
+        // Small delay to ensure fetch completes
+        kotlinx.coroutines.delay(500)
+        categoriesFetched = true
+    }
+
+    LaunchedEffect(
+        movementType,
+        analyzedVoiceNote.suggestedCategory,
+        categoriesFetched,
+        formState.value.categories.size,
+        suggestedCategoryProcessed
+    ) {
+        android.util.Log.d("EditVoiceNote", "LaunchedEffect triggered")
+        android.util.Log.d("EditVoiceNote", "movementType: $movementType")
+        android.util.Log.d("EditVoiceNote", "suggestedCategory: ${analyzedVoiceNote.suggestedCategory}")
+        android.util.Log.d("EditVoiceNote", "categories count: ${formState.value.categories.size}")
+        android.util.Log.d("EditVoiceNote", "categoriesFetched: $categoriesFetched")
+        android.util.Log.d("EditVoiceNote", "selectedCategory: $selectedCategory")
+        android.util.Log.d("EditVoiceNote", "suggestedCategoryProcessed: $suggestedCategoryProcessed")
+
+        // Wait until categories fetch attempt is complete
+        if (!categoriesFetched) {
+            android.util.Log.d("EditVoiceNote", "Categories fetch not completed yet, waiting...")
+            return@LaunchedEffect
+        }
+
+        // Only process once unless categories list changes
+        if (suggestedCategoryProcessed && selectedCategory != null) {
+            android.util.Log.d("EditVoiceNote", "Category already processed and selected, skipping...")
+            return@LaunchedEffect
+        }
+
+        if (movementType == "expense" &&
+            !analyzedVoiceNote.suggestedCategory.isNullOrBlank()
+        ) {
             val suggested = analyzedVoiceNote.suggestedCategory.trim()
-            val existingCategory = formState.value.categories.find {
-                it.name.trim().equals(suggested, ignoreCase = true)
+            android.util.Log.d("EditVoiceNote", "Searching for suggested category: '$suggested'")
+
+            // Check if category exists (only if there are categories)
+            val existingCategory = if (formState.value.categories.isNotEmpty()) {
+                formState.value.categories.find {
+                    it.name.trim().equals(suggested, ignoreCase = true)
+                }
+            } else {
+                null
             }
 
             if (existingCategory != null) {
+                android.util.Log.d("EditVoiceNote", "Found existing category: ${existingCategory.name}")
                 selectedCategory = existingCategory
-            } else {
+                suggestedCategoryProcessed = true
+            } else if (!suggestedCategoryProcessed || selectedCategory == null) {
+                android.util.Log.d("EditVoiceNote", "Category not found, showing dialog to create: '$suggested'")
+                android.util.Log.d("EditVoiceNote", "Available categories: ${formState.value.categories.map { it.name }}")
                 newCategoryName = suggested
                 showNewCategoryDialog = true
             }
         }
-    }
-
-    LaunchedEffect(userId) {
-        newMovementFormViewModel.fetchCategories(userId)
     }
 
     if (showNewCategoryDialog) {
@@ -91,6 +135,7 @@ fun EditVoiceNoteScreen(
                         newCategoryFormViewModel.onDescriptionChange("Category automatically detected by AI")
                         newCategoryFormViewModel.createCategory(userId) {
                             showNewCategoryDialog = false
+                            suggestedCategoryProcessed = true
 
                             coroutineScope.launch {
                                 kotlinx.coroutines.delay(300)
@@ -219,7 +264,10 @@ fun EditVoiceNoteScreen(
                 )
                 FilterChip(
                     selected = movementType == "income",
-                    onClick = { movementType = "income" },
+                    onClick = {
+                        movementType = "income"
+                        selectedCategory = null
+                    },
                     label = { Text(stringResource(R.string.income)) },
                     modifier = Modifier.weight(1f)
                 )
@@ -249,74 +297,74 @@ fun EditVoiceNoteScreen(
                 maxLines = 4
             )
 
-            Text(
-                stringResource(R.string.category),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            ExposedDropdownMenuBox(
-                expanded = expandedCategory,
-                onExpandedChange = { expandedCategory = !expandedCategory }
-            ) {
-                OutlinedTextField(
-                    value = selectedCategory?.name ?: "",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text(stringResource(R.string.select_category)) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+            if (movementType == "expense") {
+                Text(
+                    stringResource(R.string.category),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
 
-                ExposedDropdownMenu(
+                ExposedDropdownMenuBox(
                     expanded = expandedCategory,
-                    onDismissRequest = { expandedCategory = false }
+                    onExpandedChange = { expandedCategory = !expandedCategory }
                 ) {
-                    formState.value.categories.forEach { category ->
-                        DropdownMenuItem(
-                            text = { Text(category.name) },
-                            onClick = {
-                                selectedCategory = category
-                                expandedCategory = false
-                            }
-                        )
+                    OutlinedTextField(
+                        value = selectedCategory?.name ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.select_category)) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = expandedCategory,
+                        onDismissRequest = { expandedCategory = false }
+                    ) {
+                        formState.value.categories.forEach { category ->
+                            DropdownMenuItem(
+                                text = { Text(category.name) },
+                                onClick = {
+                                    selectedCategory = category
+                                    expandedCategory = false
+                                }
+                            )
+                        }
                     }
                 }
             }
 
             Button(
                 onClick = {
-                    selectedCategory?.let { category ->
-                        newMovementFormViewModel.onNameChange(description)
-                        newMovementFormViewModel.onDescriptionChange(analyzedVoiceNote.transcription)
-                        newMovementFormViewModel.onAmountChange(amount)
-                        newMovementFormViewModel.onCategorySelected(category)
-                        newMovementFormViewModel.onDateTimeChange(analyzedVoiceNote.date)
+                    newMovementFormViewModel.onNameChange(description)
+                    newMovementFormViewModel.onDescriptionChange(analyzedVoiceNote.transcription)
+                    newMovementFormViewModel.onAmountChange(amount)
+                    newMovementFormViewModel.onDateTimeChange(analyzedVoiceNote.date)
 
-                        if (movementType == "expense") {
-                            newMovementFormViewModel.onMovementTypeChange(MovementType.EXPENSE)
+                    if (movementType == "expense") {
+                        newMovementFormViewModel.onMovementTypeChange(MovementType.EXPENSE)
+                        selectedCategory?.let { newMovementFormViewModel.onCategorySelected(it) }
 
-                            newMovementFormViewModel.onSourceTypeChange(com.grupo03.solea.data.models.SourceType.ITEM)
-                            newMovementFormViewModel.onItemNameChange(description)
-                            newMovementFormViewModel.onItemQuantityChange("1")
-                            newMovementFormViewModel.onItemUnitPriceChange(amount)
-                        } else {
-                            newMovementFormViewModel.onMovementTypeChange(MovementType.INCOME)
-                        }
+                        newMovementFormViewModel.onSourceTypeChange(com.grupo03.solea.data.models.SourceType.ITEM)
+                        newMovementFormViewModel.onItemNameChange(description)
+                        newMovementFormViewModel.onItemQuantityChange("1")
+                        newMovementFormViewModel.onItemUnitPriceChange(amount)
+                    } else {
+                        newMovementFormViewModel.onMovementTypeChange(MovementType.INCOME)
+                    }
 
-                        newMovementFormViewModel.createMovement(userId) {
-                            audioAnalysisViewModel.clearState()
-                            onSuccess()
-                        }
+                    newMovementFormViewModel.createMovement(userId) {
+                        audioAnalysisViewModel.clearState()
+                        onSuccess()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = amount.toDoubleOrNull() != null &&
-                         description.isNotBlank() &&
-                         selectedCategory != null
+                        description.isNotBlank() &&
+                        (movementType == "income" || selectedCategory != null)
             ) {
                 Text(stringResource(R.string.save_movement))
             }

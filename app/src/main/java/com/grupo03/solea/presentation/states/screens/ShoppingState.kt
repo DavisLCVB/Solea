@@ -16,6 +16,7 @@ data class ShoppingState(
     val showVoicePreviewDialog: Boolean = false,
     val isEditing: Boolean = false,
     val editingList: ShoppingListDetails? = null,
+    val editingListName: String = "",
     val editingItems: List<ShoppingItem> = emptyList(),
     val newItemName: String = "",
     val newItemQuantity: String = "1.0",

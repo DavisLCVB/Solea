@@ -14,6 +14,7 @@ import com.grupo03.solea.data.repositories.firebase.FirebaseMovementRepository
 import com.grupo03.solea.data.repositories.firebase.FirebaseReceiptRepository
 import com.grupo03.solea.data.repositories.firebase.FirebaseSavingsGoalRepository
 import com.grupo03.solea.data.repositories.firebase.FirebaseShoppingListRepository
+import com.grupo03.solea.data.repositories.firebase.FirebaseUserRepository
 import com.grupo03.solea.data.repositories.interfaces.BudgetRepository
 import com.grupo03.solea.data.repositories.interfaces.CategoryRepository
 import com.grupo03.solea.data.repositories.interfaces.ItemRepository
@@ -22,6 +23,7 @@ import com.grupo03.solea.data.repositories.interfaces.ReceiptRepository
 import com.grupo03.solea.data.repositories.interfaces.SavingsGoalRepository
 import com.grupo03.solea.data.repositories.interfaces.ShoppingListRepository
 import com.grupo03.solea.data.repositories.interfaces.UserPreferencesRepository
+import com.grupo03.solea.data.repositories.interfaces.UserRepository
 import com.grupo03.solea.data.repositories.local.DataStoreUserPreferencesRepository
 import com.grupo03.solea.data.services.api.RetrofitAudioAnalyzerService
 import com.grupo03.solea.data.services.api.RetrofitReceiptScannerService
@@ -64,6 +66,7 @@ val appModule = module {
     single { Firebase.auth }
     single { Firebase.firestore }
     single<AuthService> { FirebaseAuthService(get()) }
+    single<UserRepository> { FirebaseUserRepository(get()) }
 
     // Room Database
     single {
@@ -84,7 +87,8 @@ val appModule = module {
     single<MovementRepository> {
         CachedMovementRepository(
             remoteRepository = FirebaseMovementRepository(get()),
-            movementDao = get()
+            movementDao = get(),
+            userPreferencesRepository = get()
         )
     }
     single<BudgetRepository> { FirebaseBudgetRepository(get()) }
@@ -96,16 +100,16 @@ val appModule = module {
     single<UserPreferencesRepository> { DataStoreUserPreferencesRepository(androidContext()) }
 
     // ViewModels
-    viewModel { AuthViewModel(get()) }
+    viewModel { AuthViewModel(get(), get()) }
     viewModel { HomeViewModel() }
     viewModel { MovementsViewModel(get(), get()) }
     viewModel { NewCategoryFormViewModel(get()) }
-    viewModel { NewMovementFormViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { NewMovementFormViewModel(get(), get(), get(), get(), get(), get()) }  // authService, movementRepo, categoryRepo, itemRepo, receiptRepo, shoppingListRepo
     viewModel { BudgetViewModel(get(), get()) }
-    viewModel { SettingsViewModel(get()) }
+    viewModel { SettingsViewModel(get(), get()) }
     viewModel { HistoryViewModel(get()) }
-    viewModel { ScanReceiptViewModel(get(), get(), get()) }
-    viewModel { AudioAnalysisViewModel(get(), get(), get()) }
+    viewModel { ScanReceiptViewModel(get(), get(), get(), get()) }  // authService, receiptScannerService, categoryRepo, userPreferencesRepo
+    viewModel { AudioAnalysisViewModel(get(), get(), get(), get()) }  // authService, audioAnalyzerService, categoryRepo, userPreferencesRepo
     viewModel { SavingsViewModel(get(), get()) }
     viewModel { ShoppingViewModel(get(), get()) }
     viewModel { StatisticsViewModel(get()) }

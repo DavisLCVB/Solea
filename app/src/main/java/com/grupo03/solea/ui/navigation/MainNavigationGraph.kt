@@ -32,7 +32,6 @@ import com.grupo03.solea.ui.screens.scanner.ScanReceiptScreen
 import com.grupo03.solea.ui.screens.voicenote.AudioAnalysisScreen
 import com.grupo03.solea.ui.screens.voicenote.EditVoiceNoteScreen
 import com.grupo03.solea.ui.screens.settings.BudgetLimitsScreen
-import com.grupo03.solea.ui.screens.settings.CurrencySelectionScreen
 import com.grupo03.solea.ui.screens.settings.EditBudgetForm
 import com.grupo03.solea.ui.screens.settings.LanguageSelectionScreen
 import com.grupo03.solea.ui.screens.settings.SettingsScreen
@@ -201,20 +200,8 @@ fun NavGraphBuilder.mainNavigationGraph(
                 onNavigateToBudgetLimits = {
                     navController.navigate(AppRoutes.BUDGET_LIMITS)
                 },
-                onNavigateToCurrencySelection = {
-                    navController.navigate(AppRoutes.CURRENCY_SELECTION)
-                },
                 onNavigateToLanguageSelection = {
                     navController.navigate(AppRoutes.LANGUAGE_SELECTION)
-                },
-                modifier = Modifier.padding(contentPadding)
-            )
-        }
-        composable(AppRoutes.CURRENCY_SELECTION) {
-            CurrencySelectionScreen(
-                settingsViewModel = koinViewModel(),
-                onNavigateBack = {
-                    navController.popBackStack()
                 },
                 modifier = Modifier.padding(contentPadding)
             )
@@ -266,6 +253,7 @@ fun NavGraphBuilder.mainNavigationGraph(
             val editBudgetFormState by budgetViewModel.editBudgetFormState.collectAsState()
             val authState by authViewModel.authState.collectAsState()
             val userId = authState.user?.uid ?: ""
+            val userCurrency = authState.user?.currency ?: "USD"
 
             LaunchedEffect(Unit) {
                 budgetViewModel.fetchStatuses()
@@ -273,6 +261,7 @@ fun NavGraphBuilder.mainNavigationGraph(
 
             EditBudgetForm(
                 budgetFormState = editBudgetFormState,
+                userCurrency = userCurrency,
                 onAmountChange = budgetViewModel::onAmountChange,
                 onSave = {
                     budgetViewModel.saveBudget(userId) { navController.popBackStack() }

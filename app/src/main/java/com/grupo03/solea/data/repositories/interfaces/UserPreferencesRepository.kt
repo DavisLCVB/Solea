@@ -53,23 +53,18 @@ interface UserPreferencesRepository {
     fun getLanguage(): Flow<String>
 
     /**
-     * Saves the preferred currency.
+     * Saves the last movements cache refresh timestamp.
      *
-     * @param currencyCode Currency code (e.g., "USD", "EUR", "ARS")
+     * @param timestamp Timestamp in milliseconds
      */
-    suspend fun saveCurrency(currencyCode: String)
+    suspend fun saveLastMovementsRefresh(timestamp: Long)
 
     /**
-     * Observes the currency preference.
+     * Observes the last movements cache refresh timestamp.
      *
-     * @return Flow emitting the current currency code, or null if not set (should use device detection)
+     * @return Flow emitting the timestamp in milliseconds
      */
-    fun getCurrency(): Flow<String?>
-
-    /**
-     * Clears the currency preference to use auto-detection.
-     */
-    suspend fun clearCurrency()
+    fun getLastMovementsRefresh(): Flow<Long>
 
     /**
      * Clears all stored preferences.

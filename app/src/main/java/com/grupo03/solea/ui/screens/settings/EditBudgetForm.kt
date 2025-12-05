@@ -62,6 +62,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun EditBudgetForm(
     budgetFormState: EditBudgetFormState,
+    userCurrency: String = "USD",
     onAmountChange: (String) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
@@ -204,7 +205,7 @@ fun EditBudgetForm(
                 label = { Text(stringResource(R.string.monthly_limit_label)) },
                 leadingIcon = {
                     Text(
-                        CurrencyUtils.getDeviceCurrencySymbol(),
+                        CurrencyUtils.getCurrencySymbol(userCurrency),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary

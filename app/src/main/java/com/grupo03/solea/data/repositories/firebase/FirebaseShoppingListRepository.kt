@@ -1,5 +1,6 @@
 package com.grupo03.solea.data.repositories.firebase
 
+import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.grupo03.solea.data.models.ShoppingItem
@@ -22,6 +23,7 @@ class FirebaseShoppingListRepository(
 ) : ShoppingListRepository {
 
     companion object {
+        private const val TAG = "FirebaseShoppingListRepo"
         private const val SHOPPING_LISTS_COLLECTION = "shoppingLists"
         private const val SHOPPING_ITEMS_COLLECTION = "shoppingItems"
     }
@@ -57,19 +59,24 @@ class FirebaseShoppingListRepository(
 
     override suspend fun getActiveShoppingList(userUid: String): RepositoryResult<ShoppingListDetails?> {
         return try {
+            Log.d(TAG, "getActiveShoppingList: Fetching active list for userUid=$userUid")
             val documents = shoppingListsCollection
                 .whereEqualTo("userUid", userUid)
                 .whereEqualTo("status", ShoppingListStatus.ACTIVE.name)
+                // TODO: Uncomment after creating Firestore index
+                // .orderBy("createdAtTimestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
                 .limit(1)
                 .get()
                 .await()
 
             if (documents.isEmpty) {
+                Log.d(TAG, "getActiveShoppingList: No active list found")
                 return RepositoryResult.Success(null)
             }
 
             val listDoc = documents.documents.first()
             val list = listDoc.toShoppingList() ?: return RepositoryResult.Success(null)
+            Log.d(TAG, "getActiveShoppingList: Found list ${list.id} - ${list.name}")
 
             val itemsResult = getShoppingItemsByListId(list.id)
             val items = if (itemsResult is RepositoryResult.Success) {
@@ -80,8 +87,10 @@ class FirebaseShoppingListRepository(
 
             RepositoryResult.Success(ShoppingListDetails(shoppingList = list, items = items))
         } catch (e: FirebaseFirestoreException) {
+            Log.e(TAG, "getActiveShoppingList: Firestore error - ${e.code}: ${e.message}", e)
             RepositoryResult.Error(mapFirestoreException(e, ShoppingListError.FETCH_FAILED))
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e(TAG, "getActiveShoppingList: Unknown error", e)
             RepositoryResult.Error(ShoppingListError.UNKNOWN_ERROR)
         }
     }
@@ -168,13 +177,17 @@ class FirebaseShoppingListRepository(
 
     override fun observeActiveShoppingList(userUid: String): Flow<RepositoryResult<ShoppingListDetails?>> {
         return callbackFlow {
+            Log.d(TAG, "observeActiveShoppingList: Starting listener for userUid=$userUid")
             var itemsListener: com.google.firebase.firestore.ListenerRegistration? = null
             val listListener = shoppingListsCollection
                 .whereEqualTo("userUid", userUid)
                 .whereEqualTo("status", ShoppingListStatus.ACTIVE.name)
+                // TODO: Uncomment after creating Firestore index
+                // .orderBy("createdAtTimestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
                 .limit(1)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
+                        Log.e(TAG, "observeActiveShoppingList: Firestore error - ${error.code}: ${error.message}", error)
                         trySend(RepositoryResult.Error(
                             mapFirestoreException(error, ShoppingListError.FETCH_FAILED)
                         ))
@@ -183,14 +196,16 @@ class FirebaseShoppingListRepository(
 
                     val list = snapshot?.documents?.firstOrNull()?.toShoppingList()
                     if (list != null) {
+                        Log.d(TAG, "observeActiveShoppingList: Received list ${list.id} - ${list.name}")
                         // Remove previous items listener
                         itemsListener?.remove()
-                        
+
                         // Observe items in real-time
                         itemsListener = shoppingItemsCollection
                             .whereEqualTo("listId", list.id)
                             .addSnapshotListener { itemsSnapshot, itemsError ->
                                 if (itemsError != null) {
+                                    Log.e(TAG, "observeActiveShoppingList: Items error - ${itemsError.code}: ${itemsError.message}", itemsError)
                                     trySend(RepositoryResult.Error(
                                         mapFirestoreException(itemsError, ShoppingListError.FETCH_FAILED)
                                     ))
@@ -198,15 +213,18 @@ class FirebaseShoppingListRepository(
                                 }
 
                                 val items = itemsSnapshot?.documents?.mapNotNull { it.toShoppingItem() } ?: emptyList()
+                                Log.d(TAG, "observeActiveShoppingList: Received ${items.size} items")
                                 trySend(RepositoryResult.Success(ShoppingListDetails(shoppingList = list, items = items)))
                             }
                     } else {
+                        Log.d(TAG, "observeActiveShoppingList: No active list found")
                         itemsListener?.remove()
                         trySend(RepositoryResult.Success(null))
                     }
                 }
 
-            awaitClose { 
+            awaitClose {
+                Log.d(TAG, "observeActiveShoppingList: Closing listener")
                 listListener.remove()
                 itemsListener?.remove()
             }

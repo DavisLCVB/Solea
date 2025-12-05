@@ -9,6 +9,7 @@ import com.grupo03.solea.data.models.EditableScannedItem
 import com.grupo03.solea.data.models.EditableScannedReceipt
 import com.grupo03.solea.data.repositories.interfaces.CategoryRepository
 import com.grupo03.solea.data.repositories.interfaces.UserPreferencesRepository
+import com.grupo03.solea.data.services.interfaces.AuthService
 import com.grupo03.solea.data.services.interfaces.ReceiptScannerService
 import com.grupo03.solea.presentation.states.screens.ScanReceiptState
 import com.grupo03.solea.utils.CurrencyUtils
@@ -34,6 +35,7 @@ import java.time.format.DateTimeFormatter
  * @property categoryRepository Repository for fetching categories for AI categorization
  */
 class ScanReceiptViewModel(
+    private val authService: AuthService,
     private val receiptScannerService: ReceiptScannerService,
     private val categoryRepository: CategoryRepository,
     private val userPreferencesRepository: UserPreferencesRepository
@@ -106,15 +108,17 @@ class ScanReceiptViewModel(
                 val imageFile = uriToFile(context, imageUri)
                 android.util.Log.d("ScanReceiptVM", "Archivo creado: ${imageFile.absolutePath}, tamaño: ${imageFile.length()} bytes")
 
-                // Get user's preferred currency
-                val userCurrencyPreference = userPreferencesRepository.getCurrency().first()
-                val deviceCurrency = CurrencyUtils.getCurrency(userCurrencyPreference)
-                android.util.Log.d("ScanReceiptVM", "Moneda del dispositivo: $deviceCurrency")
+                // Get user's preferred currency and language
+                val user = authService.getCurrentUser()
+                val userCurrency = user?.currency ?: CurrencyUtils.getCurrencyByCountry()
+                val userLanguage = userPreferencesRepository.getLanguage().first()
+                android.util.Log.d("ScanReceiptVM", "Moneda del usuario: $userCurrency")
+                android.util.Log.d("ScanReceiptVM", "Idioma del usuario: $userLanguage")
                 android.util.Log.d("ScanReceiptVM", "Total de categorías a enviar: ${categories.size}")
 
-                // Call scanner service with categories and device currency
+                // Call scanner service with categories, user currency, and user language
                 android.util.Log.d("ScanReceiptVM", "Llamando al servicio de escaneo...")
-                val result = receiptScannerService.scanReceipt(imageFile, categories, deviceCurrency)
+                val result = receiptScannerService.scanReceipt(imageFile, categories, userCurrency, userLanguage)
                 android.util.Log.d("ScanReceiptVM", "Servicio de escaneo completado. Éxito: ${result.isSuccess}")
 
                 if (result.isSuccess) {

@@ -15,10 +15,12 @@ import com.grupo03.solea.data.models.Save
 import com.grupo03.solea.data.models.SaveDetails
 import com.grupo03.solea.data.models.Source
 import com.grupo03.solea.data.repositories.interfaces.MovementRepository
+import com.grupo03.solea.data.repositories.interfaces.UserPreferencesRepository
 import com.grupo03.solea.utils.RepositoryResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -30,12 +32,18 @@ import java.time.LocalDateTime
  * - Fast local access via Room database
  * - Offline capability
  * - Reduced network calls
+ * - Automatic cache refresh after 5 minutes
  *
  */
 class CachedMovementRepository(
     private val remoteRepository: MovementRepository,
-    private val movementDao: MovementDao
+    private val movementDao: MovementDao,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : MovementRepository {
+
+    companion object {
+        private const val CACHE_REFRESH_INTERVAL_MS = 5 * 60 * 1000L // 5 minutes
+    }
 
     override suspend fun createMovement(movement: Movement): RepositoryResult<Movement> {
         val result = remoteRepository.createMovement(movement)
@@ -77,18 +85,28 @@ class CachedMovementRepository(
     override suspend fun getMovementsByUserId(userUid: String): RepositoryResult<List<Movement>> {
         val cachedMovements = movementDao.getMovementsByUser(userUid).map { it.toModel() }
         if (cachedMovements.isNotEmpty()) {
-            CoroutineScope(Dispatchers.IO).launch {
-                val remoteResult = remoteRepository.getMovementsByUserId(userUid)
-                if (remoteResult is RepositoryResult.Success) {
-                    movementDao.insertMovements(remoteResult.data.map { it.toEntity() })
+            // Check if cache needs refresh (5 minutes passed)
+            val lastRefresh = userPreferencesRepository.getLastMovementsRefresh().first()
+            val currentTime = System.currentTimeMillis()
+            val shouldRefresh = (currentTime - lastRefresh) > CACHE_REFRESH_INTERVAL_MS
+
+            if (shouldRefresh) {
+                CoroutineScope(Dispatchers.IO).launch {
+                    val remoteResult = remoteRepository.getMovementsByUserId(userUid)
+                    if (remoteResult is RepositoryResult.Success) {
+                        movementDao.insertMovements(remoteResult.data.map { it.toEntity() })
+                        userPreferencesRepository.saveLastMovementsRefresh(System.currentTimeMillis())
+                    }
                 }
             }
             return RepositoryResult.Success(cachedMovements)
         }
 
+        // No cache - fetch from remote
         val result = remoteRepository.getMovementsByUserId(userUid)
         if (result is RepositoryResult.Success) {
             movementDao.insertMovements(result.data.map { it.toEntity() })
+            userPreferencesRepository.saveLastMovementsRefresh(System.currentTimeMillis())
         }
         return result
     }
@@ -99,10 +117,18 @@ class CachedMovementRepository(
     ): RepositoryResult<List<Movement>> {
         val cachedMovements = movementDao.getMovementsByUserAndType(userUid, type).map { it.toModel() }
         if (cachedMovements.isNotEmpty()) {
-            CoroutineScope(Dispatchers.IO).launch {
-                val remoteResult = remoteRepository.getMovementsByUserAndType(userUid, type)
-                if (remoteResult is RepositoryResult.Success) {
-                    movementDao.insertMovements(remoteResult.data.map { it.toEntity() })
+            // Check if cache needs refresh (5 minutes passed)
+            val lastRefresh = userPreferencesRepository.getLastMovementsRefresh().first()
+            val currentTime = System.currentTimeMillis()
+            val shouldRefresh = (currentTime - lastRefresh) > CACHE_REFRESH_INTERVAL_MS
+
+            if (shouldRefresh) {
+                CoroutineScope(Dispatchers.IO).launch {
+                    val remoteResult = remoteRepository.getMovementsByUserAndType(userUid, type)
+                    if (remoteResult is RepositoryResult.Success) {
+                        movementDao.insertMovements(remoteResult.data.map { it.toEntity() })
+                        userPreferencesRepository.saveLastMovementsRefresh(System.currentTimeMillis())
+                    }
                 }
             }
             return RepositoryResult.Success(cachedMovements)
@@ -111,6 +137,7 @@ class CachedMovementRepository(
         val result = remoteRepository.getMovementsByUserAndType(userUid, type)
         if (result is RepositoryResult.Success) {
             movementDao.insertMovements(result.data.map { it.toEntity() })
+            userPreferencesRepository.saveLastMovementsRefresh(System.currentTimeMillis())
         }
         return result
     }
@@ -124,10 +151,18 @@ class CachedMovementRepository(
             .map { it.toModel() }
 
         if (cachedMovements.isNotEmpty()) {
-            CoroutineScope(Dispatchers.IO).launch {
-                val remoteResult = remoteRepository.getMovementsByUserAndDateRange(userUid, startDate, endDate)
-                if (remoteResult is RepositoryResult.Success) {
-                    movementDao.insertMovements(remoteResult.data.map { it.toEntity() })
+            // Check if cache needs refresh (5 minutes passed)
+            val lastRefresh = userPreferencesRepository.getLastMovementsRefresh().first()
+            val currentTime = System.currentTimeMillis()
+            val shouldRefresh = (currentTime - lastRefresh) > CACHE_REFRESH_INTERVAL_MS
+
+            if (shouldRefresh) {
+                CoroutineScope(Dispatchers.IO).launch {
+                    val remoteResult = remoteRepository.getMovementsByUserAndDateRange(userUid, startDate, endDate)
+                    if (remoteResult is RepositoryResult.Success) {
+                        movementDao.insertMovements(remoteResult.data.map { it.toEntity() })
+                        userPreferencesRepository.saveLastMovementsRefresh(System.currentTimeMillis())
+                    }
                 }
             }
             return RepositoryResult.Success(cachedMovements)
@@ -136,6 +171,7 @@ class CachedMovementRepository(
         val remoteResult = remoteRepository.getMovementsByUserAndDateRange(userUid, startDate, endDate)
         if (remoteResult is RepositoryResult.Success) {
             movementDao.insertMovements(remoteResult.data.map { it.toEntity() })
+            userPreferencesRepository.saveLastMovementsRefresh(System.currentTimeMillis())
         }
         return remoteResult
     }

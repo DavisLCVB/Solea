@@ -62,6 +62,7 @@ fun AddEditGoalScreen(
     val formState by savingsViewModel.formState.collectAsState()
     val authState by authViewModel.authState.collectAsState()
     val user = authState.user
+    val userCurrency = user?.currency ?: "USD"
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -125,7 +126,7 @@ fun AddEditGoalScreen(
                 value = formState.targetAmount,
                 onValueChange = savingsViewModel::onAmountChange,
                 label = { Text(stringResource(R.string.goal_amount)) },
-                leadingIcon = { Text(CurrencyUtils.getDeviceCurrencySymbol()) },
+                leadingIcon = { Text(CurrencyUtils.getCurrencySymbol(userCurrency)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 isError = !formState.isAmountValid,
                 supportingText = {

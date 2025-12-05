@@ -27,9 +27,12 @@ import java.util.Locale
 fun ViewShoppingListScreen(
     listId: String,
     shoppingViewModel: ShoppingViewModel = koinInject(),
+    authViewModel: com.grupo03.solea.presentation.viewmodels.shared.AuthViewModel = koinInject(),
     onNavigateBack: () -> Unit
 ) {
     val uiState by shoppingViewModel.uiState.collectAsState()
+    val authState by authViewModel.authState.collectAsState()
+    val userCurrency = authState.user?.currency ?: "USD"
 
     LaunchedEffect(listId) {
         shoppingViewModel.fetchShoppingListDetails(listId) {
@@ -109,7 +112,7 @@ fun ViewShoppingListScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Calculate total amount from bought items
-                val currencySymbol = CurrencyUtils.getDeviceCurrencySymbol()
+                val currencySymbol = CurrencyUtils.getCurrencySymbol(userCurrency)
                 val totalAmount = listDetails.items
                     .filter { it.isBought && it.realPrice != null }
                     .sumOf { it.realPrice ?: 0.0 }
@@ -149,7 +152,10 @@ fun ViewShoppingListScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(listDetails.items) { item ->
-                        ViewShoppingItemCard(item = item)
+                        ViewShoppingItemCard(
+                            item = item,
+                            userCurrency = userCurrency
+                        )
                     }
                 }
             }
@@ -159,9 +165,10 @@ fun ViewShoppingListScreen(
 
 @Composable
 fun ViewShoppingItemCard(
-    item: com.grupo03.solea.data.models.ShoppingItem
+    item: com.grupo03.solea.data.models.ShoppingItem,
+    userCurrency: String = "USD"
 ) {
-    val currencySymbol = CurrencyUtils.getDeviceCurrencySymbol()
+    val currencySymbol = CurrencyUtils.getCurrencySymbol(userCurrency)
     val isBought = item.isBought
 
     Card(

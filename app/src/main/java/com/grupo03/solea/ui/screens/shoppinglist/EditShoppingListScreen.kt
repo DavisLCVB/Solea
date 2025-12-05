@@ -34,7 +34,9 @@ fun EditShoppingListScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState by shoppingViewModel.uiState.collectAsState()
-    val userId = authViewModel.authState.collectAsState().value.user?.uid ?: ""
+    val authState by authViewModel.authState.collectAsState()
+    val userId = authState.user?.uid ?: ""
+    val userCurrency = authState.user?.currency ?: "USD"
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -70,13 +72,14 @@ fun EditShoppingListScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // List name (solo lectura por ahora)
+            // List name (editable)
             OutlinedTextField(
-                value = uiState.editingList?.shoppingList?.name ?: "",
-                onValueChange = { },
+                value = uiState.editingListName,
+                onValueChange = shoppingViewModel::updateEditingListName,
                 label = { Text("Nombre de la lista") },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = false // No permitimos cambiar el nombre por ahora
+                singleLine = true,
+                enabled = true
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -135,7 +138,7 @@ fun EditShoppingListScreen(
                                 keyboardType = KeyboardType.Decimal
                             ),
                             singleLine = true,
-                            prefix = { Text("${CurrencyUtils.getDeviceCurrencySymbol()} ") }
+                            prefix = { Text("${CurrencyUtils.getCurrencySymbol(userCurrency)} ") }
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -161,6 +164,7 @@ fun EditShoppingListScreen(
                 items(uiState.editingItems) { item ->
                     ShoppingItemEditCard(
                         item = item,
+                        userCurrency = userCurrency,
                         onDelete = {
                             shoppingViewModel.removeItemFromEditingList(item.id)
                         },
@@ -222,10 +226,11 @@ fun EditShoppingListScreen(
 @Composable
 fun ShoppingItemEditCard(
     item: com.grupo03.solea.data.models.ShoppingItem,
+    userCurrency: String = "USD",
     onDelete: () -> Unit,
     canDelete: Boolean
 ) {
-    val currencySymbol = CurrencyUtils.getDeviceCurrencySymbol()
+    val currencySymbol = CurrencyUtils.getCurrencySymbol(userCurrency)
     val isBought = item.isBought
 
     Card(

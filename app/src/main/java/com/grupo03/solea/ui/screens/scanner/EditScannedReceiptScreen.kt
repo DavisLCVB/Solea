@@ -89,23 +89,67 @@ fun EditScannedReceiptScreen(
     var convertToUserCurrency by remember { mutableStateOf(needsConversion) }
     var showNewCategoryDialog by remember { mutableStateOf(false) }
     var newCategoryName by remember { mutableStateOf("") }
+    var suggestedCategoryProcessed by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
     val aiCategoryDescription = stringResource(R.string.ai_suggested_category_description)
     val locale = java.util.Locale.getDefault()
 
-    LaunchedEffect(scannedReceipt.suggestedCategory, formState.value.categories) {
-        if (selectedCategory == null &&
-            !scannedReceipt.suggestedCategory.isNullOrBlank() &&
-            formState.value.categories.isNotEmpty()) {
+    // Check suggested category - wait for categories to be fetched (even if empty)
+    var categoriesFetched by remember { mutableStateOf(false) }
+
+    LaunchedEffect(userId) {
+        newMovementFormViewModel.fetchCategories(userId)
+        // Small delay to ensure fetch completes
+        kotlinx.coroutines.delay(500)
+        categoriesFetched = true
+    }
+
+    LaunchedEffect(
+        scannedReceipt.suggestedCategory,
+        categoriesFetched,
+        formState.value.categories.size,
+        suggestedCategoryProcessed
+    ) {
+        android.util.Log.d("EditScannedReceipt", "LaunchedEffect triggered")
+        android.util.Log.d("EditScannedReceipt", "suggestedCategory: ${scannedReceipt.suggestedCategory}")
+        android.util.Log.d("EditScannedReceipt", "categories count: ${formState.value.categories.size}")
+        android.util.Log.d("EditScannedReceipt", "categoriesFetched: $categoriesFetched")
+        android.util.Log.d("EditScannedReceipt", "selectedCategory: $selectedCategory")
+        android.util.Log.d("EditScannedReceipt", "suggestedCategoryProcessed: $suggestedCategoryProcessed")
+
+        // Wait until categories fetch attempt is complete
+        if (!categoriesFetched) {
+            android.util.Log.d("EditScannedReceipt", "Categories fetch not completed yet, waiting...")
+            return@LaunchedEffect
+        }
+
+        // Only process once unless categories list changes
+        if (suggestedCategoryProcessed && selectedCategory != null) {
+            android.util.Log.d("EditScannedReceipt", "Category already processed and selected, skipping...")
+            return@LaunchedEffect
+        }
+
+        if (!scannedReceipt.suggestedCategory.isNullOrBlank()) {
             val suggested = scannedReceipt.suggestedCategory.trim()
-            val existingCategory = formState.value.categories.find {
-                it.name.trim().equals(suggested, ignoreCase = true)
+            android.util.Log.d("EditScannedReceipt", "Searching for suggested category: '$suggested'")
+
+            // Check if category exists (only if there are categories)
+            val existingCategory = if (formState.value.categories.isNotEmpty()) {
+                formState.value.categories.find {
+                    it.name.trim().equals(suggested, ignoreCase = true)
+                }
+            } else {
+                null
             }
 
             if (existingCategory != null) {
+                android.util.Log.d("EditScannedReceipt", "Found existing category: ${existingCategory.name}")
                 selectedCategory = existingCategory
-            } else {
+                suggestedCategoryProcessed = true
+            } else if (!suggestedCategoryProcessed || selectedCategory == null) {
+                android.util.Log.d("EditScannedReceipt", "Category not found, showing dialog to create: '$suggested'")
+                android.util.Log.d("EditScannedReceipt", "Available categories: ${formState.value.categories.map { it.name }}")
                 newCategoryName = suggested
                 showNewCategoryDialog = true
             }
@@ -135,10 +179,6 @@ fun EditScannedReceiptScreen(
             currentCurrency = scannedReceipt.currency
             editableItems = scannedReceipt.items
         }
-    }
-
-    LaunchedEffect(userId) {
-        newMovementFormViewModel.fetchCategories(userId)
     }
 
     Scaffold(
@@ -455,6 +495,7 @@ fun EditScannedReceiptScreen(
                                 onSuccess = {
                                     newMovementFormViewModel.fetchCategories(userId)
                                     showNewCategoryDialog = false
+                                    suggestedCategoryProcessed = true
 
                                     coroutineScope.launch {
                                         delay(500)

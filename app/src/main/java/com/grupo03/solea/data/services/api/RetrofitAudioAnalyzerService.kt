@@ -42,7 +42,7 @@ class RetrofitAudioAnalyzerService : AudioAnalyzerService {
     private val api: AudioAnalyzerApi
     private val gson = Gson()
 
-    private fun buildPrompt(categories: List<Category>, defaultCurrency: String): String {
+    private fun buildPrompt(categories: List<Category>, defaultCurrency: String, language: String): String {
         val categoriesSection = if (categories.isNotEmpty() && categories.size <= 15) {
             val categoriesList = categories.take(15).joinToString(", ") { "\"${it.name}\"" }
             "Categories: $categoriesList. "
@@ -50,8 +50,16 @@ class RetrofitAudioAnalyzerService : AudioAnalyzerService {
             ""
         }
 
+        val languageInstruction = when (language) {
+            "es" -> "Respond in Spanish. Transcription and description should be in Spanish."
+            "en" -> "Respond in English. Transcription and description should be in English."
+            else -> "Respond in the same language as the audio."
+        }
+
         return """
 Transcribe and extract financial data from this audio. Return ONLY valid JSON, no markdown.
+
+$languageInstruction
 
 Rules:
 - Don't invent data. Use null if uncertain.
@@ -101,12 +109,13 @@ ${categoriesSection}Return ONLY the JSON.
     override suspend fun analyzeAudio(
         audioFile: File,
         categories: List<Category>,
-        defaultCurrency: String
+        defaultCurrency: String,
+        language: String
     ): Result<AnalyzedVoiceNoteResponse> {
         return try {
             Log.d("AudioAnalyzer", "Analyzing audio: ${audioFile.name} (${audioFile.length()} bytes)")
 
-            val promptText = buildPrompt(categories, defaultCurrency)
+            val promptText = buildPrompt(categories, defaultCurrency, language)
 
             val mimeType = when {
                 audioFile.name.endsWith(".mp3", ignoreCase = true) -> "audio/mpeg"

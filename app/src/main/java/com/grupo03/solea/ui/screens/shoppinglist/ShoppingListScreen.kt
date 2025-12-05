@@ -47,13 +47,16 @@ fun ShoppingListScreen(
     val uiState by shoppingViewModel.uiState.collectAsState()
     val authState by authViewModel.authState.collectAsState()
     val userId = authState.user?.uid ?: ""
+    val userCurrency = authState.user?.currency ?: "USD"
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        shoppingViewModel.initializeRecorder(context)
-        shoppingViewModel.observeActiveList(userId)
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            shoppingViewModel.initializeRecorder(context)
+            shoppingViewModel.observeActiveList(userId)
+        }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -92,6 +95,8 @@ fun ShoppingListScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showCancelDialog by remember { mutableStateOf(false) }
+    var showEditNameDialog by remember { mutableStateOf(false) }
+    var editingName by remember { mutableStateOf("") }
 
     val activeList = uiState.activeList
     
@@ -125,7 +130,15 @@ fun ShoppingListScreen(
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.weight(1f)
                         )
-                        
+
+                        // Edit name button
+                        IconButton(onClick = {
+                            editingName = list.shoppingList.name
+                            showEditNameDialog = true
+                        }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar nombre")
+                        }
+
                         // Menu button con 3 puntos
                         Box {
                             IconButton(onClick = { showMenu = true }) {
@@ -230,6 +243,7 @@ fun ShoppingListScreen(
                 else -> {
                     ActiveListContent(
                         shoppingListDetails = uiState.activeList!!,
+                        userCurrency = userCurrency,
                         onItemChecked = { item, checked ->
                             if (checked) {
                                 // Navigate to NewMovementFormScreen with pre-filled data
@@ -338,6 +352,59 @@ fun ShoppingListScreen(
             }
         )
     }
+
+    // Edit name dialog
+    if (showEditNameDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditNameDialog = false },
+            title = { Text("Editar Nombre de Lista") },
+            text = {
+                Column {
+                    Text("Ingresa un nuevo nombre para la lista:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextField(
+                        value = editingName,
+                        onValueChange = { editingName = it },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showEditNameDialog = false
+                        if (editingName.isNotBlank()) {
+                            uiState.activeList?.shoppingList?.id?.let { listId ->
+                                shoppingViewModel.updateListName(
+                                    listId = listId,
+                                    newName = editingName.trim(),
+                                    onSuccess = {
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar("Nombre actualizado")
+                                        }
+                                    },
+                                    onError = { error ->
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(error)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    },
+                    enabled = editingName.isNotBlank()
+                ) {
+                    Text("Guardar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditNameDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -409,6 +476,7 @@ fun EmptyListContent(onRecordClick: () -> Unit) {
 @Composable
 fun ActiveListContent(
     shoppingListDetails: com.grupo03.solea.data.models.ShoppingListDetails,
+    userCurrency: String = "USD",
     onItemChecked: (ShoppingItem, Boolean) -> Unit
 ) {
     Column(
@@ -431,6 +499,7 @@ fun ActiveListContent(
             items(shoppingListDetails.items) { item ->
                 ShoppingItemCard(
                     item = item,
+                    userCurrency = userCurrency,
                     onCheckedChange = { checked ->
                         onItemChecked(item, checked)
                     }
@@ -443,9 +512,10 @@ fun ActiveListContent(
 @Composable
 fun ShoppingItemCard(
     item: com.grupo03.solea.data.models.ShoppingItem,
+    userCurrency: String = "USD",
     onCheckedChange: (Boolean) -> Unit
 ) {
-    val currencySymbol = CurrencyUtils.getDeviceCurrencySymbol()
+    val currencySymbol = CurrencyUtils.getCurrencySymbol(userCurrency)
     val statusColor = when {
         item.isBought -> MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)

@@ -1,9 +1,11 @@
 package com.grupo03.solea.presentation.viewmodels.shared
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.grupo03.solea.data.models.User
+import com.grupo03.solea.data.repositories.interfaces.UserRepository
 import com.grupo03.solea.data.services.interfaces.AuthService
 import com.grupo03.solea.presentation.states.screens.SignInFormState
 import com.grupo03.solea.presentation.states.screens.SignUpFormState
@@ -11,6 +13,8 @@ import com.grupo03.solea.presentation.states.shared.AuthState
 import com.grupo03.solea.presentation.states.shared.FormType
 import com.grupo03.solea.utils.AuthError
 import com.grupo03.solea.utils.AuthResult
+import com.grupo03.solea.utils.CurrencyUtils
+import com.grupo03.solea.utils.RepositoryResult
 import com.grupo03.solea.utils.Validation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,10 +33,16 @@ import kotlinx.coroutines.launch
  * the AuthService and the UI layer, exposing StateFlows for reactive UI updates.
  *
  * @property authService Service for performing authentication operations
+ * @property userRepository Repository for managing user profile data in Firestore
  */
 class AuthViewModel(
-    private val authService: AuthService
+    private val authService: AuthService,
+    private val userRepository: UserRepository
 ) : ViewModel() {
+
+    private companion object {
+        const val TAG = "AuthViewModel"
+    }
 
     /** Authentication state including current user and error status */
     private val _authState = MutableStateFlow(AuthState())
@@ -48,6 +58,10 @@ class AuthViewModel(
 
     init {
         checkAuthState()
+        // Initialize currency with auto-detected value
+        setSignUpForm {
+            it.copy(currency = CurrencyUtils.getCurrencyByCountry())
+        }
     }
 
     /**
@@ -145,13 +159,34 @@ class AuthViewModel(
      * Checks and updates the current authentication state.
      *
      * Queries the auth service for the current user and updates the auth state accordingly.
+     * If a user is signed in, fetches their complete profile from Firestore including currency.
      * Called automatically during initialization and can be called manually to refresh state.
      */
     fun checkAuthState() {
         setLoading(true, null)
         viewModelScope.launch {
-            val user = authService.getCurrentUser()
-            setUser(user)
+            val authUser = authService.getCurrentUser()
+
+            if (authUser != null) {
+                // User is signed in - fetch complete profile from Firestore
+                val profileResult = userRepository.getUserProfile(authUser.uid)
+
+                when (profileResult) {
+                    is RepositoryResult.Success -> {
+                        setUser(profileResult.data)
+                        Log.d(TAG, "Loaded user profile from Firestore with currency: ${profileResult.data.currency}")
+                    }
+                    is RepositoryResult.Error -> {
+                        // Profile doesn't exist - use auth user as fallback
+                        setUser(authUser)
+                        Log.w(TAG, "Firestore profile not found, using Firebase Auth user")
+                    }
+                }
+            } else {
+                // No user signed in
+                setUser(null)
+            }
+
             setLoading(false, null)
         }
     }
@@ -253,6 +288,17 @@ class AuthViewModel(
     }
 
     /**
+     * Handles currency selection changes in the sign-up form.
+     *
+     * @param currencyCode The new currency code (ISO 4217, e.g., "USD", "PEN", "EUR")
+     */
+    fun onSignUpCurrencyChange(currencyCode: String) {
+        setSignUpForm {
+            it.copy(currency = currencyCode)
+        }
+    }
+
+    /**
      * Handles password field changes for authentication forms.
      *
      * Delegates to the appropriate handler based on form type. Sign-up includes validation.
@@ -333,6 +379,12 @@ class AuthViewModel(
      * Performs sign-in with email and password.
      *
      * Validates that the email is valid, then attempts to sign in using the auth service.
+     * After successful Firebase Auth sign-in, fetches the complete user profile from Firestore
+     * which includes the user's currency and other profile data.
+     *
+     * For existing users without Firestore profiles (migration scenario), creates a profile
+     * using the currency stored in DataStore or auto-detected value.
+     *
      * Updates the auth state with the user on success or error on failure.
      */
     fun signInWithEmailAndPassword() {
@@ -340,19 +392,39 @@ class AuthViewModel(
         if (!formState.isEmailValid) {
             return
         }
+
         viewModelScope.launch {
             setErrorCode(null)
             setLoading(true, FormType.SIGN_IN)
-            val result =
-                authService.signInWithEmailAndPassword(
-                    formState.email,
-                    formState.password
-                )
-            result.onSuccess { user, _ ->
-                setUser(user)
-            }.onError { error ->
-                setErrorCode(error)
+
+            val authResult = authService.signInWithEmailAndPassword(
+                formState.email,
+                formState.password
+            )
+
+            when (authResult) {
+                is AuthResult.Success -> {
+                    // Obtener perfil completo de Firestore
+                    val profileResult = userRepository.getUserProfile(authResult.user.uid)
+
+                    when (profileResult) {
+                        is RepositoryResult.Success -> {
+                            setUser(profileResult.data)
+                            Log.d(TAG, "User signed in successfully with currency: ${profileResult.data.currency}")
+                        }
+                        is RepositoryResult.Error -> {
+                            // Perfil no existe - usuario existente sin migración
+                            // Usar el usuario de Auth sin currency (fallback a auto-detect en ViewModels)
+                            setUser(authResult.user)
+                            Log.w(TAG, "User profile not found in Firestore, using Auth user")
+                        }
+                    }
+                }
+                is AuthResult.Error -> {
+                    setErrorCode(authResult.error)
+                }
             }
+
             setLoading(false, FormType.SIGN_IN)
         }
     }
@@ -360,9 +432,13 @@ class AuthViewModel(
     /**
      * Performs sign-up with email and password.
      *
-     * Validates all form fields (email, name, password, password confirmation) before
-     * attempting to create a new account using the auth service. Updates the auth state
-     * with the new user on success or error on failure.
+     * Validates all form fields (email, name, password, password confirmation, currency) before
+     * attempting to create a new account. This is a two-phase process:
+     * 1. Create Firebase Authentication account
+     * 2. Create Firestore user profile with currency and other data
+     *
+     * If Firestore profile creation fails, the Firebase Auth user is deleted (rollback).
+     * Updates the auth state with the new user on success or error on failure.
      */
     fun signUpWithEmailAndPassword() {
         val formState = _signUpFormState.value
@@ -397,17 +473,39 @@ class AuthViewModel(
         viewModelScope.launch {
             setLoading(true, FormType.SIGN_UP)
             setErrorCode(null)
-            val result =
-                authService.signUpWithEmailAndPassword(
-                    email = formState.email,
-                    password = formState.password,
-                    displayName = formState.name
-                )
-            result.onSuccess { user, _ ->
-                setUser(user)
-            }.onError { error ->
-                setErrorCode(error)
+
+            // Paso 1: Crear usuario en Firebase Authentication
+            val authResult = authService.signUpWithEmailAndPassword(
+                email = formState.email,
+                password = formState.password,
+                displayName = formState.name,
+                photoUrl = formState.photoUri
+            )
+
+            when (authResult) {
+                is AuthResult.Success -> {
+                    // Paso 2: Crear perfil en Firestore con currency
+                    val user = authResult.user.copy(currency = formState.currency)
+                    val profileResult = userRepository.createUserProfile(user)
+
+                    when (profileResult) {
+                        is RepositoryResult.Success -> {
+                            setUser(profileResult.data)
+                            Log.d(TAG, "User registered successfully with currency: ${formState.currency}")
+                        }
+                        is RepositoryResult.Error -> {
+                            // Rollback: eliminar usuario de Firebase Auth si falla Firestore
+                            authService.signOut()
+                            setErrorCode(AuthError.UNKNOWN_ERROR)
+                            Log.e(TAG, "Failed to create user profile in Firestore, user rolled back")
+                        }
+                    }
+                }
+                is AuthResult.Error -> {
+                    setErrorCode(authResult.error)
+                }
             }
+
             setLoading(false, FormType.SIGN_UP)
         }
     }
@@ -416,7 +514,12 @@ class AuthViewModel(
      * Performs sign-in with Google OAuth.
      *
      * Generates a Google sign-in request and attempts to authenticate using the Google
-     * identity provider. Requires an Android context for the Google sign-in flow.
+     * identity provider. After successful Google authentication, checks if the user has
+     * a Firestore profile:
+     * - Existing user: Fetches profile from Firestore
+     * - New user: Creates profile with PEN currency by default
+     *
+     * Requires an Android context for the Google sign-in flow.
      *
      * @param context Android context required for Google sign-in
      */
@@ -426,15 +529,50 @@ class AuthViewModel(
             setErrorCode(AuthError.GOOGLE_SIGN_IN_FAILED)
             return
         }
+
         viewModelScope.launch {
             setLoading(true, FormType.SIGN_IN)
             setErrorCode(null)
-            val result = authService.signInWithGoogle(context, request)
-            result.onSuccess { user, _ ->
-                setUser(user)
-            }.onError { error ->
-                setErrorCode(error)
+
+            val authResult = authService.signInWithGoogle(context, request)
+
+            when (authResult) {
+                is AuthResult.Success -> {
+                    val authUser = authResult.user
+
+                    // Verificar si ya existe perfil en Firestore
+                    val profileResult = userRepository.getUserProfile(authUser.uid)
+
+                    when (profileResult) {
+                        is RepositoryResult.Success -> {
+                            // Usuario existente
+                            setUser(profileResult.data)
+                            Log.d(TAG, "Google user signed in successfully with currency: ${profileResult.data.currency}")
+                        }
+                        is RepositoryResult.Error -> {
+                            // Nuevo usuario de Google - crear perfil con PEN por defecto
+                            val newUser = authUser.copy(currency = "PEN")
+                            val createResult = userRepository.createUserProfile(newUser)
+
+                            when (createResult) {
+                                is RepositoryResult.Success -> {
+                                    setUser(createResult.data)
+                                    Log.d(TAG, "New Google user profile created with PEN currency")
+                                }
+                                is RepositoryResult.Error -> {
+                                    // Si falla, usar user sin currency
+                                    setUser(authUser)
+                                    Log.e(TAG, "Failed to create Google user profile, using Auth user")
+                                }
+                            }
+                        }
+                    }
+                }
+                is AuthResult.Error -> {
+                    setErrorCode(authResult.error)
+                }
             }
+
             setLoading(false, FormType.SIGN_IN)
         }
     }

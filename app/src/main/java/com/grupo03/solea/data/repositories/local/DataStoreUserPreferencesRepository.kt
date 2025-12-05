@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.grupo03.solea.data.repositories.interfaces.UserPreferencesRepository
@@ -21,7 +22,7 @@ class DataStoreUserPreferencesRepository(
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val DARK_THEME = booleanPreferencesKey("dark_theme")
         val LANGUAGE = stringPreferencesKey("language")
-        val CURRENCY = stringPreferencesKey("currency")
+        val LAST_MOVEMENTS_REFRESH = longPreferencesKey("last_movements_refresh")
     }
 
     override suspend fun saveNotificationsEnabled(enabled: Boolean) {
@@ -60,21 +61,15 @@ class DataStoreUserPreferencesRepository(
         }
     }
 
-    override suspend fun saveCurrency(currencyCode: String) {
+    override suspend fun saveLastMovementsRefresh(timestamp: Long) {
         context.dataStore.edit { preferences ->
-            preferences[CURRENCY] = currencyCode
+            preferences[LAST_MOVEMENTS_REFRESH] = timestamp
         }
     }
 
-    override fun getCurrency(): Flow<String?> {
+    override fun getLastMovementsRefresh(): Flow<Long> {
         return context.dataStore.data.map { preferences ->
-            preferences[CURRENCY]
-        }
-    }
-
-    override suspend fun clearCurrency() {
-        context.dataStore.edit { preferences ->
-            preferences.remove(CURRENCY)
+            preferences[LAST_MOVEMENTS_REFRESH] ?: 0L
         }
     }
 

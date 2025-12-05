@@ -35,7 +35,9 @@ fun ShoppingListHistoryScreen(
     onNavigateToViewList: (String) -> Unit = {}
 ) {
     val uiState by shoppingViewModel.uiState.collectAsState()
-    val userId = authViewModel.authState.collectAsState().value.user?.uid ?: ""
+    val authState by authViewModel.authState.collectAsState()
+    val userId = authState.user?.uid ?: ""
+    val userCurrency = authState.user?.currency ?: "USD"
 
     LaunchedEffect(Unit) {
         shoppingViewModel.fetchShoppingListsHistory(userId)
@@ -91,6 +93,7 @@ fun ShoppingListHistoryScreen(
                         ShoppingListHistoryCardWithTotal(
                             shoppingList = list,
                             shoppingViewModel = shoppingViewModel,
+                            userCurrency = userCurrency,
                             onItemClick = {
                                 onNavigateToViewList(list.id)
                             }
@@ -106,6 +109,7 @@ fun ShoppingListHistoryScreen(
 fun ShoppingListHistoryCard(
     shoppingList: com.grupo03.solea.data.models.ShoppingList,
     totalAmount: Double = 0.0,
+    userCurrency: String = "USD",
     onItemClick: () -> Unit
 ) {
     val statusText = when (shoppingList.status) {
@@ -119,8 +123,8 @@ fun ShoppingListHistoryCard(
         ShoppingListStatus.CANCELLED -> MaterialTheme.colorScheme.onSurfaceVariant // Plomo/gris
         ShoppingListStatus.ACTIVE -> MaterialTheme.colorScheme.secondary
     }
-    
-    val currencySymbol = CurrencyUtils.getDeviceCurrencySymbol()
+
+    val currencySymbol = CurrencyUtils.getCurrencySymbol(userCurrency)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -177,12 +181,13 @@ fun ShoppingListHistoryCard(
 fun ShoppingListHistoryCardWithTotal(
     shoppingList: com.grupo03.solea.data.models.ShoppingList,
     shoppingViewModel: ShoppingViewModel,
+    userCurrency: String = "USD",
     onItemClick: () -> Unit
 ) {
     var totalAmount by remember { mutableStateOf(0.0) }
     val shoppingListRepository: ShoppingListRepository = koinInject()
     val scope = rememberCoroutineScope()
-    
+
     LaunchedEffect(shoppingList.id) {
         // Fetch items to calculate total
         scope.launch {
@@ -194,10 +199,11 @@ fun ShoppingListHistoryCardWithTotal(
             }
         }
     }
-    
+
     ShoppingListHistoryCard(
         shoppingList = shoppingList,
         totalAmount = totalAmount,
+        userCurrency = userCurrency,
         onItemClick = onItemClick
     )
 }

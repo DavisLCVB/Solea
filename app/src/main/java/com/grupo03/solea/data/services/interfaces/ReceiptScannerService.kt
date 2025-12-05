@@ -26,12 +26,14 @@ interface ReceiptScannerService {
      * @param categories List of available categories (both default and user-created)
      *                   to help the AI suggest the most appropriate category
      * @param defaultCurrency Default currency code for the device locale (e.g., "PEN", "USD")
+     * @param language User's preferred language code (e.g., "en", "es") for AI responses
      * @return Result containing ScannedReceiptResponse with extracted data on success,
      *         or an error if scanning fails
      */
     suspend fun scanReceipt(
         imageFile: File,
         categories: List<Category> = emptyList(),
-        defaultCurrency: String = "USD"
+        defaultCurrency: String = "PEN",
+        language: String = "es"
     ): Result<ScannedReceiptResponse>
 }
