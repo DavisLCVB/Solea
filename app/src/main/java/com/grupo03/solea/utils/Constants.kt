@@ -56,5 +56,5 @@ object AIConstants {
      * Base URL for the receipt scanner API.
      * This API uses AI/OCR to extract data from receipt images.
      */
-    const val RECEIPT_SCANNER_API_URL = "https://solea-backend.vercel.app/api/"
+    const val RECEIPT_SCANNER_API_URL = "https://solea-analyzer.onrender.com/api/"
 }

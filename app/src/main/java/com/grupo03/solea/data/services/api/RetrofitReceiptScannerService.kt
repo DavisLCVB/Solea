@@ -96,11 +96,35 @@ Return ONLY JSON, no markdown.
 
     init {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
+        // Interceptor to log request URL and headers for debugging network issues
+        val debugInterceptor = okhttp3.Interceptor { chain ->
+            var request = chain.request()
+
+            // Add Origin header for debugging (some WAFs treat requests without Origin differently)
+            if (request.header("Origin") == null) {
+                request = request.newBuilder()
+                    .header("Origin", "https://solea-analyzer.onrender.com")
+                    .build()
+                android.util.Log.d("ReceiptScanner-HTTP", "Added Origin header for debug")
+            }
+
+            android.util.Log.d("ReceiptScanner-HTTP", "Request: ${request.method} ${request.url}")
+            for (name in request.headers.names()) {
+                android.util.Log.d("ReceiptScanner-HTTP", "Request-Header: $name: ${request.header(name)}")
+            }
+            val response = chain.proceed(request)
+            android.util.Log.d("ReceiptScanner-HTTP", "Response: ${response.code} ${response.message}")
+            val respBody = response.peekBody(1024 * 8)
+            android.util.Log.d("ReceiptScanner-HTTP", "Response-Body (truncated): ${respBody.string()}")
+            response
         }
 
         val client = OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
+            .addInterceptor(debugInterceptor)
             .connectTimeout(45, TimeUnit.SECONDS)
             .readTimeout(120, TimeUnit.SECONDS)
             .writeTimeout(120, TimeUnit.SECONDS)

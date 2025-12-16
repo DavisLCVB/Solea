@@ -2,7 +2,7 @@
 
 Documentación completa de la API REST para el analizador multimodal con Gemini AI.
 
-**Base URL**: `http://localhost:3000` (desarrollo) / `https://solea-backend.vercel.app` (producción)
+**Base URL**: `http://localhost:3000` (desarrollo) / `https://solea-analyzer.onrender.com` (producción)
 
 ---
 

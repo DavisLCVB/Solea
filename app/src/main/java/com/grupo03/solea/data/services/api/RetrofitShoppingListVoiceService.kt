@@ -74,11 +74,33 @@ Return ONLY the JSON, no markdown, no code blocks.
 
     init {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
+        val debugInterceptor = okhttp3.Interceptor { chain ->
+            var request = chain.request()
+
+            if (request.header("Origin") == null) {
+                request = request.newBuilder()
+                    .header("Origin", "https://solea-analyzer.onrender.com")
+                    .build()
+                android.util.Log.d("ShoppingListVoice-HTTP", "Added Origin header for debug")
+            }
+
+            android.util.Log.d("ShoppingListVoice-HTTP", "Request: ${request.method} ${request.url}")
+            for (name in request.headers.names()) {
+                android.util.Log.d("ShoppingListVoice-HTTP", "Request-Header: $name: ${request.header(name)}")
+            }
+            val response = chain.proceed(request)
+            android.util.Log.d("ShoppingListVoice-HTTP", "Response: ${response.code} ${response.message}")
+            val respBody = response.peekBody(1024 * 8)
+            android.util.Log.d("ShoppingListVoice-HTTP", "Response-Body (truncated): ${respBody.string()}")
+            response
         }
 
         val client = OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
+            .addInterceptor(debugInterceptor)
             .connectTimeout(60, TimeUnit.SECONDS)
             .readTimeout(180, TimeUnit.SECONDS)
             .writeTimeout(180, TimeUnit.SECONDS)
