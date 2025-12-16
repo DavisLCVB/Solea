@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Savings
@@ -172,15 +173,17 @@ fun SavingsScreen(
             AddMoneyToGoalDialog(
                 goal = selectedGoal!!,
                 availableBalance = currentBalance,
+                userCurrency = userCurrency,
                 onDismiss = { showAddMoneyDialog = false },
-                onConfirm = { amount ->
+                    onConfirm = { amount ->
                     val userUid = authState.value.user?.uid ?: return@AddMoneyToGoalDialog
 
                     savingsViewModel.addMoneyToGoal(
                         userUid = userUid,
                         goalId = selectedGoal!!.id,
                         amount = amount,
-                        currentBalance = currentBalance
+                        currentBalance = currentBalance,
+                        currency = userCurrency
                     )
 
                     savingsViewModel.updateUiAfterAddingMoney(selectedGoal!!.id, amount)
@@ -206,7 +209,6 @@ fun GoalCard(
     val incomeColor = MaterialTheme.soleaColors.income
     val chartBlue = MaterialTheme.soleaColors.chartBlue
 
-    var showMenu by remember { mutableStateOf(false) }
     val progress = goal.progress()
     val color = when {
         goal.isCompleted -> incomeColor
@@ -218,6 +220,7 @@ fun GoalCard(
     val formattedDate = goal.deadline.atZone(java.time.ZoneId.systemDefault()).toLocalDate().format(dateFormatter)
 
     Card(
+        onClick = onAddMoneyClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
@@ -273,27 +276,12 @@ fun GoalCard(
                 }
             }
             Box {
-                IconButton(onClick = { showMenu = true }) {
+                IconButton(onClick = { onEditClick() }) {
                     Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = stringResource(R.string.options),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.goal_edit)) },
-                        onClick = { onEditClick(); showMenu = false })
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.goal_save)) },
-                        onClick = { onAddMoneyClick(); showMenu = false })
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.goal_complete)) },
-                        onClick = { onCompleteClick(); showMenu = false },
-                        enabled = !goal.isCompleted
+                        Icons.Default.Edit,
+                        contentDescription = stringResource(R.string.goal_edit),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    /*DropdownMenuItem(
-                        text = { Text(stringResource(R.string.goal_deactivate)) },
-                        onClick = { onDeactivateClick(); showMenu = false })*/
                 }
             }
         }

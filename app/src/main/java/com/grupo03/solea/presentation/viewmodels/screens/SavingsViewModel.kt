@@ -73,7 +73,7 @@ class SavingsViewModel(
         _formState.update { it.copy(deadline = deadline) }
     }
 
-    fun saveGoal(userUid: String, onSuccess: () -> Unit) {
+    fun saveGoal(userUid: String, userCurrency: String? = null, onSuccess: () -> Unit) {
         val currentState = _formState.value
         if (!currentState.isNameValid || !currentState.isAmountValid || currentState.name.isBlank() || currentState.targetAmount.isBlank()) return
 
@@ -89,7 +89,8 @@ class SavingsViewModel(
                 name = currentState.name,
                 targetAmount = currentState.targetAmount.toDouble(),
                 deadline = currentState.deadline,
-                createdAt = java.time.LocalDateTime.now()
+                createdAt = java.time.LocalDateTime.now(),
+                currency = userCurrency ?: currentState.existingGoal?.currency ?: "USD"
             )
 
             val result = if (currentState.existingGoal != null) {
@@ -138,7 +139,7 @@ class SavingsViewModel(
             }
         }
     }
-    fun addMoneyToGoal(userUid: String, goalId: String, amount: Double, currentBalance: Double) {
+    fun addMoneyToGoal(userUid: String, goalId: String, amount: Double, currentBalance: Double, currency: String? = null) {
         viewModelScope.launch {
             if (amount > currentBalance) {
                 _uiState.update { it.copy(error = SavingsGoalError.INVALID_AMOUNT) }
@@ -156,7 +157,7 @@ class SavingsViewModel(
                 name = "Ahorro para '${goal.name}'",
                 description = "Ahorro para meta",
                 datetime = LocalDateTime.now(),
-                currency = goal.currency,
+                currency = currency ?: goal.currency,
                 total = amount,
                 category = "Ahorros",
                 createdAt = LocalDateTime.now()

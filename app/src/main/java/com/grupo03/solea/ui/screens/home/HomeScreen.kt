@@ -234,7 +234,7 @@ fun HomeScreenContent(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Balance Card
+            // Balance Card stays fixed
             BalanceCard(
                 currentBalance = balance,
                 income = totalIncome,
@@ -242,139 +242,146 @@ fun HomeScreenContent(
                 currency = currency
             )
 
-            // Income vs Expenses Chart
-            ChartCard(
-                income = totalIncome,
-                expenses = totalExpense,
-                currency = currency,
-                onClick = onNavigateToStatistics
-            )
-
-            // Section title
-            SectionTitle(
-                text = stringResource(R.string.home_last_movements),
-                icon = Icons.Default.History
-            )
-
-            Box(
+            // Make the chart + movements scrollable as a single area
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Income vs Expenses Chart
+                ChartCard(
+                    income = totalIncome,
+                    expenses = totalExpense,
+                    currency = currency,
+                    onClick = onNavigateToStatistics
+                )
+
+                // Section title
+                SectionTitle(
+                    text = stringResource(R.string.home_last_movements),
+                    icon = Icons.Default.History
+                )
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 20.dp)
-                        .zIndex(10f)
-                        .align(Alignment.TopCenter)
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.background,
-                                    MaterialTheme.colorScheme.background,
-                                    MaterialTheme.colorScheme.background.copy(alpha = 0.7f),
-                                    MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
-                                    MaterialTheme.colorScheme.background.copy(alpha = 0f),
-                                )
-                            ),
-                            shape = RectangleShape
-                        )
-                )
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(top = 40.dp, bottom = 40.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    allMovements.forEach { movementItem ->
-                        when (movementItem) {
-                            is MovementItem.IncomeItem -> {
-                                Card(
-                                    onClick = {
-                                        homeViewModel?.onMovementSelected(
-                                            movementItem.incomeDetails.toHistoryMovementItem()
-                                        )
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 10.dp)
+                            .zIndex(10f)
+                            .align(Alignment.TopCenter)
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.background,
+                                        MaterialTheme.colorScheme.background,
+                                        MaterialTheme.colorScheme.background.copy(alpha = 0.7f),
+                                        MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
+                                        MaterialTheme.colorScheme.background.copy(alpha = 0f),
                                     )
-                                ) {
-                                    MovementCard(
-                                        incomeDetails = movementItem.incomeDetails,
-                                        expenseDetails = null,
-                                        category = Category()
-                                    )
-                                }
-                            }
+                                ),
+                                shape = RectangleShape
+                            )
+                    )
 
-                            is MovementItem.ExpenseItem -> {
-                                Card(
-                                    onClick = {
-                                        homeViewModel?.onMovementSelected(
-                                            movementItem.expenseDetails.toHistoryMovementItem()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp, bottom = 40.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        allMovements.forEach { movementItem ->
+                            when (movementItem) {
+                                is MovementItem.IncomeItem -> {
+                                    Card(
+                                        onClick = {
+                                            homeViewModel?.onMovementSelected(
+                                                movementItem.incomeDetails.toHistoryMovementItem()
+                                            )
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainer
                                         )
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                                    )
-                                ) {
-                                    MovementCard(
-                                        incomeDetails = null,
-                                        expenseDetails = movementItem.expenseDetails,
-                                        category = Category()
-                                    )
+                                    ) {
+                                        MovementCard(
+                                            incomeDetails = movementItem.incomeDetails,
+                                            expenseDetails = null,
+                                            category = Category()
+                                        )
+                                    }
                                 }
-                            }
 
-                            is MovementItem.SaveItem -> {
-                                Card(
-                                    onClick = {
-                                        homeViewModel?.onMovementSelected(
-                                            movementItem.saveDetails.toHistoryMovementItem()
+                                is MovementItem.ExpenseItem -> {
+                                    Card(
+                                        onClick = {
+                                            homeViewModel?.onMovementSelected(
+                                                movementItem.expenseDetails.toHistoryMovementItem()
+                                            )
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainer
                                         )
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                                    )
-                                ) {
-                                    MovementCard(
-                                        incomeDetails = null,
-                                        expenseDetails = null,
-                                        saveDetails = movementItem.saveDetails,
-                                        category = Category()
-                                    )
+                                    ) {
+                                        MovementCard(
+                                            incomeDetails = null,
+                                            expenseDetails = movementItem.expenseDetails,
+                                            category = Category()
+                                        )
+                                    }
+                                }
+
+                                is MovementItem.SaveItem -> {
+                                    Card(
+                                        onClick = {
+                                            homeViewModel?.onMovementSelected(
+                                                movementItem.saveDetails.toHistoryMovementItem()
+                                            )
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                        )
+                                    ) {
+                                        MovementCard(
+                                            incomeDetails = null,
+                                            expenseDetails = null,
+                                            saveDetails = movementItem.saveDetails,
+                                            category = Category()
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 20.dp)
-                        .align(Alignment.BottomCenter)
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.background.copy(alpha = 0f),
-                                    MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
-                                    MaterialTheme.colorScheme.background.copy(alpha = 0.7f),
-                                    MaterialTheme.colorScheme.background,
-                                    MaterialTheme.colorScheme.background,
-                                )
-                            ),
-                            shape = RectangleShape
-                        )
-                )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 20.dp)
+                            .align(Alignment.BottomCenter)
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.background.copy(alpha = 0f),
+                                        MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
+                                        MaterialTheme.colorScheme.background.copy(alpha = 0.7f),
+                                        MaterialTheme.colorScheme.background,
+                                        MaterialTheme.colorScheme.background,
+                                    )
+                                ),
+                                shape = RectangleShape
+                            )
+                    )
+                }
             }
         }
 

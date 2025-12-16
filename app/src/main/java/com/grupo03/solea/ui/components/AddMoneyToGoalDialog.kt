@@ -10,12 +10,18 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.unit.dp
 import com.grupo03.solea.data.models.SavingsGoal
 import com.grupo03.solea.utils.CurrencyUtils
@@ -25,12 +31,16 @@ import java.util.Locale
 fun AddMoneyToGoalDialog(
     goal: SavingsGoal,
     availableBalance: Double,
+    userCurrency: String,
     onDismiss: () -> Unit,
     onConfirm: (Double) -> Unit
 ) {
     var amount by remember { mutableStateOf("") }
     var isAmountValid by remember { mutableStateOf(true) }
     var isBalanceSufficient by remember { mutableStateOf(true) }
+
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     val amountAsDouble = amount.toDoubleOrNull()
     val isAmountGreaterThanBalance = amountAsDouble != null && amountAsDouble > availableBalance
@@ -66,7 +76,7 @@ fun AddMoneyToGoalDialog(
                 Text("¿Cuánto quieres agregar a tu meta?")
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Balance disponible: ${CurrencyUtils.getCurrencySymbol(goal.currency)} ${String.format(Locale.getDefault(), "%.2f", availableBalance)}",
+                    text = "Balance disponible: ${CurrencyUtils.getCurrencySymbol(userCurrency)} ${String.format(Locale.getDefault(), "%.2f", availableBalance)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -75,8 +85,10 @@ fun AddMoneyToGoalDialog(
                     value = amount,
                     onValueChange = onAmountChange,
                     label = { Text("Monto") },
-                    leadingIcon = { Text(CurrencyUtils.getCurrencySymbol(goal.currency)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    leadingIcon = { Text(CurrencyUtils.getCurrencySymbol(userCurrency)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { keyboardController?.hide() }),
+                    modifier = Modifier.focusRequester(focusRequester),
                     isError = !isAmountValid || !isBalanceSufficient,
                     supportingText = {
                         when {
@@ -96,6 +108,10 @@ fun AddMoneyToGoalDialog(
                     },
                     singleLine = true
                 )
+                LaunchedEffect(Unit) {
+                    focusRequester.requestFocus()
+                    keyboardController?.show()
+                }
             }
         },
         confirmButton = {

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
@@ -94,8 +95,29 @@ fun AddEditGoalScreen(
                 )
             }
             if (isEditMode) {
-                IconButton(onClick = { showDeleteDialog = true }) {
-                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete), tint = MaterialTheme.colorScheme.error)
+                Row {
+                    val alreadyCompleted = formState.existingGoal?.isCompleted == true
+                    IconButton(
+                        onClick = {
+                            formState.existingGoal?.id?.let { id ->
+                                if (!alreadyCompleted) {
+                                    savingsViewModel.markAsCompleted(id)
+                                    onSaveSuccess()
+                                }
+                            }
+                        },
+                        enabled = !alreadyCompleted
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = stringResource(R.string.goal_complete),
+                            tint = if (alreadyCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    IconButton(onClick = { showDeleteDialog = true }) {
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete), tint = MaterialTheme.colorScheme.error)
+                    }
                 }
             }
         }
@@ -164,7 +186,7 @@ fun AddEditGoalScreen(
 
             // --- Action Buttons ---
             Button(
-                onClick = { user?.uid?.let { savingsViewModel.saveGoal(it, onSaveSuccess) } },
+                onClick = { user?.uid?.let { savingsViewModel.saveGoal(it, userCurrency, onSaveSuccess) } },
                 enabled = formState.name.isNotBlank() && formState.targetAmount.isNotBlank() && formState.isAmountValid && !formState.isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
