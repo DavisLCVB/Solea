@@ -124,6 +124,9 @@
     <string name="error_receipt_network_error">Error: ¡Error de red!</string>
     <string name="error_receipt_unknown">Error: ¡Falló la operación del recibo!</string>
 
+    <!-- Receipt UI -->
+    <string name="receipt_items_label">Artículos del recibo: %1$s</string>
+
     <!-- Item Errors -->
     <string name="error_item_not_found">Error: ¡Artículo no encontrado!</string>
     <string name="error_item_creation_failed">Error: ¡Falló la creación del artículo!</string>

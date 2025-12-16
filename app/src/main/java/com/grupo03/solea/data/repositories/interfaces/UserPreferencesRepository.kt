@@ -72,4 +72,16 @@ interface UserPreferencesRepository {
      * This resets all settings to their default values.
      */
     suspend fun clearAllPreferences()
+
+    /**
+     * Quick-start preference: whether to open a quick action on app start
+     */
+    suspend fun saveQuickStartEnabled(enabled: Boolean)
+    fun getQuickStartEnabled(): Flow<Boolean>
+
+    /**
+     * Quick-start target: "receipt" | "voice"
+     */
+    suspend fun saveQuickStartTarget(target: String)
+    fun getQuickStartTarget(): Flow<String>
 }

@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.grupo03.solea.R
 import com.grupo03.solea.data.models.MovementType
+import com.grupo03.solea.data.models.SourceDetails
+import com.grupo03.solea.data.models.Item
 import com.grupo03.solea.presentation.states.screens.HistoryMovementItem
 import com.grupo03.solea.ui.theme.soleaGreen
 import com.grupo03.solea.ui.theme.soleaRed
@@ -154,19 +156,19 @@ fun MovementDetailsModal(
                     }
 
                     // Goal info (for savings)
-                    if (isSaving && movement is HistoryMovementItem.SaveItem) {
-                        DetailRow(
-                            icon = {
-                                Icon(
-                                    Icons.Default.MonetizationOn,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            label = "Meta de Ahorro",
-                            value = "ID: ${movement.saveDetails.save.goalId}"
-                        )
-                    }
+                    // if (isSaving && movement is HistoryMovementItem.SaveItem) {
+                    //     DetailRow(
+                    //         icon = {
+                    //             Icon(
+                    //                 Icons.Default.MonetizationOn,
+                    //                 contentDescription = null,
+                    //                 tint = MaterialTheme.colorScheme.primary
+                    //             )
+                    //         },
+                    //         label = "Meta de Ahorro",
+                    //         value = "ID: ${movement.saveDetails.save.goalId}"
+                    //     )
+                    // }
 
                     // Date
                     DetailRow(
@@ -219,6 +221,58 @@ fun MovementDetailsModal(
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.Medium
                                     )
+                                }
+                            }
+                        }
+                    }
+                    // If this is an expense with a receipt, show receipt items
+                    if (movement is HistoryMovementItem.ExpenseItem) {
+                        val src = movement.expenseDetails.source
+                        if (src is SourceDetails.ReceiptSource && src.items.isNotEmpty()) {
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.receipt_items_label, src.receipt.description),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                src.items.forEach { item: Item ->
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surface
+                                        )
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = item.description.ifEmpty { "-" },
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                                Text(
+                                                    text = "${item.quantity} x ${CurrencyUtils.getCurrencySymbol(item.currency)} ${String.format(Locale.getDefault(), "%.2f", item.unitPrice)}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+
+                                            Text(
+                                                text = "${CurrencyUtils.getCurrencySymbol(item.currency)} ${String.format(Locale.getDefault(), "%.2f", item.totalPrice)}",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
                                 }
                             }
                         }

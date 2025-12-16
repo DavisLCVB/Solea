@@ -416,8 +416,7 @@ class NewMovementFormViewModel(
                                 return@launch
                             }
 
-                            // Process expense entry for shopping list matching
-                            // If shoppingItemId is set, update that specific item
+                            // Process expense entry for shopping list matching using receipt items
                             if (currentState.shoppingItemId != null) {
                                 shoppingListRepository.markItemAsBought(
                                     itemId = currentState.shoppingItemId!!,
@@ -425,8 +424,8 @@ class NewMovementFormViewModel(
                                     realPrice = amount
                                 )
                             } else {
-                                // Otherwise, use fuzzy matching
-                                processExpenseMatching(userId, movement)
+                                // Match individual receipt items against shopping list
+                                processReceiptItemsMatching(userId, currentState.receiptItems, movement)
                             }
                         }
                     }
@@ -482,7 +481,9 @@ class NewMovementFormViewModel(
             }
 
             // Process expense entry matching with shopping list (if expense was created)
-            if (currentState.movementType == MovementType.EXPENSE) {
+            // For receipt-based expenses we already attempted per-item matching above,
+            // so only run the generic movement-name based matching for other expense sources.
+            if (currentState.movementType == MovementType.EXPENSE && currentState.sourceType != SourceType.RECEIPT) {
                 processExpenseMatching(userId, movement)
             }
 
@@ -542,6 +543,58 @@ class NewMovementFormViewModel(
             }
         } catch (e: Exception) {
             // Silently fail - matching is optional
+        }
+    }
+
+    /**
+     * Matches individual receipt items against the active shopping list and marks matches as bought.
+     */
+    private suspend fun processReceiptItemsMatching(
+        userId: String,
+        receiptItems: List<ReceiptItemData>,
+        movement: Movement
+    ) {
+        try {
+            val activeListResult = shoppingListRepository.getActiveShoppingList(userId)
+            if (activeListResult.isError ||
+                activeListResult is RepositoryResult.Success && activeListResult.data == null) {
+                return
+            }
+
+            val activeList = (activeListResult as RepositoryResult.Success).data ?: return
+            val unboughtItems = activeList.items.filter { !it.isBought }
+            if (unboughtItems.isEmpty()) return
+
+            for (receiptItem in receiptItems) {
+                val receiptName = receiptItem.name.lowercase().trim()
+                if (receiptName.isEmpty()) continue
+
+                val qty = receiptItem.quantity.toDoubleOrNull() ?: 1.0
+                val unit = receiptItem.unitPrice.toDoubleOrNull() ?: 0.0
+                val itemRealPrice = qty * unit
+
+                var bestMatch: com.grupo03.solea.data.models.ShoppingItem? = null
+                var bestScore = 0.0
+
+                for (shoppingItem in unboughtItems) {
+                    val itemName = shoppingItem.name.lowercase().trim()
+                    val score = calculateMatchScore(receiptName, itemName)
+                    if (score > bestScore && score >= MATCH_THRESHOLD) {
+                        bestScore = score
+                        bestMatch = shoppingItem
+                    }
+                }
+
+                if (bestMatch != null) {
+                    shoppingListRepository.markItemAsBought(
+                        itemId = bestMatch.id,
+                        movementId = movement.id,
+                        realPrice = itemRealPrice
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore matching failures
         }
     }
 

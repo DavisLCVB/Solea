@@ -64,12 +64,16 @@ class SettingsViewModel(
             combine(
                 userPreferencesRepository.getNotificationsEnabled(),
                 userPreferencesRepository.getDarkTheme(),
-                userPreferencesRepository.getLanguage()
-            ) { notifications, darkTheme, language ->
+                userPreferencesRepository.getLanguage(),
+                userPreferencesRepository.getQuickStartEnabled(),
+                userPreferencesRepository.getQuickStartTarget()
+            ) { notifications, darkTheme, language, quickEnabled, quickTarget ->
                 SettingsState(
                     notificationsEnabled = notifications,
                     isDarkTheme = darkTheme,
-                    selectedLanguage = language
+                    selectedLanguage = language,
+                    quickStartEnabled = quickEnabled,
+                    quickStartTarget = quickTarget
                 )
             }.collect { state ->
                 _uiState.value = state
@@ -119,6 +123,30 @@ class SettingsViewModel(
                     isLoading = false,
                     error = "Error al guardar preferencia de tema"
                 )
+            }
+        }
+    }
+
+    fun toggleQuickStart(enabled: Boolean) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            try {
+                userPreferencesRepository.saveQuickStartEnabled(enabled)
+                _uiState.value = _uiState.value.copy(quickStartEnabled = enabled, isLoading = false)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false, error = "Error al guardar quick start")
+            }
+        }
+    }
+
+    fun saveQuickStartTarget(target: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            try {
+                userPreferencesRepository.saveQuickStartTarget(target)
+                _uiState.value = _uiState.value.copy(quickStartTarget = target, isLoading = false)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false, error = "Error al guardar quick start target")
             }
         }
     }

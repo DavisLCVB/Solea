@@ -22,6 +22,8 @@ class DataStoreUserPreferencesRepository(
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val DARK_THEME = booleanPreferencesKey("dark_theme")
         val LANGUAGE = stringPreferencesKey("language")
+        val QUICK_START_ENABLED = booleanPreferencesKey("quick_start_enabled")
+        val QUICK_START_TARGET = stringPreferencesKey("quick_start_target")
         val LAST_MOVEMENTS_REFRESH = longPreferencesKey("last_movements_refresh")
     }
 
@@ -58,6 +60,30 @@ class DataStoreUserPreferencesRepository(
     override fun getLanguage(): Flow<String> {
         return context.dataStore.data.map { preferences ->
             preferences[LANGUAGE] ?: "es"
+        }
+    }
+
+    override suspend fun saveQuickStartEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[QUICK_START_ENABLED] = enabled
+        }
+    }
+
+    override fun getQuickStartEnabled(): Flow<Boolean> {
+        return context.dataStore.data.map { preferences ->
+            preferences[QUICK_START_ENABLED] ?: false
+        }
+    }
+
+    override suspend fun saveQuickStartTarget(target: String) {
+        context.dataStore.edit { preferences ->
+            preferences[QUICK_START_TARGET] = target
+        }
+    }
+
+    override fun getQuickStartTarget(): Flow<String> {
+        return context.dataStore.data.map { preferences ->
+            preferences[QUICK_START_TARGET] ?: "receipt"
         }
     }
 

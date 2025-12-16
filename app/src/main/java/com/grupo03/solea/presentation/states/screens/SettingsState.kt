@@ -18,6 +18,8 @@ data class SettingsState(
     val notificationsEnabled: Boolean = true,
     val isDarkTheme: Boolean = false,
     val selectedLanguage: String = "es", // "es" o "en"
+    val quickStartEnabled: Boolean = false,
+    val quickStartTarget: String = "receipt", // "receipt" or "voice"
     val isLoading: Boolean = false,
     val error: String? = null,
     val isExporting: Boolean = false,

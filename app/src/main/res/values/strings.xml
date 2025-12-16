@@ -124,6 +124,9 @@
     <string name="error_receipt_network_error">Error: Network error!</string>
     <string name="error_receipt_unknown">Error: Receipt operation failed!</string>
 
+    <!-- Receipt UI -->
+    <string name="receipt_items_label">Receipt items: %1$s</string>
+
     <!-- Item Errors -->
     <string name="error_item_not_found">Error: Item not found!</string>
     <string name="error_item_creation_failed">Error: Failed to create item!</string>
@@ -310,6 +313,10 @@
     <string name="general_title">General</string>
     <string name="dark_theme">Dark Theme</string>
     <string name="dark_theme_label">Dark Theme</string>
+    <string name="quick_start_title">Quick Start (Open on app launch)</string>
+    <string name="quick_start_choose_target">Open directly to:</string>
+    <string name="quick_start_target_receipt">Scan Receipt</string>
+    <string name="quick_start_target_voice">Voice Note</string>
     <string name="about_app">About the app</string>
     <string name="about_app_label">About the app</string>
     <string name="version">Version 1.0.1</string>

@@ -127,6 +127,8 @@ fun MainAppContent(
 ) {
     val scanReceiptViewModel: ScanReceiptViewModel = koinViewModel()
     val audioAnalysisViewModel: AudioAnalysisViewModel = koinViewModel()
+    val settingsViewModel: com.grupo03.solea.presentation.viewmodels.screens.SettingsViewModel = koinViewModel()
+    val settingsState = settingsViewModel.uiState.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -150,6 +152,25 @@ fun MainAppContent(
                 contentPadding = PaddingValues(0.dp)
             )
 
+        }
+    }
+
+    // Quick-start: if enabled, ensure Home is below the quick target so Back returns to Home
+    androidx.compose.runtime.LaunchedEffect(settingsState.value.quickStartEnabled) {
+        if (settingsState.value.quickStartEnabled) {
+            // Ensure Home is on the back stack (push if necessary)
+            navController.navigate(com.grupo03.solea.ui.navigation.AppRoutes.HOME) {
+                launchSingleTop = true
+            }
+
+            when (settingsState.value.quickStartTarget) {
+                "receipt" -> navController.navigate(com.grupo03.solea.ui.navigation.AppRoutes.SCAN_RECEIPT) {
+                    launchSingleTop = true
+                }
+                "voice" -> navController.navigate(com.grupo03.solea.ui.navigation.AppRoutes.AUDIO_ANALYSIS) {
+                    launchSingleTop = true
+                }
+            }
         }
     }
 }

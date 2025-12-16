@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Wallet
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -71,6 +72,8 @@ fun SettingsScreen(
         settingsState = settingsState.value,
         onToggleNotifications = settingsViewModel::toggleNotifications,
         onToggleTheme = settingsViewModel::toggleTheme,
+        onToggleQuickStart = settingsViewModel::toggleQuickStart,
+        onSaveQuickStartTarget = settingsViewModel::saveQuickStartTarget,
         onSignOut = { authViewModel.signOut() },
         onNavigateToBudgetLimits = onNavigateToBudgetLimits,
         onNavigateToLanguageSelection = onNavigateToLanguageSelection,
@@ -97,6 +100,8 @@ private fun SettingsContent(
     settingsState: com.grupo03.solea.presentation.states.screens.SettingsState,
     onToggleNotifications: (Boolean) -> Unit,
     onToggleTheme: (Boolean) -> Unit,
+    onToggleQuickStart: (Boolean) -> Unit,
+    onSaveQuickStartTarget: (String) -> Unit,
     onSignOut: () -> Unit,
     onNavigateToBudgetLimits: () -> Unit,
     onNavigateToLanguageSelection: () -> Unit,
@@ -211,6 +216,55 @@ private fun SettingsContent(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+
+            // Quick Start configuration
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    SettingItemWithSwitch(
+                        icon = Icons.Default.Receipt,
+                        title = stringResource(R.string.quick_start_title),
+                        checked = settingsState.quickStartEnabled,
+                        onCheckedChange = onToggleQuickStart
+                    )
+
+                    if (settingsState.quickStartEnabled) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = stringResource(R.string.quick_start_choose_target),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { onSaveQuickStartTarget("receipt") },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = if (settingsState.quickStartTarget == "receipt") ButtonDefaults.buttonColors() else ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
+                            ) {
+                                Icon(imageVector = Icons.Default.Receipt, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.quick_start_target_receipt))
+                            }
+
+                            Button(
+                                onClick = { onSaveQuickStartTarget("voice") },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = if (settingsState.quickStartTarget == "voice") ButtonDefaults.buttonColors() else ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
+                            ) {
+                                Icon(imageVector = Icons.Default.Mic, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.quick_start_target_voice))
+                            }
+                        }
+                    }
+                }
+            }
 
             SettingNavigationCard(
                 icon = Icons.Default.Language,
